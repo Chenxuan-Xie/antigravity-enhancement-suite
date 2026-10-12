@@ -23,6 +23,8 @@
 
 **Antigravity Enhancement Suite** 是专为 **Google Antigravity 2.0 桌面端 (Windows)** 打造的一站式开源增强工具包。它在**不修改、不破坏官方 `app.asar` 核心文件**的前提下，通过外置无损引导与本地后台服务，为 Antigravity 提供四大实用功能：
 
+**四项功能现在可独立启用。** 安装时勾选需要的模块；安装后在「设置 → ✨ 增强套件控制中心」分别开关 Claude 皮肤、中文汉化、多账号切换和 API 中转。可以只汉化并保留官方配色，也可以保持英文界面只用账号或 API 功能。更新自愈计划任务为独立可选项，默认不启用。
+
 1. 🎨 **Claude 书卷风主题皮肤 (`antigravity-claude-skin`)**
    - 复刻 Claude 标志性的 **羊皮纸暖白 (`#FAF9F5`)** 与 **深色暖炭黑 (`#1F1E1D`)** 双模式配色，告别刺眼冷白光。
    - **离线人文衬线排版**：内置离线 `Source Serif 4` 衬线字体与中文思源宋体混排，呈现 **“提问现代干练、AI 回答温润如书”** 的阅读体验。
@@ -62,7 +64,12 @@
 
 ```mermaid
 flowchart TD
-    Guardian["更新自愈守护进程"] -. "官方更新后自动恢复" .-> Boot["外置无损启动引导器"]
+    Runtime["固定安装目录：~/.gemini/antigravity-suite"] --> Boot["外置无损启动引导器"]
+    Guardian["更新自愈守护进程（可选）"] -. "检测更新后恢复" .-> Boot
+    Control["设置：增强套件控制中心"] -. "独立开关" .-> Skin
+    Control -. "独立开关" .-> I18n
+    Control -. "独立开关" .-> AccUI
+    Control -. "独立开关" .-> ChatUI
 
     Boot --> Skin["Claude 暖白书卷风皮肤"]
     Boot --> I18n["简体中文全量界面汉化"]
@@ -79,7 +86,7 @@ flowchart TD
 
 ## 🔒 隐私与数据安全说明
 
-- **账号与密钥 100% 保存在您本机**：您登录的 Google 账号凭证（运行后自动保存在本地 `antigravity-account-switcher/data/accounts.json` 及 Windows 系统凭据管理器中）和您填写的第三方 API Key（运行后保存在本地 `antigravity-model-switcher/data/models.json` 中）**仅存放在您自己的电脑上**。
+- **账号与密钥保存在本机**：默认安装到 `~/.gemini/antigravity-suite/`，账号与模型数据位于对应模块的 `data/` 中。模型按服务商共享 API Key，界面列表只显示掩码。配置 JSON 本身未加密，应按凭据文件保护；请求模型或登录时会按功能向您选择的 API 服务商或 Google 发送所需数据。
 - **零外部数据收集**：本开源项目不包含任何统计或遥测代码。
 - **仓库防呆保护**：`.gitignore` 已默认排除所有个人配置文件（`data/*.json`）、聊天桥接缓存与备份目录；仓库中仅提供空白的脱敏模板 [`accounts.example.json`](./antigravity-account-switcher/data/accounts.example.json) 与 [`models.example.json`](./antigravity-model-switcher/data/models.example.json)。
 
@@ -89,20 +96,36 @@ flowchart TD
 
 ### 1. 环境要求
 - **操作系统**：Windows 10 / 11 (64 位)
-- **基础环境**：已安装 [Node.js](https://nodejs.org/)（建议 v18 及以上版本）
+- **基础环境**：已安装 [Node.js](https://nodejs.org/) **22 或以上版本**
 - **目标软件**：已安装 Google Antigravity 桌面客户端
 
 ### 2. 下载并一键安装
 
-打开 PowerShell，将本仓库克隆到您电脑上的固定目录（守护服务会直接引用该目录中的脚本，安装后请勿随意移动文件夹），然后运行安装脚本：
+下载 [仓库 ZIP](https://github.com/Chenxuan-Xie/antigravity-enhancement-suite/archive/refs/heads/main.zip) 并解压，双击 **`双击一键安装.cmd`**，勾选需要的功能后安装。安装器将运行时复制到固定应用数据目录；**成功安装后，下载或克隆的源文件夹可以移动或删除**。
+
+也可以用 PowerShell 安装：
 
 ```powershell
 git clone https://github.com/Chenxuan-Xie/antigravity-enhancement-suite.git
 cd antigravity-enhancement-suite
 
-# 一键安装全部功能（自动识别本机 Antigravity 与 Node.js 路径）
+# 打开可视化功能选择窗口
 powershell -ExecutionPolicy Bypass -File .\install-all.ps1
+
+# 只汉化，保留官方颜色；不注册自愈任务
+powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules i18n -NoUi
+
+# 只启用账号与 API，并选择更新自愈
+powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api -EnableGuardian -NoUi
 ```
+
+**一行命令下载并启动安装器（PowerShell）：**
+
+```powershell
+& { $installer = Join-Path $env:TEMP 'agy-suite-install.ps1'; Invoke-WebRequest 'https://raw.githubusercontent.com/Chenxuan-Xie/antigravity-enhancement-suite/main/install-online.ps1' -OutFile $installer; powershell -NoProfile -ExecutionPolicy Bypass -File $installer }
+```
+
+`-RuntimeDir` 可指定固定安装目录，例如 `D:\AppsData\antigravity-suite`；`-ConfigDir` 可指定 Antigravity 插件配置目录。以后更新或卸载自定义安装时也传入相同的 `-RuntimeDir`。
 
 > 📌 **如果您的 Antigravity 安装在自定义位置**，可以通过 `-AntigravityDir` 参数指定 `Antigravity.exe` 所在的文件夹路径：
 > ```powershell
@@ -111,28 +134,28 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1
 
 **安装脚本会自动为您完成以下步骤**：
 1. 自动识别本机 Antigravity 安装目录；
-2. 将多账号切换与 API 模型切换插件安装到 `~/.gemini/config/plugins/` 并自动启用；
-3. 编译 Claude 主题皮肤与简体中文汉化包，并配置外置无损启动器；
-4. 如果 Antigravity 当前正在运行，**无需重启软件，窗口会当场实时切换为中文与 Claude 主题**；
-5. 注册后台自愈守护任务：当 Antigravity 后续触发官方版本更新时，守护进程会自动为您恢复皮肤、汉化与插件功能。
+2. 复制核心到固定运行时目录，插件、启动器、MCP 和可选守护均指向该目录；重装保留账号、模型与聊天数据；
+3. 根据勾选项启用插件和界面模块，写入外置启动器，官方 ASAR 保持不变；
+4. 应用空闲且 CDP 可用时加载界面，无需刷新聊天；原生菜单与窗口启动钩子的升级在下一次应用启动时完整生效；生成期间安装和重新注入会等待用户完成任务；
+5. 仅在选择更新自愈时注册计划任务与开机自启；未启用时，本机后端由应用启动，应用关闭后退出。关闭自愈后，官方更新若移除启动器，需要重新运行安装器。
 
 ---
 
 ## 📚 功能使用指南
 
-### 一、Claude 暖白皮肤与简体中文汉化 (`antigravity-claude-skin`)
+### 一、Claude 书卷双色皮肤与简体中文汉化 (`antigravity-claude-skin`)
 
-1. **浅色 / 深色模式切换**：
-   - 同时支持浅色模式（**羊皮纸暖白 `#FAF9F5`**）与深色模式（**暖炭黑 `#1F1E1D`**），可在 Antigravity 设置中随心切换。
+1. **设置页一键切换皮肤（白天 / 黑夜 / 跟随系统）**：
+   - 打开左下角 **「设置 (Settings)」**，在顶部 **「切换皮肤（Claude 书卷双色主题）」** 卡片中即可实时切换三档模式：
+     - **☀️ 白天（羊皮纸浅色 `#FAF9F5`）**：复刻 Claude Desktop 标志性羊皮纸暖白画布与焦糖赤陶点缀；
+     - **🌙 黑夜（暖炭黑深色 `#1F1E1D`）**：复刻 Claude Desktop 经典暖炭黑深色护眼画布（侧栏 `#161514`、卡片 `#282725`、米白正文 `#ECE9E2`），彻底告别刺眼纯黑与反差眩光；
+     - **💻 跟随系统**：自动监听 Windows 10/11 系统深浅色设置并实时无感切换（连同 Windows 原生右上角窗口控制栏自动同步变色）。
 2. **设置专属首页问候语称呼**：
    - 新建会话首页默认根据时间显示 `早上好`、`下午好`、`晚上好`。
-   - 如果希望显示您的名字（例如 `早上好，Alex`），可按 `Ctrl+Shift+I` 打开开发者工具控制台，输入并回车：
-     ```javascript
-     localStorage.setItem('__agy_greeting_name__', 'Alex');
-     ```
-     （如需恢复默认无称呼状态，执行 `localStorage.removeItem('__agy_greeting_name__')` 即可）。
+   - 在「设置 → 增强套件控制中心」的「首页问候语称呼」输入名字，实时保存；清空恢复默认称呼。汉化关闭时使用英文问候语。
 3. **自定义字体字号或翻译词条**：
-   - 修改样式文件 [`antigravity-claude-skin/src/claude-core.css`](./antigravity-claude-skin/src/claude-core.css) 或自定义词典 [`antigravity-claude-skin/i18n/dicts/v2.22.0_overlay.json`](./antigravity-claude-skin/i18n/dicts/v2.22.0_overlay.json) 后，运行根目录下的热更新命令即可立即生效：
+   - 控制中心可选择「跟随主题 / 书卷衬线体 / 现代无衬线体」及「小 / 标准 / 大」字号，无需改 CSS。关闭皮肤且选择跟随主题时保留官方字体与配色。
+   - 开发者修改源码样式或词典后，以下命令将更新固定目录中的运行时，保留当前功能开关与数据：
      ```powershell
      powershell -ExecutionPolicy Bypass -File .\live-reload.ps1
      ```
@@ -142,6 +165,8 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1
 ### 二、Google 多账号秒级切换 (`antigravity-account-switcher`)
 
 安装后，系统会自动识别并记录您当前已登录的 Google 账号。您可以通过以下两个位置管理账号：
+- **快捷入口**：聊天输入框旁的账号配额胶囊，点击即可打开切换菜单；显示当前模型匹配的配额，无法匹配时显示最低已知配额，缓存数据会标注「缓存」。每分钟检查账号状态，当前账号配额按需每 5 分钟刷新，也可手动刷新。
+- **低配额提醒**：新鲜配额低于 10% 或检测到原生额度限制提示时，提供备用账号切换按钮；不会自动切号，生成过程中不能切换。提醒可在控制中心关闭。
 - **方式一（推荐）**：打开 Antigravity **「设置 (`Ctrl+,`) -> 账号」**，页面顶部会直接显示 **「多账号无缝热切换」** 面板。
 - **方式二**：点击窗口右侧边栏打开 **Account Switcher** 插件面板。
 
@@ -162,10 +187,15 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1
 支持将任意兼容 **OpenAI (`/v1/chat/completions`)** 或 **Anthropic / Claude (`/v1/messages`)** 协议的第三方 API 或中转站接入 Antigravity 原生聊天框。
 
 #### 1. 添加您的 API Key 与模型
+先在添加弹窗选择服务商预设：**OneAPI / NewAPI、自定义、DeepSeek、OpenRouter、硅基流动、OpenAI、Anthropic**。官方预设填写地址与协议，自定义站点的地址由用户提供。填写一次 Key，拉取模型列表后勾选多个模型并批量导入；不提供模型列表的站点仍可手动填写 Model ID。
+
+之后选择「已保存服务商」即可复用地址和密钥；修改所选服务商的 Key 或地址会同步更新关联模型。旧版配置按地址、协议和密钥分组迁移，使用不同密钥的记录保持独立，迁移前保留原模型文件备份。
+
+预设地址参考 [DeepSeek 文档](https://api-docs.deepseek.com/)、[OpenRouter 文档](https://openrouter.ai/docs/api/api-reference/models/get-models)、[硅基流动文档](https://api-docs.siliconflow.cn/docs/userguide/quickstart)、[OpenAI 文档](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) 和 [Anthropic 文档](https://platform.claude.com/docs/en/api/messages/create)。实际模型列表与参数透传能力取决于所选服务商。
 您可以通过以下任意一种方式添加模型：
 - **在聊天框直接添加**：点击底部聊天输入框左下角的 **模型选择菜单**，在菜单底部的 **「⚡ 第三方 API / 中转站模型」** 区域点击 **「+ 添加 / 管理中转模型」**。
 - **在右侧面板添加**：打开右侧边栏的 **API Model Switcher** 面板进行配置。
-- **直接发消息让 AI 帮您配**：在聊天框里直接发送：`帮我添加一个中转模型，地址是 https://api.xxx.com/v1，API Key 是 sk-xxx，模型 ID 是 claude-sonnet-4-5-20250929`。
+- 密钥建议在专用表单中填写，避免进入聊天历史。
 
 **填写说明**：
 | 配置项 | 是否必填 | 填写说明 |
@@ -181,11 +211,17 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1
 - **调节思考强度**：对于支持深度思考的模型（如 Claude 3.7/4.x、OpenAI o1/o3/GPT-5、DeepSeek R1 等），将鼠标悬停在菜单里的模型名称上，会展开 **思考强度子菜单（默认 / 低 / 中 / 高 / 最大）**，可按需自由选择。
 - **同会话上下文自动衔接**：在同一个对话中，无论您是先用官方模型聊了几轮再切到中转模型，还是先用中转模型聊完再切回官方模型，插件都会自动帮您同步前文对话内容，不会出现报错或失忆。
 
+#### 3. 查看 Token 消耗
+
+在控制中心开启「显示 Token 消耗」，聊天输入区与 API 管理面板可查看本轮输入/输出和会话累计 Token。统计包含一次任务中的各次工具与模型请求，Anthropic 缓存输入也计入输入数。只显示接口实际返回的数据；缺失时显示「—」或「部分请求未返回统计」，不估算费用。历史记录中的统计随会话保存，面板可点击刷新查看最新数据。
+
+中转请求的运行提示区分收到思考内容、正在输出、执行工具和等待响应；网络保活不代表模型在思考。默认按连续 120 秒无上游响应超时，持续输出和工具执行不受固定轮数上限影响。
+
 ---
 
 ## 🛠️ 一键卸载与恢复官方原版
 
-如果您想卸载本套件并完全恢复 Antigravity 官方英文原版界面，只需在 PowerShell 中运行：
+双击 **`双击一键卸载.cmd`**；也可以运行以下命令。源文件夹已删除时，直接运行固定安装目录中的 `uninstall-all.ps1`：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\uninstall-all.ps1
@@ -194,8 +230,8 @@ powershell -ExecutionPolicy Bypass -File .\uninstall-all.ps1
 卸载脚本会：
 1. 移除开机自启项与后台更新自愈计划任务；
 2. 停止后台本地服务并清理外置启动器；
-3. 恢复原版插件配置文件备份；
-4. **当场将正在运行的 Antigravity 窗口实时还原为官方默认皮肤与英文界面**（且不会误删您保存在本地 `data/` 目录下的配置数据）。
+3. 仅还原套件的插件配置项，保留安装后修改的无关设置；
+4. 应用空闲且可连接时关闭界面模块，重启后完整恢复官方启动行为。固定目录中的账号、密钥与会话数据保留，不会随卸载删除。
 
 ---
 
@@ -206,10 +242,30 @@ antigravity-enhancement-suite/
 ├── install-all.ps1                     # 一键全量安装脚本（推荐入口）
 ├── uninstall-all.ps1                   # 一键完整卸载与还原官方界面脚本
 ├── live-reload.ps1                     # 样式、词条与前端脚本实时热更新工具
+├── 双击一键安装.cmd / 双击一键卸载.cmd # 可视化安装入口
+├── install-online.ps1                  # 一行下载安装入口
+├── suite/                              # 独立开关、控制中心、固定运行时安装与回归
 ├── antigravity-claude-skin/            # [模块一] Claude 暖白书卷风皮肤 + 简体中文全量汉化 + 更新自愈守护
 ├── antigravity-account-switcher/       # [模块二] Google 多账号一键无感热切换与配额查看插件
 └── antigravity-model-switcher/         # [模块三] 第三方 API / 中转站无缝切换与同会话上下文衔接插件
 ```
+
+## ✅ 验证与兼容范围
+
+2026-10-12 本地验证：73 项模型/会话/SDK 回归、32 项套件/安装/服务商/账号 SDK 检查、49 项原聊天浏览器检查、18 项套件浏览器交互检查、13 项删除隔离检查、23 项模拟更新恢复检查，以及当前原生设置页挂载点检查。安装测试使用包含中文的隔离目录，覆盖首次安装、覆盖重装、保留数据、删除下载目录、固定运行时卸载和保留无关插件配置；所有测试均未调用付费模型或切换真实账号。
+
+```powershell
+node suite/tests/regression.mjs
+node antigravity-model-switcher/tools/regression.mjs
+node antigravity-claude-skin/tools/regression-resilience.cjs
+# 以下浏览器验证需要 Antigravity 正在运行，使用一次性 iframe 和模拟 API
+node suite/tests/verify-ui.mjs
+node suite/tests/verify-native-settings.mjs
+node antigravity-model-switcher/tools/verify-ui.mjs
+node antigravity-model-switcher/tools/verify-delete-ui.mjs
+```
+
+GitHub Actions 在 Windows + Node 22 上检查构建、安装、服务商、模型与模拟更新；未安装 Antigravity 的 CI 环境跳过内置 SDK 检查。界面适配依赖当前 Antigravity 的设置、编辑器与聊天状态格式；自愈能恢复外置启动器，不能保证官方未来重大内部改版无需适配。第三方网关可能不提供模型列表、思考内容、Token 统计或某些参数；保留明确错误和缺失状态，不声称具备接口未提供的能力。
 
 ---
 

@@ -16,6 +16,7 @@ import {
     recordTestResult
 } from './model-store.mjs';
 import { testModelConnection, chatWithModel } from './model-client.mjs';
+import suiteSettings from '../../suite/settings.cjs';
 import {
     resolveConversationId,
     buildUnifiedConversationHistory,
@@ -158,6 +159,7 @@ function findModelFlexible(identifier) {
 }
 
 async function handleToolCall(name, args = {}) {
+    if(!suiteSettings.readSettings().api)throw Error('API 中转功能已关闭');
     if (name === 'list_custom_models') {
         const state = getSanitizedState();
         const cid = resolveConversationId(args.conversationId || 'auto');

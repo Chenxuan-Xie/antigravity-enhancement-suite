@@ -122,7 +122,7 @@ function buildI18nBundle() {
         window.__agyCnOrigAttrValues = origAttrValues;
     }
     function recordOrigText(node) {
-        if (node && !origTextValues.has(node)) {
+        if (node && (!origTextValues.has(node) || translatedValues.get(node) !== node.nodeValue)) {
             origTextValues.set(node, node.nodeValue);
         }
     }
@@ -200,6 +200,8 @@ function buildI18nBundle() {
         };
         window.__agyCnI18nCleanup = () => {
             try { observer.disconnect(); } catch (_) {}
+            document.removeEventListener('DOMContentLoaded', startEngine);
+            window.removeEventListener('load', startEngine);
             try { Element.prototype.attachShadow = origAttachShadow; } catch (_) {}
             window.__agyCnI18nActive = false;
         };
@@ -235,22 +237,32 @@ function buildI18nBundle() {
     window.addEventListener('load', startEngine);`
   );
 
-  // Append Settings -> Account Multi-Account Switcher widget if present
+  // Localization is independent of theme decorations.
+  js = js.replace('function mountClaudeStartPageHero() {', 'function mountClaudeStartPageHero() { return;');
+  js = `window.__agySuiteModules={i18n:function(){\n${js}\n}};`;
+  // Modules are definitions, not unconditional side effects.
   const switcherInjectorPath = path.resolve(skinRoot, '..', 'antigravity-account-switcher', 'core', 'settings-injector.js');
   if (fs.existsSync(switcherInjectorPath)) {
-    js += '\n;\n' + fs.readFileSync(switcherInjectorPath, 'utf8') + '\n';
+    js += '\nwindow.__agySuiteModules.accounts=function(){\n' + fs.readFileSync(switcherInjectorPath, 'utf8') + '\n' + fs.readFileSync(path.join(path.dirname(switcherInjectorPath),'quota-badge.js'),'utf8') + '\n};';
   }
 
   // Append Native Chat Model Selector + Seamless Relay Switcher widget if present
   const modelInjectorPath = path.resolve(skinRoot, '..', 'antigravity-model-switcher', 'core', 'chat-injector.js');
   if (fs.existsSync(modelInjectorPath)) {
-    js += '\n;\n' + fs.readFileSync(modelInjectorPath, 'utf8') + '\n';
+    js += '\nwindow.__agySuiteModules.api=function(){\n' + fs.readFileSync(modelInjectorPath, 'utf8') + '\n};';
   }
 
   // Main hooks, legacy preloads and the guardian can reach the same renderer.
   // Do not tear down a live relay or re-mount identical code on repeated injection.
+  js += `\nwindow.__agyProviderPresets=${fs.readFileSync(path.join(skinRoot,'..','antigravity-model-switcher','core','provider-presets.json'),'utf8')};\n`;
+  js += `\nwindow.__agySuiteTheme=${JSON.stringify(fs.readFileSync(path.join(skinRoot,'claude-theme.css'),'utf8'))};\n`;
+  const themeSwitcherPath = path.join(skinRoot, 'src', 'theme-switcher.js');
+  if (fs.existsSync(themeSwitcherPath)) {
+    js += '\n;\n' + fs.readFileSync(themeSwitcherPath, 'utf8') + '\n';
+  }
+  js += fs.readFileSync(path.join(skinRoot,'..','suite','control-center.js'),'utf8');
   const bundleId = crypto.createHash('sha256').update(js).digest('hex');
-  js = `(()=>{if(window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&window.__AGY_MODEL_SWITCHER&&document.getElementById('agy-model-switcher-styles'))return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;\n${js}\nwindow.__agyRendererBundleId=${JSON.stringify(bundleId)};})();`;
+  js = `(()=>{if(window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;\n${js}\nwindow.__agyRendererBundleId=${JSON.stringify(bundleId)};})();`;
 
   // Verify syntax with vm.Script
   new vm.Script(js);

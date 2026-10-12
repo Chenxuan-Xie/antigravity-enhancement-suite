@@ -375,15 +375,18 @@
     const manualInput = root.querySelector('[data-as-role="manual-input"]');
 
     async function apiRequest(endpoint, bodyObj = null, maxRetries = 3) {
+      if (bodyObj !== null) maxRetries = 0;
       let lastErr = null;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           const opts = bodyObj !== null
             ? { method: "POST", body: JSON.stringify(bodyObj) }
             : { method: "GET" };
+          opts.signal = AbortSignal.timeout(30000);
           const r = await fetch(`${API_BASE}${endpoint}`, opts);
           const d = await r.json();
           if (d && Array.isArray(d.accounts)) {
+            window.dispatchEvent(new CustomEvent('agy-accounts-updated',{detail:d.accounts}));
             try {
               localStorage.setItem("__agy_saved_accounts__", JSON.stringify(d.accounts));
             } catch (_) {}

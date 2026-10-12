@@ -76,9 +76,9 @@ async function injectLiveViaCdp(options = {}) {
                 pending.set(id, { resolve, reject, timer });
                 socket.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, returnByValue: true, awaitPromise: true } }));
             });
-            const condition = await evaluate(`({busy:!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat,ready:document.readyState!=='loading',installed:window.__agyInstalledBundleHash===${JSON.stringify(hash)}&&window.__agyInstalledCssHash===${JSON.stringify(cssHash)}&&window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&!!window.__AGY_MODEL_SWITCHER&&!!document.getElementById('agy-claude-skin')})`);
+            const condition = await evaluate(`({busy:!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]'),ready:document.readyState!=='loading',installed:window.__agyInstalledBundleHash===${JSON.stringify(hash)}&&window.__agyInstalledCssHash===${JSON.stringify(cssHash)}&&window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&!!window.__agySuite})`);
             if (condition.busy || !condition.ready || (options.onlyIfMissing && condition.installed)) continue;
-            await evaluate(`(()=>{let style=document.getElementById('agy-claude-skin');if(!style){style=document.createElement('style');style.id='agy-claude-skin';(document.head||document.documentElement).appendChild(style);}if(style.textContent!==${JSON.stringify(css)})style.textContent=${JSON.stringify(css)};})()`);
+            if(options.settings)await evaluate(`window.__agySuite?.apply(${JSON.stringify(options.settings)})`);
             await evaluate(bundle);
             const installed = await evaluate(`(()=>{if(window.__agyRendererBundleId!==${JSON.stringify(bundleId)})return false;window.__agyInstalledBundleHash=${JSON.stringify(hash)};window.__agyInstalledCssHash=${JSON.stringify(cssHash)};return true})()`);
             if (installed) injected++;

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { getReasoningOptions, getReasoningValues, resolveReasoningEffort } from './reasoning-config.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const providerPresets = JSON.parse(fs.readFileSync(path.join(__dirname,'provider-presets.json'),'utf8'));
 export const DATA_DIR = process.env.AGY_MODEL_DATA_DIR
   ? path.resolve(process.env.AGY_MODEL_DATA_DIR) : path.join(__dirname, "..", "data");
 export const MODELS_FILE = path.join(DATA_DIR, "models.json");
@@ -16,7 +17,8 @@ function ensureDirs() {
 }
 
 const DEFAULT_STORE = {
-  version: 1,
+  version: 2,
+  providers: [],
   activeMode: "official", // "official" | "custom"
   activeModelId: null,
   officialModelLabel: "",
@@ -50,6 +52,24 @@ export function loadModelStore() {
         store.activeMode = "official";
       }
     }
+    const needsMigration = parsed.version!==2 || parsed.models.some(m=>!m.providerId);
+    store.providers = Array.isArray(parsed.providers) ? parsed.providers : [];
+    for (const model of store.models) {
+      let provider = store.providers.find(p => p.id === model.providerId);
+      if (!provider && model.providerId) throw Error('模型引用的服务商不存在');
+      if (!provider) {
+        provider=store.providers.find(p=>p.baseUrl===model.baseUrl&&p.apiKey===model.apiKey&&p.protocol===model.protocol);
+        if(!provider){provider={id:'prv_'+crypto.randomBytes(6).toString('hex'),name:new URL(model.baseUrl).host,baseUrl:model.baseUrl,apiKey:model.apiKey,protocol:model.protocol||'auto'};store.providers.push(provider);}
+        model.providerId=provider.id;
+      }
+      Object.assign(model,{baseUrl:provider.baseUrl,apiKey:provider.apiKey,protocol:provider.protocol});
+    }
+    store.version=2;
+    if(needsMigration){
+      const backup=path.join(DATA_DIR,'models.before-providers.json');
+      if(!fs.existsSync(backup))fs.copyFileSync(MODELS_FILE,backup);
+      saveModelStore(store);
+    }
     return store;
   } catch (err) {
     console.error("[ModelStore] Failed to parse models.json:", err.message);
@@ -60,7 +80,8 @@ export function loadModelStore() {
 export function saveModelStore(store) {
   ensureDirs();
   const tmpFile = `${MODELS_FILE}.tmp.${process.pid}.${Date.now()}`;
-  fs.writeFileSync(tmpFile, JSON.stringify(store, null, 2) + "\n", "utf8");
+  const disk={...store,models:store.models.map(model=>{if(!model.providerId)return model;const {apiKey,baseUrl,protocol,...own}=model;return own;})};
+  fs.writeFileSync(tmpFile, JSON.stringify(disk, null, 2) + "\n", "utf8");
   fs.renameSync(tmpFile, MODELS_FILE);
   return store;
 }
@@ -106,6 +127,8 @@ export function getPublicStoreState(includeFullKey = false) {
     officialModelLabel: store.officialModelLabel || "",
     chatRelayMode: store.chatRelayMode || "direct",
     models: store.models.map((m) => sanitizeModelForView(m, includeFullKey)),
+    providers: store.providers.map(p=>({...p,apiKey:includeFullKey?p.apiKey:undefined,maskedApiKey:maskApiKey(p.apiKey),hasApiKey:!!p.apiKey})),
+    providerPresets,
   };
 }
 
@@ -143,8 +166,12 @@ export function recordTestResult(id, result, expectedConfig) {
   }, expectedConfig);
 }
 
-export function upsertModel(input) {
-  const store = loadModelStore();
+export function upsertModel(input, transaction = null) {
+  const store = transaction || loadModelStore();
+  const previous = input.id ? store.models.find(m=>m.id===input.id) : null;
+  const provider = store.providers.find(p=>p.id===(input.providerId===undefined?previous?.providerId:input.providerId));
+  if(input.providerId && !provider)throw Error('服务商不存在');
+  input={baseUrl:provider?.baseUrl,protocol:provider?.protocol,...input,apiKey:input.apiKey||provider?.apiKey};
   const modelId = String(input.modelId || input.name || "").trim();
   const name = String(input.name || modelId).trim();
   const baseUrl = String(input.baseUrl || "").trim();
@@ -235,8 +262,41 @@ export function upsertModel(input) {
   }
 
   existing.reasoningEffort = reasoningEffort;
-  saveModelStore(store);
+  let shared=provider||store.providers.find(p=>p.baseUrl===baseUrl&&p.apiKey===finalApiKey&&p.protocol===protocol);
+  if(!shared){shared={id:'prv_'+crypto.randomBytes(6).toString('hex'),name:input.providerName||new URL(baseUrl).host};store.providers.push(shared);}
+  Object.assign(shared,{baseUrl,apiKey:finalApiKey,protocol});
+  existing.providerId=shared.id;
+  for(const sibling of store.models.filter(m=>m.providerId===shared.id)){
+    if(sibling.apiKey!==finalApiKey||sibling.baseUrl!==baseUrl||sibling.protocol!==protocol){sibling.lastTestOk=null;sibling.lastTestAt=null;delete sibling.resolvedProtocol;}
+    Object.assign(sibling,{baseUrl,apiKey:finalApiKey,protocol});
+    if(!getReasoningValues(sibling).includes(sibling.reasoningEffort))sibling.reasoningEffort='default';
+  }
+  if(!transaction)saveModelStore(store);
   return existing;
+}
+
+export function getProvider(id) { return loadModelStore().providers.find(p=>p.id===id)||null; }
+export function importProviderModels(input) {
+  if(!Array.isArray(input.modelIds))throw Error('modelIds 必须是模型列表');
+  const modelIds=[...new Set(input.modelIds.map(id=>typeof id==='string'?id.trim():id))];
+  if(!modelIds.length||modelIds.length>500||modelIds.some(id=>typeof id!=='string'||!id.trim()||id.length>256))throw Error('请选择 1 至 500 个有效模型');
+  const store=loadModelStore(),models=[];
+  let providerId=input.providerId||store.providers.find(p=>p.baseUrl===String(input.baseUrl||'').trim()&&p.apiKey===String(input.apiKey||'').trim()&&p.protocol===(input.protocol||'auto'))?.id;
+  for(const modelId of modelIds){
+    const existing=providerId&&store.models.find(m=>m.providerId===providerId&&m.modelId===modelId);
+    const model=upsertModel({...input,id:existing?.id,providerId,modelId,name:existing?.name||modelId,autoActivate:false},store);
+    providerId=model.providerId;models.push(model);
+  }
+  saveModelStore(store);return {models:models.map(m=>sanitizeModelForView(m)),state:getSanitizedState()};
+}
+export function updateProvider(input) {
+  const store=loadModelStore(),provider=store.providers.find(p=>p.id===input.id);
+  if(!provider)throw Error('服务商不存在');
+  const linked=store.models.find(m=>m.providerId===provider.id);
+  if(linked)upsertModel({...input,id:linked.id,name:linked.name,modelId:linked.modelId,providerId:provider.id},store);
+  else throw Error('请先为服务商导入模型');
+  if(input.providerName!==undefined)provider.name=String(input.providerName).trim().slice(0,100)||provider.name;
+  saveModelStore(store);return getSanitizedState();
 }
 
 export function setModelReasoningEffort(id, effort, activate = false) {

@@ -16,6 +16,7 @@ import {
     recordTestResult,
     maskApiKey
 } from './model-store.mjs';
+import { importProviderModels, getProvider, updateProvider } from './model-store.mjs';
 import { testModelConnection, chatWithModel, streamChatWithModel, discoverRelayModels } from './model-client.mjs';
 import {
     resolveConversationId,
@@ -38,6 +39,8 @@ import {
     executeAgentTool
 } from './agent-tools.mjs';
 import { createAgentTurnPolicy, compactAgentMessages, TOOL_RESULT_INSTRUCTION } from './agent-turn-policy.mjs';
+import { createUsageAccumulator } from './usage.mjs';
+import suiteSettings from '../../suite/settings.cjs';
 
 function createExchangeCheckpoint(cid, fields) {
     let exchange = appendCustomBridgeExchange(cid, { ...fields, completionStatus: 'incomplete' });
@@ -157,6 +160,7 @@ function readJsonBody(req) {
 
 const activeConversationRequests = new Set();
 const conversationControllers = new Map();
+export function getActiveModelRequestCount(){return activeConversationRequests.size;}
 
 export async function handleModelApiRequest(req, res, pathname, searchParams = new URL(req.url || '/', 'http://127.0.0.1').searchParams) {
     if (!pathname.startsWith('/api/models')) {
@@ -181,6 +185,8 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         sendJson(res, 200, { ok: true });
         return true;
     }
+
+    if(!suiteSettings.readSettings().api){sendJson(res,403,{ok:false,error:'API 中转功能已关闭'});return true;}
 
     const controller = new AbortController();
     const onDisconnect = () => { if (!res.writableEnded) controller.abort(new Error('客户端已断开连接')); };
@@ -230,6 +236,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
             const historyInfo = buildUnifiedConversationHistory(cid, { maxTurns: 6 });
             sendJson(res, 200, {
                 ok: true,
+                showUsage:suiteSettings.readSettings().showUsage,
                 ...getSanitizedState(),
                 localSessions: listLocalCustomSessions(),
                 bridge: {
@@ -244,6 +251,12 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
             return true;
         }
 
+        if(pathname==='/api/models/import'&&req.method==='POST') {
+            sendJson(res,200,{ok:true,...importProviderModels(await readJsonBody(req))});return true;
+        }
+        if(pathname==='/api/models/provider'&&req.method==='POST') {
+            sendJson(res,200,{ok:true,state:updateProvider(await readJsonBody(req))});return true;
+        }
         // 2. 新增或更新自定义模型
         if ((pathname === '/api/models' || pathname === '/api/models/save') && req.method === 'POST') {
             const body = await readJsonBody(req);
@@ -296,7 +309,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         // 5. 测试连接 (Test Connection) —— 支持测试已保存模型或正在填写的草稿配置
         if (pathname === '/api/models/test' && req.method === 'POST') {
             const body = await readJsonBody(req);
-            const existing = body.id ? getModelById(body.id) : null;
+            const existing = body.id ? getModelById(body.id) : getProvider(body.providerId);
 
             let apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
             if ((!apiKey || apiKey.includes('****') || apiKey.includes('••••')) && existing) {
@@ -329,7 +342,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         // 5b. 自动从中转站 /v1/models 探测可用模型列表
         if (pathname === '/api/models/discover' && req.method === 'POST') {
             const body = await readJsonBody(req);
-            const existing = body.id ? getModelById(body.id) : null;
+            const existing = body.id ? getModelById(body.id) : getProvider(body.providerId);
             let apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
             if ((!apiKey || apiKey.includes('****') || apiKey.includes('••••')) && existing) {
                 apiKey = existing.apiKey;
@@ -396,6 +409,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
             const maxToolRounds = enableTools ? Infinity : 1;
             const turnPolicy = createAgentTurnPolicy(enableTools);
             let totalLatencyMs = 0;
+            const usageStats = createUsageAccumulator();
             const finalContentParts = [];
             const finalReasoningParts = [];
             const executedToolSteps = [];
@@ -412,11 +426,13 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                     maxTokens: body.maxTokens || targetModel.maxTokens || 4096,
                     temperature: body.temperature,
                     reasoningEffort: body.reasoningEffort,
+                    includeUsage: suiteSettings.readSettings().showUsage,
                     timeoutMs: body.timeoutMs || 120000,
                     signal: controller.signal
                 });
                 controller.signal.throwIfAborted();
                 lastChatRes = chatRes;
+                checkpoint.update({usage:usageStats.add(chatRes.usage)},true);
                 if (!chatRes.ok) break;
 
                 totalLatencyMs += (chatRes.latencyMs || 0);
@@ -522,7 +538,8 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 modelId: targetModel.modelId,
                 modelName: targetModel.name,
                 protocol: lastChatRes.protocol,
-                images: rawImages
+                images: rawImages,
+                usage: usageStats.value()
             });
 
             sendJson(res, 200, {
@@ -535,7 +552,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 latencyMs: totalLatencyMs,
                 protocol: lastChatRes.protocol,
                 endpointUrl: lastChatRes.endpointUrl,
-                usage: lastChatRes.usage,
+                usage: usageStats.value(),
                 exchangeId: savedExchange.id,
                 exchange: savedExchange,
                 contextStats: historyMeta,
@@ -645,6 +662,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
             const maxToolRounds = enableTools ? Infinity : 1;
             const turnPolicy = createAgentTurnPolicy(enableTools);
             let totalLatencyMs = 0;
+            const usageStats = createUsageAccumulator();
             const finalContentParts = [];
             const finalReasoningParts = [];
             const executedToolSteps = [];
@@ -674,6 +692,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                         maxTokens: body.maxTokens || targetModel.maxTokens || 4096,
                         temperature: body.temperature,
                         reasoningEffort: body.reasoningEffort,
+                        includeUsage: suiteSettings.readSettings().showUsage,
                         timeoutMs: body.timeoutMs || 120000,
                     signal: controller.signal
                     },
@@ -733,6 +752,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
 
                 controller.signal.throwIfAborted();
                 lastChatRes = chatRes;
+                checkpoint.update({usage:usageStats.add(chatRes.usage)},true);
                 if (!chatRes.ok) {
                     break;
                 }
@@ -878,7 +898,8 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 modelId: targetModel.modelId,
                 modelName: targetModel.name,
                 protocol: lastChatRes.protocol,
-                images: rawImages
+                images: rawImages,
+                usage: usageStats.value()
             });
 
             sendSse('done', {
@@ -893,6 +914,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 endpointUrl: lastChatRes.endpointUrl,
                 exchangeId: savedExchange.id,
                 exchange: savedExchange,
+                usage: usageStats.value(),
                 contextStats: historyMeta,
                 model: {
                     id: targetModel.id,

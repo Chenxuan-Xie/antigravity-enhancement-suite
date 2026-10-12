@@ -16,6 +16,8 @@ const INSTALL_CORE_PATH = path.join(BASE_DIR, "install-core.js");
 const SWITCHER_DAEMON_PATH = path.resolve(SKIN_ROOT, "..", "antigravity-account-switcher", "core", "daemon.mjs");
 const ASAR_DIR = path.join(resourcesDir, "app.asar");
 const HOOK_DIR = path.join(resourcesDir, "app");
+const suiteSettings = require(path.resolve(SKIN_ROOT,'..','suite','settings.cjs'));
+const flags = () => {try{return suiteSettings.readSettings();}catch{return {skin:false,i18n:false,accounts:false,api:false,guardian:false};}};
 const asarPkg = JSON.parse(fs.readFileSync(path.join(ASAR_DIR, "package.json"), "utf8"));
 // The external bootstrap has no ASAR byte budget. Keep debugging loopback-only.
 if (!electron.app.commandLine.hasSwitch('remote-debugging-port')) electron.app.commandLine.appendSwitch('remote-debugging-port', '0');
@@ -26,6 +28,7 @@ const loadJs = Module._extensions['.js'];
 const policyFile = path.join(ASAR_DIR, 'dist', 'languageServer.js');
 Module._extensions['.js'] = function(module, filename) {
   if (path.resolve(filename) !== path.resolve(policyFile)) return loadJs(module, filename);
+  if (flags().accounts === false) return loadJs(module, filename);
   const source = fs.readFileSync(filename, 'utf8');
   const result = require('./runtime-transforms.cjs').languageServerPolicy(source);
   if (!result.compatible) console.warn('[Guardian] Language server restart policy changed; keeping official code');
@@ -71,6 +74,7 @@ try {
   const origAttach = loadingOverlay.attachLoadingOverlay;
   if (typeof origAttach === "function") {
     loadingOverlay.attachLoadingOverlay = function (win, fg, bg) {
+      if (!flags().skin) return origAttach.call(this,win,fg,bg);
       const isDark = bg === "#131313" || bg === "#1F1E1D";
       const claudeBg = isDark ? "#1F1E1D" : "#FAF9F5";
       const claudeFg = "#D97757";
@@ -143,6 +147,7 @@ const NATIVE_MENU_DICT = {
 };
 
 function translateMenuLabel(rawLabel, itemId) {
+  if (!flags().i18n) return rawLabel;
   if (typeof rawLabel !== "string" || !rawLabel) return rawLabel;
   if (itemId && /^group-(?!new$|remove$)/i.test(String(itemId))) return rawLabel;
   let label = rawLabel.trim();
@@ -175,7 +180,7 @@ function translateMenuItemsRecursive(items) {
     if (!item || typeof item !== "object") continue;
     if (typeof item.label === "string" && item.label) {
       if (!item.__origLabel) item.__origLabel = item.label;
-      item.label = translateMenuLabel(item.label, item.id);
+      item.label = translateMenuLabel(item.__origLabel, item.id);
     }
     if (Array.isArray(item.submenu)) {
       translateMenuItemsRecursive(item.submenu);
@@ -258,7 +263,7 @@ try {
   if (electron.dialog && typeof electron.dialog.showMessageBox === "function") {
     const origShowMessageBox = electron.dialog.showMessageBox.bind(electron.dialog);
     electron.dialog.showMessageBox = function (...args) {
-      for (const arg of args) {
+      for (const arg of flags().i18n ? args : []) {
         if (arg && typeof arg === "object" && !Array.isArray(arg)) {
           if (arg.title === "Check for Updates") arg.title = "检查更新";
           if (arg.message === "No updates available") arg.message = "暂无可用更新";
@@ -314,10 +319,6 @@ function getSkinInjectionScript(cssContent) {
 function injectSkinAndI18nIntoWindow(win) {
   if (!win || win.isDestroyed() || !win.webContents || win.webContents.isDestroyed()) return;
   try {
-    if (fs.existsSync(SKIN_CSS_PATH)) {
-      const css = fs.readFileSync(SKIN_CSS_PATH, "utf8");
-      win.webContents.executeJavaScript(getSkinInjectionScript(css)).catch(() => {});
-    }
     if (fs.existsSync(I18N_JS_PATH)) {
       const i18nJs = fs.readFileSync(I18N_JS_PATH, "utf8");
       win.webContents.executeJavaScript(i18nJs).catch(() => {});
@@ -333,6 +334,8 @@ electron.app.on("browser-window-created", (_event, win) => {
     if (process.platform === "win32" && typeof win.setTitleBarOverlay === "function") {
       const origSetOverlay = win.setTitleBarOverlay.bind(win);
       win.setTitleBarOverlay = function (options) {
+        win.__agyOriginalOverlay = options;
+        if (!flags().skin) return origSetOverlay(options);
         const rawColor = String((options && options.color) || "").toLowerCase();
         const isDark = rawColor === "#131313" || rawColor === "#181818" || rawColor === "#1f1e1d" || rawColor === "#161514";
         return origSetOverlay({
@@ -341,9 +344,9 @@ electron.app.on("browser-window-created", (_event, win) => {
           height: (options && options.height) || 30
         });
       };
-      win.setTitleBarOverlay({ color: "#FAF9F5", symbolColor: "#3D3A34", height: 30 });
+      win.setTitleBarOverlay({ color: "#FAFAFA", symbolColor: "#383A42", height: 30 });
     }
-    if (typeof win.setBackgroundColor === "function") {
+    if (flags().skin && typeof win.setBackgroundColor === "function") {
       win.setBackgroundColor("#FAF9F5");
     }
     win.webContents.on("dom-ready", () => injectSkinAndI18nIntoWindow(win));
@@ -354,6 +357,17 @@ electron.app.on("browser-window-created", (_event, win) => {
 });
 
 // 5. Self-heal hook on app quit (if an in-app update modified resources, re-ensure hook before exit)
+let lastFlags = JSON.stringify(flags());
+const suiteTimer = setInterval(() => {
+  try {
+    const next=JSON.stringify(flags());if(next===lastFlags)return;lastFlags=next;
+    const menu=electron.Menu.getApplicationMenu();if(menu)electron.Menu.setApplicationMenu(menu);
+    for(const win of electron.BrowserWindow.getAllWindows()) {
+      if(win.__agyOriginalOverlay)win.setTitleBarOverlay(win.__agyOriginalOverlay);
+      injectSkinAndI18nIntoWindow(win);
+    }
+  }catch(error){console.warn('[Suite]',error.message);}
+},2000);suiteTimer.unref?.();
 electron.app.on("will-quit", () => {
   try {
     if (!fs.existsSync(__filename) && fs.existsSync(INSTALL_CORE_PATH)) {

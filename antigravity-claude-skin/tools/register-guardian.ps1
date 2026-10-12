@@ -1,8 +1,19 @@
+param([switch]$Disable)
 $ErrorActionPreference = 'Stop'
 $vbsPath = Join-Path $PSScriptRoot 'start-auto-heal.vbs'
 $regPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $name = 'AntigravityClaudeSkinAutoHeal'
 $taskName = 'Antigravity Claude Skin Guardian'
+if ($Disable) {
+    if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        Stop-ScheduledTask -TaskName $taskName
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+    }
+    if (Get-ItemProperty -Path $regPath -Name $name -ErrorAction SilentlyContinue) { Remove-ItemProperty -Path $regPath -Name $name }
+    $guardianScript = Join-Path $PSScriptRoot 'auto-heal-daemon.js'
+    Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine.Contains($guardianScript) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    exit 0
+}
 Set-ItemProperty -Path $regPath -Name $name -Value "wscript.exe //B //Nologo `"$vbsPath`""
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\wscript.exe" -Argument "//B //Nologo `"$vbsPath`""
 $triggers = @(

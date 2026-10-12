@@ -1,4 +1,5 @@
 const accountsListEl = document.getElementById("accountsList");
+const panelFetch=async(url,options)=>{const res=await (window.sidecar?.fetch?window.sidecar.fetch('/'+String(url).replace(/^\/+/,''),options):window.fetch(url,options));if(String(url).includes('api/switch')&&res.ok)window.parent.postMessage({type:'agy-account-switcher-updated'},'*');return res;};
 const statusBannerEl = document.getElementById("statusBanner");
 const addAccountPanelEl = document.getElementById("addAccountPanel");
 const toggleAddBtn = document.getElementById("toggleAddBtn");
@@ -121,7 +122,7 @@ function renderAccounts(accounts) {
       const nextLabel = window.prompt(`修改账号 ${email} 的备注名称：`, currentText);
       if (nextLabel === null) return;
       try {
-        const res = await fetch("api/accounts/meta", {
+        const res = await panelFetch("api/accounts/meta", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, label: nextLabel }),
@@ -140,7 +141,7 @@ function renderAccounts(accounts) {
       const email = btn.getAttribute("data-delete-email");
       if (!window.confirm(`确定要从切换器列表中移除 ${email} 吗？`)) return;
       try {
-        const res = await fetch("api/accounts/delete", {
+        const res = await panelFetch("api/accounts/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
@@ -170,7 +171,7 @@ async function triggerAccountSwitch(email) {
   showStatus(`正在为您无缝切换至 ${email}（自动续期 Token 并热重载服务，约 2 秒完成）…`, "info");
 
   try {
-    const res = await fetch("api/switch", {
+    const res = await panelFetch("api/switch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -188,7 +189,7 @@ async function triggerAccountSwitch(email) {
 
 async function loadAccounts() {
   try {
-    const res = await fetch("api/accounts");
+    const res = await panelFetch("api/accounts");
     const data = await res.json();
     if (data.ok) {
       renderAccounts(data.accounts);
@@ -210,7 +211,7 @@ refreshQuotaBtn.addEventListener("click", async () => {
   refreshQuotaBtn.disabled = true;
   showStatus("正在同步所有账号的最新模型配额…", "info");
   try {
-    const res = await fetch("api/accounts/quota", {
+    const res = await panelFetch("api/accounts/quota", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
@@ -231,7 +232,7 @@ function startPollingOAuthStatus() {
   if (oauthPollTimer) clearInterval(oauthPollTimer);
   oauthPollTimer = setInterval(async () => {
     try {
-      const res = await fetch("api/oauth/status");
+      const res = await panelFetch("api/oauth/status");
       const data = await res.json();
       if (data.status === "completed" && data.account) {
         clearInterval(oauthPollTimer);
@@ -255,7 +256,7 @@ startOAuthBtn.addEventListener("click", async () => {
   startOAuthBtn.disabled = true;
   try {
     const label = newAccountLabelInput.value.trim();
-    const res = await fetch("api/oauth/start", {
+    const res = await panelFetch("api/oauth/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ openBrowser: true, label }),
@@ -276,7 +277,7 @@ copyOAuthUrlBtn.addEventListener("click", async () => {
   copyOAuthUrlBtn.disabled = true;
   try {
     const label = newAccountLabelInput.value.trim();
-    const res = await fetch("api/oauth/start", {
+    const res = await panelFetch("api/oauth/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ openBrowser: false, label }),
@@ -301,7 +302,7 @@ submitManualCodeBtn.addEventListener("click", async () => {
   submitManualCodeBtn.disabled = true;
   try {
     const label = newAccountLabelInput.value.trim();
-    const res = await fetch("api/oauth/manual", {
+    const res = await panelFetch("api/oauth/manual", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ codeOrUrl, label }),
@@ -327,7 +328,7 @@ importTokenBtn.addEventListener("click", async () => {
   importTokenBtn.disabled = true;
   try {
     const label = newAccountLabelInput.value.trim();
-    const res = await fetch("api/accounts/import-token", {
+    const res = await panelFetch("api/accounts/import-token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken, label }),

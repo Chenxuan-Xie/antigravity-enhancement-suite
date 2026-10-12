@@ -47,7 +47,7 @@ async function main() {
         vm.runInNewContext(bundle, { window: busyWindow });
         check(busyWindow.__AGY_MODEL_SWITCHER === busyApi, 'reinjection cannot cancel or replace an active relay');
         const idleApi = {};
-        const idleWindow = { __agyRendererBundleId: JSON.parse(id), __AGY_MODEL_SWITCHER: idleApi };
+        const idleWindow = { __agyRendererBundleId: JSON.parse(id), __AGY_MODEL_SWITCHER: idleApi, __agySuite:{} };
         vm.runInNewContext(bundle, { window: idleWindow, document: { getElementById: () => ({}) } });
         check(idleWindow.__AGY_MODEL_SWITCHER === idleApi, 'identical bundle reinjection preserves the existing runtime');
 
@@ -58,7 +58,8 @@ async function main() {
             Tray, Menu: { buildFromTemplate: items => ({ items }), setApplicationMenu: () => {} }, dialog: {} };
         const fakeFs = { ...fs, existsSync: () => false, readFileSync: file => /package\.json$/.test(file) ? JSON.stringify({ version: '3.1', main: 'dist/new-entry.js' }) : '' };
         const context = { module: { exports: {} }, __filename: 'bootstrap', process, console,
-            require: name => name === 'electron' ? electron : name === 'fs' ? fakeFs : name === 'path' ? path : name === 'node:module' ? fakeModule :
+            setInterval:()=>({unref(){}}),
+            require: name => /suite[\\/]settings\.cjs$/.test(name) ? {readSettings:()=>({skin:true,i18n:true})} : name === 'electron' ? electron : name === 'fs' ? fakeFs : name === 'path' ? path : name === 'node:module' ? fakeModule :
                 name === './guardian-runtime.cjs' ? { ensureGuardian: () => {} } : name === './runtime-transforms.cjs' ? { languageServerPolicy } :
                 (loaded.push(name), {}) };
         vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'native-bootstrap.cjs'), 'utf8'), context);

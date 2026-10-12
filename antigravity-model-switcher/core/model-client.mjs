@@ -340,7 +340,8 @@ export function buildProtocolRequestBody({
     maxTokens = 4096,
     effectiveTemp,
     reasoningEffort = 'default',
-    useStream = false
+    useStream = false,
+    includeUsage = true
 }) {
     if (protocol === 'anthropic') {
         const b = {
@@ -393,6 +394,7 @@ export function buildProtocolRequestBody({
             messages: openAiMessages,
             stream: useStream
         };
+        if(useStream&&includeUsage)b.stream_options={include_usage:true};
         if (maxTokens) b[/^(?:gpt-[56]|o[134])(?:[.-]|$)/i.test(modelId) ? 'max_completion_tokens' : 'max_tokens'] = maxTokens;
         if (typeof effectiveTemp === 'number') b.temperature = effectiveTemp;
         return applyReasoningConfig(b, { modelId }, reasoningEffort, protocol);
@@ -719,7 +721,8 @@ async function executeStreamingProtocolRequest({
     extraHeaders = {},
     timeoutMs = 120000,
     signal,
-    callbacks = {}
+    callbacks = {},
+    includeUsage = true
 }) {
     const headers = {
         'Content-Type': 'application/json',
@@ -753,7 +756,8 @@ async function executeStreamingProtocolRequest({
                 maxTokens,
                 effectiveTemp,
                 reasoningEffort,
-                useStream: true
+                useStream: true,
+                includeUsage
             }))
         },
         timeoutMs,
@@ -837,7 +841,9 @@ async function executeStreamingProtocolRequest({
             }
             if (evt.model && !detectedModel) detectedModel = evt.model;
             if (evt.message?.model && !detectedModel) detectedModel = evt.message.model;
-            if (evt.usage) usage = evt.usage;
+            if (evt.message?.usage) usage = { ...usage, ...evt.message.usage };
+            if (evt.usage) usage = { ...usage, ...evt.usage };
+            if (ended) return;
             finishReason = evt.choices?.[0]?.finish_reason || evt.delta?.stop_reason || evt.message?.stop_reason || finishReason;
             if (evt.type === 'message_stop') ended = true;
 
@@ -882,7 +888,7 @@ async function executeStreamingProtocolRequest({
     };
 
     const processLine = (line) => {
-        if (ended || sseError) return;
+        if (sseError) return;
         if (line === '') {
             if (dataLines.length) processSseLine(`data: ${dataLines.join('\n')}`);
             dataLines = [];
@@ -900,6 +906,16 @@ async function executeStreamingProtocolRequest({
             buffer = lines.pop() || '';
             for (const line of lines) processLine(line);
             if (done) { if (buffer) processLine(buffer); processLine(''); break; }
+            if(ended && protocol==='openai' && finishReason && !usage){
+                // OpenAI usage often arrives just after finish_reason. Read a
+                // bounded tail so relays that never close still finish promptly.
+                let timer;
+                const tail=await Promise.race([reader.read(),new Promise(resolve=>{timer=setTimeout(()=>resolve(null),Math.min(300,timeoutMs/2));})]);
+                clearTimeout(timer);
+                if(tail){buffer+=tail.done?decoder.decode():decoder.decode(tail.value,{stream:true});
+                  const tailLines=buffer.split(/\r?\n/);buffer=tailLines.pop()||'';for(const line of tailLines)processLine(line);
+                  if(tail.done){if(buffer)processLine(buffer);processLine('');}}
+            }
         }
     } finally {
         try { await reader.cancel(); } catch {}
@@ -1037,6 +1053,7 @@ export async function streamChatWithModel(modelConfig, messages, options = {}, c
                     timeoutMs,
                     signal,
                     callbacks: guardedCallbacks
+                    ,includeUsage: options.includeUsage !== false
                 });
 
                 if (result.ok) {

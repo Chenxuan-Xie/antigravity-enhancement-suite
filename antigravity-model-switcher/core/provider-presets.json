@@ -1,0 +1,8 @@
+[
+  {"id":"custom","name":"OneAPI / NewAPI / 自定义","baseUrl":"","protocol":"auto","hint":"填写你的站点地址，如 https://你的站点/v1；地址由中转站提供。"},
+  {"id":"deepseek","name":"DeepSeek 官方","baseUrl":"https://api.deepseek.com","protocol":"openai","docs":"https://api-docs.deepseek.com/"},
+  {"id":"openrouter","name":"OpenRouter","baseUrl":"https://openrouter.ai/api/v1","protocol":"openai","docs":"https://openrouter.ai/docs/api/api-reference/models/get-models"},
+  {"id":"siliconflow","name":"硅基流动 SiliconFlow","baseUrl":"https://api.siliconflow.cn/v1","protocol":"openai","docs":"https://api-docs.siliconflow.cn/docs/userguide/quickstart"},
+  {"id":"openai","name":"OpenAI 官方","baseUrl":"https://api.openai.com/v1","protocol":"openai","docs":"https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create"},
+  {"id":"anthropic","name":"Anthropic 官方","baseUrl":"https://api.anthropic.com/v1","protocol":"anthropic","docs":"https://platform.claude.com/docs/en/api/messages/create"}
+]

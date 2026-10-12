@@ -1,0 +1,24 @@
+name: Verify suite
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows-regression:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build runtime bundles
+        run: |
+          node antigravity-claude-skin/tools/build-theme.js
+          node antigravity-claude-skin/tools/build-i18n.js
+      - name: Isolated installer and provider regression
+        run: node suite/tests/regression.mjs
+      - name: Model and conversation regression
+        env:
+          AGY_SKIP_SDK_TESTS: '1'
+        run: node antigravity-model-switcher/tools/regression.mjs
+      - name: Simulated app-update recovery
+        run: node antigravity-claude-skin/tools/regression-resilience.cjs

@@ -758,6 +758,7 @@
         activeModelId: null,
         chatRelayMode: 'direct', // 'direct' | 'mcp'
         models: [],
+        providers: [],
         localSessions: [],
         activeLocalSessionId: null,
         bridge: {
@@ -875,6 +876,7 @@
                 state.activeModelId = data.activeModelId || null;
                 state.chatRelayMode = data.chatRelayMode || 'direct';
                 state.models = Array.isArray(data.models) ? data.models : [];
+                state.providers = Array.isArray(data.providers) ? data.providers : [];
                 state.localSessions = Array.isArray(data.localSessions) ? data.localSessions : [];
                 if (state.models.length === 0 && state.activeMode === 'custom') {
                     state.activeMode = 'official';
@@ -1790,6 +1792,12 @@
                         </div>
                     </div>
 
+                    <div class="agy-ms-field">
+                        <label>服务商（同一站点的模型共享地址和密钥）</label>
+                        <select class="agy-ms-select" id="agy-ms-provider"><option value="">新服务商 / 自定义</option></select>
+                        <select class="agy-ms-select" id="agy-ms-provider-preset" aria-label="服务商预设"><option value="">主流服务商一键预设</option></select>
+                        <p id="agy-ms-provider-hint" style="font-size:11px;opacity:.7;">编辑已保存服务商的地址或 Key，会同步更新该服务商下所有模型。</p>
+                    </div>
                     <div class="agy-ms-grid-2">
                         <div class="agy-ms-field">
                             <label>显示名称 (添加后显示在模型选择列表中)</label>
@@ -1829,6 +1837,7 @@
                     </div>
 
                     <div id="agy-ms-discovered-chips" style="display:none;flex-wrap:wrap;gap:5px;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.04);max-height:96px;overflow-y:auto;"></div>
+                    <button type="button" class="agy-ms-btn" id="agy-ms-import-btn" style="display:none;">批量导入勾选模型</button>
                     <div id="agy-ms-test-result-banner" class="agy-ms-test-banner"></div>
 
                     <div class="agy-ms-btn-row">
@@ -1899,6 +1908,29 @@
         const discoverBtn = modal.querySelector('#agy-ms-discover-btn');
         const discoveredChipsEl = modal.querySelector('#agy-ms-discovered-chips');
         const datalistEl = modal.querySelector('#agy-ms-discovered-models-list');
+        const providerSelect=modal.querySelector('#agy-ms-provider');
+        const presetSelect=modal.querySelector('#agy-ms-provider-preset');
+        const importBtn=modal.querySelector('#agy-ms-import-btn');
+        const selectedModels=new Set();let discoverySignature='';
+        for(const provider of state.providers){const option=document.createElement('option');option.value=provider.id;option.textContent=provider.name+' · '+provider.baseUrl;providerSelect.appendChild(option);}
+        providerSelect.value=editModel?.providerId||'';
+        providerSelect.addEventListener('change',()=>{
+            const provider=state.providers.find(p=>p.id===providerSelect.value);
+            modal.querySelector('#agy-ms-input-base-url').value=provider?.baseUrl||'';
+            modal.querySelector('#agy-ms-input-protocol').value=provider?.protocol||'auto';
+            keyInput.value='';keyInput.placeholder=provider?'已保存密钥，留空保留':'sk-...';
+            selectedModels.clear();importBtn.style.display='none';discoveredChipsEl.style.display='none';
+        });
+        const presets=window.__agyProviderPresets||[];
+        for(const preset of presets){const option=document.createElement('option');option.value=preset.id;option.textContent=preset.name;presetSelect.appendChild(option);}
+        presetSelect.addEventListener('change',()=>{
+            const preset=presets.find(p=>p.id===presetSelect.value);if(!preset)return;
+            providerSelect.value='';keyInput.value='';keyInput.placeholder='sk-...';
+            modal.querySelector('#agy-ms-input-base-url').value=preset.baseUrl;
+            modal.querySelector('#agy-ms-input-protocol').value=preset.protocol;
+            modal.querySelector('#agy-ms-provider-hint').textContent=preset.hint||'地址和协议已填好，填写 API Key 后拉取模型列表。';
+            selectedModels.clear();importBtn.style.display='none';discoveredChipsEl.style.display='none';
+        });
 
         function readFormDraft() {
             const name = modal.querySelector('#agy-ms-input-name').value.trim();
@@ -1913,13 +1945,14 @@
                 baseUrl,
                 apiKey,
                 protocol
+                ,providerId:providerSelect.value||null
             };
         }
 
         // 从中转站 /v1/models 拉取可用模型列表
         discoverBtn.addEventListener('click', async () => {
             const draft = readFormDraft();
-            if (!draft.baseUrl || (!draft.apiKey && !draft.id)) {
+            if (!draft.baseUrl || (!draft.apiKey && !draft.id && !draft.providerId)) {
                 bannerEl.className = 'agy-ms-test-banner err';
                 bannerEl.textContent = '❌ 请先填写【中转站接口地址 (Base URL)】和【API Key】，再点击获取模型列表。';
                 return;
@@ -1933,16 +1966,14 @@
                 if (res && res.ok && Array.isArray(res.models) && res.models.length > 0) {
                     datalistEl.innerHTML = res.models.map(id => `<option value="${escapeHtml(id)}"></option>`).join('');
                     discoveredChipsEl.style.display = 'flex';
-                    discoveredChipsEl.innerHTML = `<span style="font-size:11px;opacity:0.75;width:100%;">✅ 发现 ${res.models.length} 个可用模型，点击即可填入：</span>`;
-                    res.models.slice(0, 40).forEach((mId) => {
-                        const chip = document.createElement('span');
+                    discoverySignature=JSON.stringify([draft.providerId,draft.baseUrl,draft.apiKey,draft.protocol]);selectedModels.clear();importBtn.style.display='inline-block';
+                    discoveredChipsEl.innerHTML = `<span style="font-size:11px;opacity:0.75;width:100%;">发现 ${res.models.length} 个模型，勾选后批量导入：</span>`;
+                    res.models.forEach((mId) => {
+                        const chip = document.createElement('label');
                         chip.className = 'agy-ms-preset-chip';
-                        chip.textContent = mId;
-                        chip.addEventListener('click', () => {
-                            modal.querySelector('#agy-ms-input-model-id').value = mId;
-                            const nameEl = modal.querySelector('#agy-ms-input-name');
-                            if (!nameEl.value.trim()) nameEl.value = mId;
-                        });
+                        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=mId;
+                        checkbox.addEventListener('change',()=>{if(checkbox.checked)selectedModels.add(mId);else selectedModels.delete(mId);});
+                        chip.append(checkbox,document.createTextNode(mId));
                         discoveredChipsEl.appendChild(chip);
                     });
                     bannerEl.className = 'agy-ms-test-banner ok';
@@ -1959,10 +1990,20 @@
             }
         });
 
+        importBtn.addEventListener('click',async()=>{
+            const draft=readFormDraft();
+            if(discoverySignature!==JSON.stringify([draft.providerId,draft.baseUrl,draft.apiKey,draft.protocol])){bannerEl.textContent='连接信息已改变，请重新拉取模型列表';return;}
+            if(!selectedModels.size){bannerEl.textContent='请先勾选模型';return;}
+            importBtn.disabled=true;
+            try{await apiFetch('/import',{method:'POST',body:{...draft,id:undefined,modelIds:[...selectedModels]}});await refreshState();openModelManagerModal(null);}
+            catch(error){bannerEl.className='agy-ms-test-banner err';bannerEl.textContent=error.message;}
+            finally{importBtn.disabled=false;}
+        });
+
         // 测试连接按钮逻辑
         testBtn.addEventListener('click', async () => {
             const draft = readFormDraft();
-            if (!draft.modelId || !draft.baseUrl || (!draft.apiKey && !draft.id)) {
+            if (!draft.modelId || !draft.baseUrl || (!draft.apiKey && !draft.id && !draft.providerId)) {
                 bannerEl.className = 'agy-ms-test-banner err';
                 bannerEl.textContent = '❌ 请先完整填写【模型标识 (Model ID)】、【中转站接口地址 (Base URL)】和【API Key】后再测试连接。';
                 return;
@@ -1999,7 +2040,7 @@
         // 保存按钮逻辑
         saveBtn.addEventListener('click', async () => {
             const draft = readFormDraft();
-            if (!draft.modelId || !draft.baseUrl || (!draft.apiKey && !draft.id)) {
+            if (!draft.modelId || !draft.baseUrl || (!draft.apiKey && !draft.id && !draft.providerId)) {
                 bannerEl.className = 'agy-ms-test-banner err';
                 bannerEl.textContent = '❌ 请填写完整的【模型标识 (Model ID)】、【中转站接口地址 (Base URL)】和【API Key】。';
                 return;
@@ -2986,6 +3027,7 @@
                         exchange.id = data.exchangeId;
                     }
                 } else if (evtName === 'done') {
+                    if(uiTurn.nativeExchange)uiTurn.nativeExchange.usage=data.usage||data.exchange?.usage||null;
                     handledFinal = true;
                     completed = true;
                     if (typeof data.reply === 'string') {
@@ -3434,9 +3476,28 @@
         handleOutgoingComposerSubmit(e, editorEl);
     }
 
+    function syncUsageDisplay() {
+        let element=document.getElementById('agy-ms-usage');
+        if(!window.__agySuiteSettings?.showUsage){element?.remove();return;}
+        const composer=document.querySelector('[data-testid="agent-input-box"]');
+        if(!composer)return;
+        const exchanges=state.bridge.exchanges||[],last=exchanges.at(-1);
+        if(!last){element?.remove();return;}
+        if(!element){element=document.createElement('div');element.id='agy-ms-usage';element.setAttribute(SKIP_I18N_ATTR,'true');element.className='text-xs text-muted-foreground px-2 py-1';}
+        if(element.parentElement!==composer)composer.appendChild(element);
+        const known=exchanges.filter(ex=>ex.usage?.reportedRounds>0);
+        const total=key=>known.reduce((sum,ex)=>sum+(ex.usage[key]||0),0);
+        const number=value=>value===null||value===undefined?'—':value.toLocaleString();
+        const usage=last.usage;
+        const partial=exchanges.some(ex=>!ex.usage?.complete);
+        const message=`Token：本轮输入 ${number(usage?.inputTokens)} / 输出 ${number(usage?.outputTokens)} · 会话累计输入 ${known.length?total('inputTokens').toLocaleString():'—'} / 输出 ${known.length?total('outputTokens').toLocaleString():'—'}${partial?'（部分请求未返回统计）':''}`;
+        if(element.textContent!==message)element.textContent=message;
+    }
+
     function syncAllUI() {
         if (disposed) return;
         syncRunStatus();
+        syncUsageDisplay();
         const notice = document.getElementById('agy-ms-error-notice');
         if (notice && notice.getAttribute('data-agy-conversation-id') !== getActiveConversationId()) notice.remove();
         for (const cid of deletedConversations) {
@@ -3530,6 +3591,7 @@
     };
 
     window.__AGY_MODEL_SWITCHER_CLEANUP = () => {
+        document.getElementById('agy-ms-usage')?.remove();
         disposed = true;
         activeRunStatus?.element.remove();
         activeRunStatus = null;

@@ -1,83 +1,34 @@
-import http from "node:http";
-import fs from "node:fs";
-import path from "node:path";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { handleAccountApiRequest } from "../../../core/api-handler.mjs";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DAEMON_SCRIPT = path.resolve(__dirname, "../../../core/daemon.mjs");
-
-// Ensure the background daemon on 127.0.0.1:19823 is running too
-try {
-  const child = spawn(process.execPath, [DAEMON_SCRIPT], {
-    detached: true,
-    stdio: "ignore",
-    windowsHide: true,
-  });
-  child.unref();
-} catch {}
-
-let sidecar = null;
-try {
-  const { Sidecar } = await import("@antigravity/sidecar-sdk");
-  sidecar = new Sidecar();
-} catch {
-  try {
-    const os = await import("node:os");
-    const { pathToFileURL } = await import("node:url");
-    const sdkPath = path.join(os.default.homedir(), ".gemini", "config", "node_modules", "sidecar_sdk", "index.mjs");
-    if (fs.existsSync(sdkPath) && process.env.ANTIGRAVITY_SIDECAR_SOCKET) {
-      const { Sidecar } = await import(pathToFileURL(sdkPath).href);
-      sidecar = new Sidecar();
-    }
-  } catch {}
+import http from 'node:http';import fs from 'node:fs';import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';import {PassThrough} from 'node:stream';import {EventEmitter} from 'node:events';import os from 'node:os';
+import {handleAccountApiRequest} from '../../../core/api-handler.mjs';
+const directory=path.dirname(fileURLToPath(import.meta.url));
+const files=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','application/javascript']],['/styles.css',['styles.css','text/css']]]);
+async function loadSdk(){
+  try{return await import('sidecar_sdk');}catch{}
+  for(const dir of [path.resolve(directory,'../../../..','node_modules','sidecar_sdk'),path.join(process.env.USERPROFILE||os.homedir(),'.gemini','config','node_modules','sidecar_sdk')]){
+    if(fs.existsSync(path.join(dir,'package.json'))){const pkg=JSON.parse(fs.readFileSync(path.join(dir,'package.json'),'utf8'));return import(pathToFileURL(path.join(dir,pkg.main||'index.js')).href);}
+  }
+  throw Error('Antigravity bundled sidecar_sdk is unavailable');
 }
-
-const MIME = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".json": "application/json; charset=utf-8",
-};
-
-const httpServer = http.createServer(async (req, res) => {
-  const url = new URL(req.url || "/", "http://127.0.0.1");
-
-  if (url.pathname.startsWith("/api/")) {
-    const handled = await handleAccountApiRequest(req, res, url.pathname);
-    if (handled) return;
+if(process.env.ANTIGRAVITY_SIDECAR_WEB_PORT){
+  const {SidecarApp,Response}=await loadSdk();const app=new SidecarApp();
+  for(const [route,[name,contentType]] of files)app.page(route,()=>new Response(fs.readFileSync(path.join(directory,name)),{contentType}));
+  for(const [route,method] of [['/api/accounts','GET'],['/api/accounts/quota','POST'],['/api/switch','POST'],['/api/accounts/delete','POST'],['/api/accounts/meta','POST'],['/api/accounts/import-token','POST'],['/api/oauth/start','POST'],['/api/oauth/status','GET'],['/api/oauth/manual','POST']]){
+    app.api(route,async data=>{
+      const req=new PassThrough();req.method=method;req.url=route;req.headers={};
+      const res=new EventEmitter();let status=200,payload='{}';res.headersSent=false;res.writableEnded=false;
+      res.writeHead=code=>{status=code;res.headersSent=true;};res.end=body=>{payload=body;res.writableEnded=true;};
+      const handled=handleAccountApiRequest(req,res,route);req.end(method==='GET'?'':JSON.stringify(data));await handled;
+      return new Response(payload,{status,contentType:'application/json; charset=utf-8'});
+    },method);
   }
-
-  const rel = url.pathname === "/" ? "index.html" : url.pathname.replace(/^\/+/, "");
-  const filePath = path.resolve(__dirname, rel);
-  if (filePath.startsWith(__dirname) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath);
-    res.writeHead(200, {
-      "Content-Type": MIME[ext] || "application/octet-stream",
-      "Cache-Control": "no-store",
-    });
-    res.end(fs.readFileSync(filePath));
-    return;
-  }
-
-  res.writeHead(404);
-  res.end("Not Found");
-});
-
-const listenPort = sidecar ? 0 : Number(process.env.PORT || 0);
-httpServer.listen(listenPort, "127.0.0.1", async () => {
-  const { port } = httpServer.address();
-  if (sidecar) {
-    await sidecar.start(port);
-  } else {
-    console.log(`Standalone panel listening on http://127.0.0.1:${port}`);
-  }
-});
-
-if (sidecar) {
-  sidecar.onShutdown(() => {
-    httpServer.close();
-  });
+  await app.run();
+}else{
+  const server=http.createServer(async(req,res)=>{
+    try{const url=new URL(req.url,'http://127.0.0.1');if(url.pathname.startsWith('/api/')){if(await handleAccountApiRequest(req,res,url.pathname))return;}
+      if(url.pathname==='/preload.js'){res.writeHead(200,{'Content-Type':'application/javascript'});res.end('');return;}
+      const entry=files.get(url.pathname);if(!entry){res.writeHead(404);res.end('Not found');return;}
+      res.writeHead(200,{'Content-Type':entry[1],'Cache-Control':'no-store'});res.end(fs.readFileSync(path.join(directory,entry[0])));
+    }catch(error){res.writeHead(500,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:false,error:error.message}));}
+  });server.listen(Number(process.env.PORT||0),'127.0.0.1',()=>console.log('Account panel listening on http://127.0.0.1:'+server.address().port));
 }

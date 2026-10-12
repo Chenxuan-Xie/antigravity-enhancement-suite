@@ -10,6 +10,8 @@ import {
   refreshAccountQuota,
 } from "./account-manager.mjs";
 import { handleModelApiRequest } from "../../antigravity-model-switcher/core/api-handler.mjs";
+import { handleSuiteApi } from '../../suite/api.mjs';
+import suiteSettings from '../../suite/settings.cjs';
 
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
@@ -44,6 +46,16 @@ function sendJson(res, status, payload) {
 }
 
 export async function handleAccountApiRequest(req, res, pathname) {
+  if(req.headers?.origin&&!/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(req.headers.origin)){
+    sendJson(res,403,{ok:false,error:'仅允许本机 Antigravity 界面访问账号 API'});return true;
+  }
+  if (await handleSuiteApi(req,res,pathname)) return true;
+  const suite = suiteSettings.readSettings();
+  if (req.method !== 'OPTIONS' &&
+      ((pathname.startsWith('/api/models') && !suite.api) ||
+       (!pathname.startsWith('/api/models') && !suite.accounts))) {
+    sendJson(res,403,{ok:false,error:'该功能已在增强套件控制中心关闭'}); return true;
+  }
   if (pathname && pathname.startsWith("/api/models")) {
     const urlObj = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
     return await handleModelApiRequest(req, res, pathname, urlObj.searchParams);

@@ -18,7 +18,8 @@ async function loadSidecarSdk() {
     try {
         return await import('sidecar_sdk');
     } catch {
-        const sdkDir = path.join(process.env.USERPROFILE || os.homedir(), '.gemini', 'config', 'node_modules', 'sidecar_sdk');
+        const installedSdk = path.resolve(directory,'../../../..','node_modules','sidecar_sdk');
+        const sdkDir = fs.existsSync(path.join(installedSdk,'package.json'))?installedSdk:path.join(process.env.USERPROFILE || os.homedir(), '.gemini', 'config', 'node_modules', 'sidecar_sdk');
         const pkg = JSON.parse(fs.readFileSync(path.join(sdkDir, 'package.json'), 'utf8'));
         return await import(pathToFileURL(path.join(sdkDir, pkg.main || 'index.js')).href);
     }
@@ -35,7 +36,8 @@ if (process.env.ANTIGRAVITY_SIDECAR_WEB_PORT) {
         ['/api/models', 'GET'], ['/api/models/bridge', 'GET'],
         ['/api/models', 'POST'], ['/api/models/save', 'POST'],
         ['/api/models/select', 'POST'], ['/api/models/test', 'POST'],
-        ['/api/models/discover', 'POST'], ['/api/models/delete', 'POST']
+        ['/api/models/discover', 'POST'], ['/api/models/delete', 'POST'],
+        ['/api/models/import','POST'], ['/api/models/provider','POST']
     ];
     for (const [route, method] of routes) {
         app.api(route, async data => {

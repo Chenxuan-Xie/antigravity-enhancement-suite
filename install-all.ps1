@@ -1,113 +1,42 @@
-# =============================================================================
-# Antigravity Enhancement Suite - One-Click Full Installer
-# Modules:
-#   1. Claude Desktop Skin (Warm Parchment + Bookish Serif) & Simplified CN i18n
-#   2. Google Multi-Account Hot Switcher & Quota Monitor
-#   3. Custom Relay API / Token Proxy Model Switcher & Context Bridge
-# =============================================================================
-
-param(
-    [string]$AntigravityDir = ""
+﻿param(
+    [string]$AntigravityDir = '',
+    [string]$RuntimeDir = '',
+    [string]$ConfigDir = '',
+    [string]$Modules = '',
+    [switch]$EnableGuardian,
+    [switch]$NoUi
 )
-
-$ErrorActionPreference = "Stop"
-$SuiteRoot   = $PSScriptRoot
-$SkinRoot    = Join-Path $SuiteRoot "antigravity-claude-skin"
-$AccRoot     = Join-Path $SuiteRoot "antigravity-account-switcher"
-$ModelRoot   = Join-Path $SuiteRoot "antigravity-model-switcher"
-
-if ($AntigravityDir) {
-    $env:AGY_APP_DIR = $AntigravityDir
-}
-
-$NodeCmd = (Get-Command node -ErrorAction Stop).Source
-$env:AGY_NODE_BIN = $NodeCmd
-
-Write-Host "======================================================================" -ForegroundColor Yellow
-Write-Host "  Antigravity Enhancement Suite - One-Click Installer" -ForegroundColor Yellow
-Write-Host "  [1] Claude Warm Parchment Skin + Simplified Chinese Localization" -ForegroundColor Yellow
-Write-Host "  [2] Google Multi-Account Seamless Hot Switcher" -ForegroundColor Yellow
-Write-Host "  [3] Custom API / Relay Model Switcher (OpenAI & Anthropic)" -ForegroundColor Yellow
-Write-Host "======================================================================" -ForegroundColor Yellow
-
-# -----------------------------------------------------------------------------
-# Step 1: Install & Configure Plugins in ~/.gemini/config/plugins
-# -----------------------------------------------------------------------------
-$GeminiConfigDir = Join-Path $HOME ".gemini\config"
-$PluginsDir      = Join-Path $GeminiConfigDir "plugins"
-New-Item -ItemType Directory -Path $PluginsDir -Force | Out-Null
-
-# 1.1 Account Switcher Plugin
-$AccPluginDst = Join-Path $PluginsDir "account-switcher"
-if (Test-Path $AccPluginDst) { Remove-Item $AccPluginDst -Recurse -Force }
-Copy-Item -Path (Join-Path $AccRoot "plugin") -Destination $AccPluginDst -Recurse -Force
-
-$AccApiUrl  = ([System.Uri](Join-Path $AccRoot "core\api-handler.mjs")).AbsoluteUri
-$AccDaemon  = (Join-Path $AccRoot "core\daemon.mjs").Replace('\', '\\')
-$AccPanelJs = Join-Path $AccPluginDst "sidecars\panel\main.mjs"
-$accPanelContent = Get-Content $AccPanelJs -Raw -Encoding UTF8
-$accPanelContent = $accPanelContent.Replace('../../../core/api-handler.mjs', $AccApiUrl)
-$accPanelContent = $accPanelContent.Replace('path.resolve(__dirname, "../../../core/daemon.mjs")', "`"$AccDaemon`"")
-Set-Content -Path $AccPanelJs -Value $accPanelContent -Encoding UTF8
-Write-Host "[Plugin] Installed account-switcher -> $AccPluginDst" -ForegroundColor Green
-
-# 1.2 API Model Switcher Plugin
-$ModelPluginDst = Join-Path $PluginsDir "api-model-switcher"
-if (Test-Path $ModelPluginDst) { Remove-Item $ModelPluginDst -Recurse -Force }
-Copy-Item -Path (Join-Path $ModelRoot "plugin") -Destination $ModelPluginDst -Recurse -Force
-
-$ModelApiUrl  = ([System.Uri](Join-Path $ModelRoot "core\api-handler.mjs")).AbsoluteUri
-$ModelPanelJs = Join-Path $ModelPluginDst "sidecars\panel\main.mjs"
-$modelPanelContent = Get-Content $ModelPanelJs -Raw -Encoding UTF8
-$modelPanelContent = $modelPanelContent.Replace('../../../core/api-handler.mjs', $ModelApiUrl)
-Set-Content -Path $ModelPanelJs -Value $modelPanelContent -Encoding UTF8
-
-$McpServerPath = Join-Path $ModelRoot "core\mcp-server.mjs"
-$McpConfigObj  = @{
-    mcpServers = @{
-        "api-model-switcher-mcp" = @{
-            command = $NodeCmd
-            args    = @($McpServerPath)
-        }
+$ErrorActionPreference = 'Stop'
+$nodeBin = (Get-Command node -ErrorAction Stop).Source
+if (([version]((& $nodeBin --version).Trim().TrimStart('v'))).Major -lt 22) { throw 'Please install Node.js 22 or later: https://nodejs.org/' }
+if (-not $Modules -and -not $NoUi) {
+    Add-Type -AssemblyName System.Windows.Forms
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'Antigravity Enhancement Suite'; $form.Width = 440; $form.Height = 330
+    $form.StartPosition = 'CenterScreen'; $form.FormBorderStyle = 'FixedDialog'; $form.MaximizeBox = $false
+    $choices = @{}
+    $moduleLabels = @('Claude theme / Claude 皮肤','Chinese localization / 中文汉化','Account switcher / 多账号切换','API model switcher / API 中转切换')
+    $moduleKeys = @('skin','i18n','accounts','api')
+    for ($i = 0; $i -lt 4; $i++) {
+        $choice = New-Object System.Windows.Forms.CheckBox
+        $choice.Text = $moduleLabels[$i]; $choice.Left = 22; $choice.Top = 20 + $i * 36; $choice.Width = 380; $choice.Checked = $true
+        $form.Controls.Add($choice); $choices[$moduleKeys[$i]] = $choice
     }
+    $guardianChoice = New-Object System.Windows.Forms.CheckBox
+    $guardianChoice.Text = 'Update recovery task / 更新自愈计划任务（可选）'; $guardianChoice.Left = 22; $guardianChoice.Top = 168; $guardianChoice.Width = 390
+    $form.Controls.Add($guardianChoice)
+    $button = New-Object System.Windows.Forms.Button
+    $button.Text = 'Install / 安装'; $button.Left = 260; $button.Top = 225; $button.Width = 130; $button.DialogResult = 'OK'
+    $form.Controls.Add($button); $form.AcceptButton = $button
+    if ($form.ShowDialog() -ne 'OK') { exit 0 }
+    $Modules = (($moduleKeys | Where-Object { $choices[$_].Checked }) -join ',')
+    if (-not $Modules) { throw 'Please select at least one feature.' }
+    $EnableGuardian = $guardianChoice.Checked
 }
-$McpJson = $McpConfigObj | ConvertTo-Json -Depth 5
-Set-Content -Path (Join-Path $ModelPluginDst "mcp_config.json") -Value $McpJson -Encoding UTF8
-Write-Host "[Plugin] Installed api-model-switcher -> $ModelPluginDst" -ForegroundColor Green
-
-# 1.3 Enable both plugins in ~/.gemini/config/config.json
-$ConfigJsonPath = Join-Path $GeminiConfigDir "config.json"
-$BackupDir      = Join-Path $SkinRoot "backup"
-New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
-if ((Test-Path $ConfigJsonPath) -and -not (Test-Path (Join-Path $BackupDir "config.json.bak"))) {
-    Copy-Item -Path $ConfigJsonPath -Destination (Join-Path $BackupDir "config.json.bak") -Force
-}
-
-$cfg = @{}
-if (Test-Path $ConfigJsonPath) {
-    try {
-        $cfg = Get-Content $ConfigJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
-    } catch {
-        $cfg = @{}
-    }
-}
-if (-not $cfg.ContainsKey("plugins") -or $null -eq $cfg["plugins"]) {
-    $cfg["plugins"] = @{}
-}
-$cfg["plugins"]["account-switcher"]   = @{ enabled = $true }
-$cfg["plugins"]["api-model-switcher"] = @{ enabled = $true }
-($cfg | ConvertTo-Json -Depth 10) | Set-Content -Path $ConfigJsonPath -Encoding UTF8
-Write-Host "[Config] Enabled account-switcher & api-model-switcher in $ConfigJsonPath" -ForegroundColor Green
-
-# -----------------------------------------------------------------------------
-# Step 2: Build & Install Claude Skin + CN i18n + External Bootstrap + Guardian
-# -----------------------------------------------------------------------------
-& (Join-Path $SkinRoot "install-claude-skin.ps1")
-
-Write-Host ""
-Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "  All 3 Enhancement Modules Installed Successfully!" -ForegroundColor Cyan
-Write-Host "  - Theme & CN UI: Active (auto-healing guardian registered)" -ForegroundColor Cyan
-Write-Host "  - Account Switcher: Available in Settings -> Account & Side Panel" -ForegroundColor Cyan
-Write-Host "  - API Model Switcher: Available in Chat Model Menu & Side Panel" -ForegroundColor Cyan
-Write-Host "======================================================================" -ForegroundColor Cyan
+if (-not $Modules) { $Modules = 'skin,i18n,accounts,api' }
+$installArgs = @((Join-Path $PSScriptRoot 'suite\install.cjs'),'--modules',$Modules,'--guardian',([bool]$EnableGuardian).ToString().ToLowerInvariant())
+if ($AntigravityDir) { $installArgs += @('--app',$AntigravityDir) }
+if ($RuntimeDir) { $installArgs += @('--runtime',$RuntimeDir) }
+if ($ConfigDir) { $installArgs += @('--config',$ConfigDir) }
+& $nodeBin @installArgs
+if ($LASTEXITCODE -ne 0) { throw 'Installation failed. Your existing account and model data were preserved.' }

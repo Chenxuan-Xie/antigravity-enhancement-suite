@@ -48,6 +48,8 @@ async function tick() {
     if (busy || stopped) return;
     busy = true;
     try {
+        const suite = path.resolve(root,'..','suite','settings.cjs');
+        if (fs.existsSync(suite) && !require(suite).readSettings().guardian) { stop(); process.exit(0); }
         status.backend = await ensureSwitcherDaemon();
         ensureWatchers();
         const archive = path.join(resourcesDir, 'app.asar');

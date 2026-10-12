@@ -474,7 +474,8 @@ export function appendCustomBridgeExchange(conversationId, {
     protocol = 'openai',
     images = [],
     toolSteps = [],
-    completionStatus = 'complete'
+    completionStatus = 'complete',
+    usage = null
 }) {
     const cid = resolveConversationId(conversationId);
     const official = readSanitizedOfficialTranscript(cid, 4);
@@ -500,6 +501,7 @@ export function appendCustomBridgeExchange(conversationId, {
         toolSteps: Array.isArray(toolSteps) ? toolSteps : [],
         completionStatus: completionStatus === 'incomplete' ? 'incomplete' : 'complete',
         syncedToOfficial: false
+        ,usage
     };
 
     state.exchanges.push(exchange);
@@ -512,7 +514,7 @@ export function updateCustomBridgeExchange(conversationId, exchangeId, patch = {
     if (state.deletedAt) throw new Error('会话已删除');
     const exchange = state.exchanges.find(item => item.id === exchangeId);
     if (!exchange) throw new Error('中转记录不存在');
-    for (const key of ['assistantReply', 'reasoning', 'toolSteps', 'latencyMs', 'protocol', 'completionStatus', 'error']) {
+    for (const key of ['assistantReply', 'reasoning', 'toolSteps', 'latencyMs', 'protocol', 'completionStatus', 'error', 'usage']) {
         if (patch[key] !== undefined) exchange[key] = patch[key];
     }
     writeBridgeState(cid, state);

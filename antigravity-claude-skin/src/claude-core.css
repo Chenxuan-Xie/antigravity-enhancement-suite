@@ -1,17 +1,12 @@
 /* ==========================================================================
-   Antigravity Claude Desktop Skin — Round 2 (Component & Scrollbar Refinement)
-   Theme: Warm Parchment (羊皮纸暖白) + Humanistic Bookish Serif (中西文人文衬线)
+   Antigravity Claude Desktop Skin — Dual Theme (Warm Parchment & Warm Charcoal)
+   Light Theme: Warm Parchment (羊皮纸暖白 #FAF9F5) + Humanistic Bookish Serif
+   Dark Theme:  Warm Charcoal  (暖炭黑深色 #1F1E1D) + Humanistic Bookish Serif
    ========================================================================== */
 
 :root,
 html,
-body,
-body.theme-light,
-.theme-standalone.theme-light,
-:root.vscode-light {
-  color-scheme: light !important;
-
-  /* --- Font Stacks --- */
+body {
   --claude-font-serif: 'ClaudeSerif', 'Source Serif 4', 'Noto Serif SC', 'STZhongsong', '华文中宋', 'Georgia', 'STSong', '华文宋体', serif;
   --claude-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
   --claude-font-mono: 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Ubuntu Mono', 'Noto Sans SC', monospace;
@@ -22,7 +17,21 @@ body.theme-light,
   --default-mono-font-family: var(--claude-font-mono) !important;
   --editor-font-family: var(--claude-font-mono) !important;
 
-  /* --- Claude Warm Parchment Core Palette --- */
+  --max-conversation-width: 51rem !important;
+  --focus-ring-color: rgba(217, 119, 87, 0.28) !important;
+  --focus-ring-offset-color: rgba(217, 119, 87, 0.15) !important;
+  --shimmer-peak: #D97757 !important;
+}
+
+/* 1A. Claude Warm Parchment Light Theme (白天模式 · 羊皮纸暖白) */
+:root:not(.dark):not(.theme-dark),
+html:not(.dark):not(.theme-dark),
+body:not(.theme-dark):not(.dark),
+body.theme-light,
+.theme-standalone.theme-light,
+:root.vscode-light {
+  color-scheme: light !important;
+
   --background: #FAF9F5 !important;
   --content: #FAF9F5 !important;
   --foreground: #141413 !important;
@@ -43,7 +52,6 @@ body.theme-light,
   --placeholder: #918D82 !important;
   --border: rgba(20, 20, 19, 0.085) !important;
 
-  /* --- Claude Terracotta Brand Accents --- */
   --primary: #D97757 !important;
   --primary-foreground: #FFFFFF !important;
   --link: #C6613F !important;
@@ -53,7 +61,6 @@ body.theme-light,
   --warning: #B87314 !important;
   --error: #C94038 !important;
 
-  /* --- Tailwind v4 / Theme Layer Mapped Variables --- */
   --color-background: var(--background) !important;
   --color-foreground: var(--foreground) !important;
   --color-sidebar: var(--sidebar) !important;
@@ -75,7 +82,6 @@ body.theme-light,
   --color-warning: var(--warning) !important;
   --color-error: var(--error) !important;
 
-  /* --- VS Code Bridge Variables (Warm Parchment) --- */
   --vscode-editor-background: #FAF9F5 !important;
   --vscode-sideBar-background: #F0EEE6 !important;
   --vscode-titleBar-activeBackground: #F0EEE6 !important;
@@ -95,7 +101,6 @@ body.theme-light,
   --vscode-textBlockQuote-background: #F3F1E9 !important;
   --vscode-textBlockQuote-border: #D97757 !important;
 
-  /* --- Syntax Highlighting on Warm Parchment --- */
   --syntax-default-fg: #1F1E1D !important;
   --syntax-comment: #858177 !important;
   --syntax-punctuation: #5E5B53 !important;
@@ -113,43 +118,110 @@ body.theme-light,
   --syntax-function: #B84B29 !important;
   --syntax-class-name: #9E472A !important;
   --syntax-regex: #B5622B !important;
-
-  /* --- Focus Ring & Shimmer --- */
-  --focus-ring-color: rgba(217, 119, 87, 0.28) !important;
-  --focus-ring-offset-color: rgba(217, 119, 87, 0.15) !important;
-  --shimmer-peak: #D97757 !important;
 }
 
-/* --- Dark Mode Fallback: Claude Warm Charcoal --- */
+/* 1B. Claude Warm Charcoal Dark Theme (黑夜模式 · 暖炭黑深色) */
+:root.dark,
+:root.theme-dark,
+html.dark,
+html.theme-dark,
 body.theme-dark,
+body.dark,
+body.dark-theme,
 .theme-standalone.theme-dark,
-.dark,
-.dark-theme,
+:root.vscode-dark,
 .vscode-dark {
+  color-scheme: dark !important;
+
   --background: #1F1E1D !important;
   --content: #1F1E1D !important;
   --foreground: #ECE9E2 !important;
+
   --sidebar: #161514 !important;
-  --sidebar-muted: #262522 !important;
-  --sidebar-secondary: #2F2E2A !important;
-  --card: #292826 !important;
+  --sidebar-muted: #242320 !important;
+  --sidebar-secondary: #2E2C29 !important;
+
+  --card: #282725 !important;
   --card-border: #3B3935 !important;
+
   --muted: #252422 !important;
-  --muted-foreground: #8F8B82 !important;
-  --secondary: #302F2C !important;
-  --secondary-foreground: #C4C0B6 !important;
-  --placeholder: #6E6B63 !important;
-  --border: rgba(236, 233, 226, 0.09) !important;
+  --muted-foreground: #9A968C !important;
+
+  --secondary: #302E2B !important;
+  --secondary-foreground: #D4D0C7 !important;
+
+  --placeholder: #757168 !important;
+  --border: rgba(236, 233, 226, 0.095) !important;
+
   --primary: #D97757 !important;
   --primary-foreground: #FFFFFF !important;
-  --link: #E4896B !important;
-  --code-foreground: #E89A7E !important;
+  --link: #E58B6D !important;
+  --code-foreground: #EE9B7D !important;
+
+  --success: #48A868 !important;
+  --warning: #DFA03A !important;
+  --error: #E05A52 !important;
+
+  --color-background: var(--background) !important;
+  --color-foreground: var(--foreground) !important;
+  --color-sidebar: var(--sidebar) !important;
+  --color-sidebar-muted: var(--sidebar-muted) !important;
+  --color-sidebar-secondary: var(--sidebar-secondary) !important;
+  --color-card: var(--card) !important;
+  --color-card-border: var(--card-border) !important;
+  --color-muted: var(--muted) !important;
+  --color-muted-foreground: var(--muted-foreground) !important;
+  --color-secondary: var(--secondary) !important;
+  --color-secondary-foreground: var(--secondary-foreground) !important;
+  --color-placeholder: var(--placeholder) !important;
+  --color-border: var(--border) !important;
+  --color-primary: var(--primary) !important;
+  --color-primary-foreground: var(--primary-foreground) !important;
+  --color-link: var(--link) !important;
+  --color-code: var(--code-foreground) !important;
+  --color-success: var(--success) !important;
+  --color-warning: var(--warning) !important;
+  --color-error: var(--error) !important;
+
+  --vscode-editor-background: #1F1E1D !important;
+  --vscode-sideBar-background: #161514 !important;
+  --vscode-titleBar-activeBackground: #161514 !important;
+  --vscode-titleBar-inactiveBackground: #161514 !important;
+  --vscode-activityBar-background: #161514 !important;
+  --vscode-panel-background: #1F1E1D !important;
+  --vscode-input-background: #282725 !important;
+  --vscode-input-border: #3B3935 !important;
+  --vscode-dropdown-background: #282725 !important;
+  --vscode-dropdown-border: #3B3935 !important;
+  --vscode-focusBorder: #D97757 !important;
+  --vscode-button-background: #D97757 !important;
+  --vscode-button-hoverBackground: #C6613F !important;
+  --vscode-textLink-foreground: #E58B6D !important;
+  --vscode-textLink-activeForeground: #F2A287 !important;
+  --vscode-textCodeBlock-background: #1A1918 !important;
+  --vscode-textBlockQuote-background: #262522 !important;
+  --vscode-textBlockQuote-border: #D97757 !important;
+
+  --syntax-default-fg: #ECE9E2 !important;
+  --syntax-comment: #858075 !important;
+  --syntax-punctuation: #B0ACA2 !important;
+  --syntax-property: #E89A7E !important;
+  --syntax-tag: #E89A7E !important;
+  --syntax-constant: #DFA066 !important;
+  --syntax-number: #DFA066 !important;
+  --syntax-string: #8CC286 !important;
+  --syntax-attr-name: #8CC286 !important;
+  --syntax-builtin: #8CC286 !important;
+  --syntax-operator: #C8B294 !important;
+  --syntax-variable: #E6A972 !important;
+  --syntax-attr-value: #7AB4D9 !important;
+  --syntax-keyword: #D68FB8 !important;
+  --syntax-function: #EB8A68 !important;
+  --syntax-class-name: #E59B76 !important;
+  --syntax-regex: #E6A972 !important;
 }
 
-/* ==========================================================================
-   Claude Signature Typography — AI Responses & Reading Surfaces (Bookish Serif)
-   ========================================================================== */
-
+/* 2. Claude Signature Typography — AI Responses & Reading Surfaces (Bookish Serif) */
 [data-testid="planner-response-text"],
 .md-divider-spacing {
   font-family: var(--claude-font-serif) !important;
@@ -164,11 +236,12 @@ body.theme-dark,
 }
 
 body.theme-dark [data-testid="planner-response-text"],
-body.theme-dark .md-divider-spacing {
+body.theme-dark .md-divider-spacing,
+html.dark [data-testid="planner-response-text"],
+html.dark .md-divider-spacing {
   color: #ECE9E2 !important;
 }
 
-/* Paragraph & List Spacing for Editorial Book Feel */
 [data-testid="planner-response-text"] p,
 .md-divider-spacing p {
   margin-block: 0.25em !important;
@@ -188,7 +261,13 @@ body.theme-dark .md-divider-spacing {
   font-family: var(--claude-font-serif) !important;
 }
 
-/* Headings inside AI Responses & Markdown */
+body.theme-dark [data-testid="planner-response-text"] ul > li::marker,
+body.theme-dark [data-testid="planner-response-text"] ol > li::marker,
+body.theme-dark .md-divider-spacing ul > li::marker,
+body.theme-dark .md-divider-spacing ol > li::marker {
+  color: #9A958B !important;
+}
+
 [data-testid="planner-response-text"] h1,
 [data-testid="planner-response-text"] h2,
 [data-testid="planner-response-text"] h3,
@@ -201,6 +280,17 @@ body.theme-dark .md-divider-spacing {
   color: #141413 !important;
   letter-spacing: -0.01em !important;
   font-weight: 600 !important;
+}
+
+body.theme-dark [data-testid="planner-response-text"] h1,
+body.theme-dark [data-testid="planner-response-text"] h2,
+body.theme-dark [data-testid="planner-response-text"] h3,
+body.theme-dark [data-testid="planner-response-text"] h4,
+body.theme-dark .md-divider-spacing h1,
+body.theme-dark .md-divider-spacing h2,
+body.theme-dark .md-divider-spacing h3,
+body.theme-dark .md-divider-spacing h4 {
+  color: #F5F2EB !important;
 }
 
 [data-testid="planner-response-text"] h1,
@@ -227,7 +317,6 @@ body.theme-dark .md-divider-spacing {
   margin-bottom: 0.45rem !important;
 }
 
-/* Strong / Bold in Serif */
 [data-testid="planner-response-text"] strong,
 [data-testid="planner-response-text"] b,
 .md-divider-spacing strong,
@@ -236,7 +325,13 @@ body.theme-dark .md-divider-spacing {
   color: #121211 !important;
 }
 
-/* Dividers (hr) inside Markdown */
+body.theme-dark [data-testid="planner-response-text"] strong,
+body.theme-dark [data-testid="planner-response-text"] b,
+body.theme-dark .md-divider-spacing strong,
+body.theme-dark .md-divider-spacing b {
+  color: #F7F5F0 !important;
+}
+
 .md-divider-spacing hr,
 [data-testid="planner-response-text"] hr {
   border: none !important;
@@ -246,7 +341,11 @@ body.theme-dark .md-divider-spacing {
   margin-bottom: 1.4rem !important;
 }
 
-/* Blockquotes & Alerts */
+body.theme-dark .md-divider-spacing hr,
+body.theme-dark [data-testid="planner-response-text"] hr {
+  border-top-color: rgba(236, 233, 226, 0.11) !important;
+}
+
 [data-testid="planner-response-text"] blockquote,
 .md-divider-spacing blockquote {
   border-left: 3px solid #D97757 !important;
@@ -257,7 +356,12 @@ body.theme-dark .md-divider-spacing {
   margin: 0.6rem 0 !important;
 }
 
-/* Markdown Tables */
+body.theme-dark [data-testid="planner-response-text"] blockquote,
+body.theme-dark .md-divider-spacing blockquote {
+  background-color: #262522 !important;
+  color: #D4D0C7 !important;
+}
+
 [data-testid="planner-response-text"] table,
 .md-divider-spacing table {
   border-collapse: separate !important;
@@ -269,6 +373,12 @@ body.theme-dark .md-divider-spacing {
   font-size: 14.5px !important;
 }
 
+body.theme-dark [data-testid="planner-response-text"] table,
+body.theme-dark .md-divider-spacing table {
+  border-color: #3B3935 !important;
+  background-color: #252422 !important;
+}
+
 [data-testid="planner-response-text"] th,
 .md-divider-spacing th {
   background-color: #EFECE2 !important;
@@ -278,10 +388,23 @@ body.theme-dark .md-divider-spacing {
   border-bottom: 1px solid #DFDCD2 !important;
 }
 
+body.theme-dark [data-testid="planner-response-text"] th,
+body.theme-dark .md-divider-spacing th {
+  background-color: #2E2C29 !important;
+  color: #F2EFE8 !important;
+  border-bottom-color: #3B3935 !important;
+}
+
 [data-testid="planner-response-text"] td,
 .md-divider-spacing td {
   padding: 8px 12px !important;
   border-bottom: 1px solid rgba(20, 20, 19, 0.06) !important;
+}
+
+body.theme-dark [data-testid="planner-response-text"] td,
+body.theme-dark .md-divider-spacing td {
+  border-bottom-color: rgba(236, 233, 226, 0.075) !important;
+  color: #E4E0D7 !important;
 }
 
 [data-testid="planner-response-text"] tr:last-child td,
@@ -289,7 +412,6 @@ body.theme-dark .md-divider-spacing {
   border-bottom: none !important;
 }
 
-/* Preserve Monospace for Code Blocks & Inline Code inside Serif containers */
 [data-testid="planner-response-text"] pre,
 [data-testid="planner-response-text"] code,
 [data-testid="planner-response-text"] .code-block,
@@ -301,7 +423,6 @@ body.theme-dark .md-divider-spacing {
   line-height: 1.55 !important;
 }
 
-/* Inline Code Pill (Claude Warm Sandstone style) */
 [data-testid="planner-response-text"] :not(pre) > code,
 .md-divider-spacing :not(pre) > code {
   background-color: #EFECE2 !important;
@@ -313,7 +434,13 @@ body.theme-dark .md-divider-spacing {
   font-weight: 500 !important;
 }
 
-/* Links & File Reference Pills inside AI responses */
+body.theme-dark [data-testid="planner-response-text"] :not(pre) > code,
+body.theme-dark .md-divider-spacing :not(pre) > code {
+  background-color: #2D2B28 !important;
+  color: #EE9B7D !important;
+  border-color: rgba(236, 233, 226, 0.12) !important;
+}
+
 [data-testid="planner-response-text"] a,
 .md-divider-spacing a {
   color: #C6613F !important;
@@ -329,7 +456,18 @@ body.theme-dark .md-divider-spacing {
   text-decoration-color: #A64829 !important;
 }
 
-/* File reference inline pill chips */
+body.theme-dark [data-testid="planner-response-text"] a,
+body.theme-dark .md-divider-spacing a {
+  color: #E58B6D !important;
+  text-decoration-color: rgba(229, 139, 109, 0.38) !important;
+}
+
+body.theme-dark [data-testid="planner-response-text"] a:hover,
+body.theme-dark .md-divider-spacing a:hover {
+  color: #F4A388 !important;
+  text-decoration-color: #F4A388 !important;
+}
+
 [data-testid="planner-response-text"] .inline-pill,
 .md-divider-spacing .inline-pill {
   font-family: var(--claude-font-sans) !important;
@@ -350,11 +488,21 @@ body.theme-dark .md-divider-spacing {
   color: #141413 !important;
 }
 
-/* ==========================================================================
-   Claude Surface & Component Refinements
-   ========================================================================== */
+body.theme-dark [data-testid="planner-response-text"] .inline-pill,
+body.theme-dark .md-divider-spacing .inline-pill {
+  background-color: #2C2B28 !important;
+  border-color: #3E3C37 !important;
+  color: #D8D4CB !important;
+}
 
-/* 1. User Prompt Bubble (Warm Oatmeal Pill, Modern Sans-Serif) */
+body.theme-dark [data-testid="planner-response-text"] .inline-pill:hover,
+body.theme-dark .md-divider-spacing .inline-pill:hover {
+  background-color: #35332F !important;
+  border-color: #D97757 !important;
+  color: #F5F2EB !important;
+}
+
+/* 3. Claude Surface & Component Refinements (Light & Dark) */
 [data-testid="user-input-step"] {
   font-family: var(--claude-font-sans) !important;
 }
@@ -387,7 +535,28 @@ body.theme-dark .md-divider-spacing {
   box-shadow: 0 0 16px 8px #F0EEE6 !important;
 }
 
-/* Sticky message bleed gradient fix */
+body.theme-dark [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] {
+  background: #3A3833 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24) !important;
+}
+
+body.theme-dark [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] > div {
+  background: #2B2A27 !important;
+}
+
+body.theme-dark [data-testid="user-input-step"] [data-quotable="true"] {
+  color: #ECE9E2 !important;
+}
+
+body.theme-dark [data-testid="user-input-step"] .user-input-buttons-container {
+  background-color: #2B2A27 !important;
+  border-color: #3D3B36 !important;
+}
+
+body.theme-dark [data-testid="user-input-step"] .user-input-buttons-shadow {
+  box-shadow: 0 0 16px 8px #2B2A27 !important;
+}
+
 .md-sticky-message-bleed {
   background-color: var(--background) !important;
 }
@@ -396,7 +565,7 @@ body.theme-dark .md-divider-spacing {
   background-image: linear-gradient(to bottom, var(--background), transparent) !important;
 }
 
-/* 2. Bottom Input Composer & Goal Banner (Floating Warm Ivory Capsule) */
+/* Bottom Input Composer */
 .rounded-2xl.bg-card-border {
   background: #EFECE3 !important;
   border: 1px solid #DDD9CE !important;
@@ -412,14 +581,12 @@ body.theme-dark .md-divider-spacing {
   box-shadow: 0 6px 24px -3px rgba(217, 119, 87, 0.11), 0 2px 6px rgba(20, 20, 19, 0.04) !important;
 }
 
-/* Goal header inside composer */
 .rounded-2xl.bg-card-border > .grid button {
   padding-inline: 12px !important;
   color: #57534A !important;
   font-weight: 500 !important;
 }
 
-/* Inner warm ivory input box */
 .rounded-2xl.bg-card-border > .bg-card {
   background: #FDFCF8 !important;
   border-radius: 19px !important;
@@ -432,7 +599,6 @@ body.theme-dark .md-divider-spacing {
   background: #FFFFFF !important;
 }
 
-/* Composer contenteditable input */
 .rounded-2xl.bg-card-border [contenteditable] {
   font-family: var(--claude-font-sans) !important;
   font-size: 14.5px !important;
@@ -440,7 +606,6 @@ body.theme-dark .md-divider-spacing {
   color: #141413 !important;
 }
 
-/* Composer send / stop circular button */
 .rounded-2xl.bg-card-border button.rounded-full.w-7.h-7.bg-secondary {
   background-color: #EAE7DC !important;
   border: 1px solid #DCD8CC !important;
@@ -456,7 +621,44 @@ body.theme-dark .md-divider-spacing {
   background-color: #C6613F !important;
 }
 
-/* Artifact cards */
+body.theme-dark .rounded-2xl.bg-card-border {
+  background: #252422 !important;
+  border-color: #3B3935 !important;
+  box-shadow: 0 6px 24px -2px rgba(0, 0, 0, 0.38), 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border:focus-within {
+  border-color: #B5654B !important;
+  box-shadow: 0 8px 28px -3px rgba(217, 119, 87, 0.16), 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border > .grid button {
+  color: #B5B1A6 !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border > .bg-card {
+  background: #2A2926 !important;
+  border-top-color: #383632 !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border:focus-within > .bg-card {
+  background: #2E2D2A !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border [contenteditable] {
+  color: #ECE9E2 !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border button.rounded-full.w-7.h-7.bg-secondary {
+  background-color: #363430 !important;
+  border-color: #46433E !important;
+  color: #ECE9E2 !important;
+}
+
+body.theme-dark .rounded-2xl.bg-card-border button.rounded-full.w-7.h-7.bg-secondary:hover {
+  background-color: #423F3A !important;
+}
+
 .artifact-card {
   background-color: #FDFCF8 !important;
   border-color: #E0DDD2 !important;
@@ -466,7 +668,20 @@ body.theme-dark .md-divider-spacing {
   background-color: #F3F1E8 !important;
 }
 
-/* Scroll-to-bottom floating circular button */
+body.theme-dark .artifact-card,
+body.theme-dark .files-changed-header {
+  background-color: #282724 !important;
+  border-color: #3B3935 !important;
+}
+body.theme-dark .artifact-card:hover:not(:has(.proceed-button:hover)) {
+  background-color: #2F2E2B !important;
+}
+body.theme-dark .review-button {
+  background-color: #32302D !important;
+  border-color: #46433E !important;
+  color: #ECE9E2 !important;
+}
+
 button.rounded-full.bg-muted.border.border-border {
   background-color: #FFFFFF !important;
   border-color: #DCD8CC !important;
@@ -479,7 +694,19 @@ button.rounded-full.bg-muted.border.border-border:hover {
   border-color: #D97757 !important;
 }
 
-/* 3. Left Sidebar & "+ New Conversation" Button */
+body.theme-dark button.rounded-full.bg-muted.border.border-border {
+  background-color: #2C2B28 !important;
+  border-color: #403E39 !important;
+  color: #DFDCD3 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+}
+body.theme-dark button.rounded-full.bg-muted.border.border-border:hover {
+  background-color: #35332F !important;
+  color: #E58B6D !important;
+  border-color: #D97757 !important;
+}
+
+/* Left Sidebar */
 .bg-sidebar {
   background-color: var(--sidebar) !important;
 }
@@ -503,7 +730,19 @@ button.rounded-full.bg-muted.border.border-border:hover {
   color: #D97757 !important;
 }
 
-/* Sidebar conversation list items & active spinners */
+body.theme-dark .bg-sidebar a[href="/"],
+body.theme-dark .bg-sidebar a.border.border-border.bg-background {
+  background-color: #252422 !important;
+  border-color: #383632 !important;
+  color: #ECE9E2 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.theme-dark .bg-sidebar a.border.border-border.bg-background:hover {
+  background-color: #2E2C29 !important;
+  border-color: #D97757 !important;
+}
+
 .bg-sidebar a.rounded-lg,
 .bg-sidebar button.rounded-lg,
 [data-testid="conversation-row-sidebar"] {
@@ -514,7 +753,7 @@ button.rounded-full.bg-muted.border.border-border:hover {
   color: #D97757 !important;
 }
 
-/* 4. Code Block Cards */
+/* Code Block Cards */
 .rounded-xl.bg-muted.border {
   background-color: #F4F2EA !important;
   border-color: #E0DDD2 !important;
@@ -537,7 +776,19 @@ button.rounded-full.bg-muted.border.border-border:hover {
   line-height: 1.55 !important;
 }
 
-/* 5. Sleek Scrollbars (Eliminate classic Windows arrow buttons across all containers!) */
+body.theme-dark .rounded-xl.bg-muted.border {
+  background-color: #1A1918 !important;
+  border-color: #35332F !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22) !important;
+}
+
+body.theme-dark .rounded-xl.bg-muted.border > .border-b {
+  background-color: #242320 !important;
+  border-bottom-color: #35332F !important;
+  color: #A6A298 !important;
+}
+
+/* Sleek Scrollbars */
 *:not(.scrollbar-none),
 html,
 body {
@@ -577,27 +828,24 @@ body {
   background-color: rgba(112, 109, 100, 0.42) !important;
 }
 
-/* ==========================================================================
-   6. Claude Desktop Start Page (Home View) — Hero Greeting & Enlarged Composer
-   ========================================================================== */
+body.theme-dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(210, 205, 195, 0.18) !important;
+}
 
-/* Reposition Start Page vertical offset so Hero + Larger Composer sit at golden center */
+body.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(210, 205, 195, 0.34) !important;
+}
+
+/* Start Page (Home View) */
 .pt-\[30vh\] {
   padding-top: 15vh !important;
   padding-bottom: 8vh !important;
 }
 
-/* Make the Start Page composer container generously wide like Claude Desktop */
 .pt-\[30vh\] [style*="max-conversation-width"] {
   max-width: min(820px, 90vw) !important;
 }
 
-/* Also slightly widen active conversation composer for comfort */
-:root {
-  --max-conversation-width: 51rem !important;
-}
-
-/* Project selector badge ("无项目 v") above Start Page composer */
 .pt-\[30vh\] [data-testid="project-selector-trigger"] {
   background-color: #EFECE3 !important;
   border: 1px solid #DFDCD1 !important;
@@ -617,7 +865,19 @@ body {
   color: #141413 !important;
 }
 
-/* Enlarged Start Page Composer Card */
+body.theme-dark .pt-\[30vh\] [data-testid="project-selector-trigger"] {
+  background-color: #272623 !important;
+  border-color: #3B3935 !important;
+  color: #C9C5BB !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.theme-dark .pt-\[30vh\] [data-testid="project-selector-trigger"]:hover {
+  background-color: #302E2B !important;
+  border-color: #B5654B !important;
+  color: #ECE9E2 !important;
+}
+
 .pt-\[30vh\] [data-testid="agent-input-box"] .rounded-2xl.bg-card-border {
   border-radius: 22px !important;
   border: 1px solid #D9D5C9 !important;
@@ -641,7 +901,25 @@ body {
   background: #FFFFFF !important;
 }
 
-/* Significantly taller, more spacious text editor on Start Page */
+body.theme-dark .pt-\[30vh\] [data-testid="agent-input-box"] .rounded-2xl.bg-card-border {
+  border-color: #3B3935 !important;
+  background: #252422 !important;
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.45), 0 2px 10px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.theme-dark .pt-\[30vh\] [data-testid="agent-input-box"] .rounded-2xl.bg-card-border:focus-within {
+  border-color: #C26C4F !important;
+  box-shadow: 0 14px 40px -4px rgba(217, 119, 87, 0.18), 0 3px 12px rgba(0, 0, 0, 0.38) !important;
+}
+
+body.theme-dark .pt-\[30vh\] [data-testid="agent-input-box"] .rounded-2xl.bg-card-border > .bg-card {
+  background: #2A2926 !important;
+}
+
+body.theme-dark .pt-\[30vh\] [data-testid="agent-input-box"] .rounded-2xl.bg-card-border:focus-within > .bg-card {
+  background: #2E2D29 !important;
+}
+
 .pt-\[30vh\] [data-testid="agent-input-box"] [data-lexical-editor="true"] {
   min-height: 102px !important;
   font-size: 15.5px !important;
@@ -649,7 +927,6 @@ body {
   padding: 10px 10px 16px 10px !important;
 }
 
-/* Matching placeholder positioning & font size on Start Page */
 .pt-\[30vh\] [data-testid="agent-input-box"] [data-lexical-editor="true"] + p {
   font-size: 15.5px !important;
   line-height: 1.65 !important;
@@ -659,7 +936,10 @@ body {
   opacity: 0.85 !important;
 }
 
-/* Start Page bottom input footer toolbar spacing & send button */
+body.theme-dark .pt-\[30vh\] [data-testid="agent-input-box"] [data-lexical-editor="true"] + p {
+  color: #7D7970 !important;
+}
+
 .pt-\[30vh\] [data-testid="agent-input-box"] .\@container\/input-footer {
   padding-top: 6px !important;
   padding-inline: 4px !important;
@@ -670,7 +950,6 @@ body {
   height: 32px !important;
 }
 
-/* Claude Desktop Hero Greeting Banner above Start Page Composer */
 .agy-claude-hero-greeting {
   display: flex;
   flex-direction: column;
@@ -756,7 +1035,6 @@ body.theme-dark .agy-claude-hero-subtitle {
   color: #9E9A90 !important;
 }
 
-/* Claude Desktop Style Quick-Start Suggestion Pills below Start Page Composer */
 .agy-claude-starter-pills {
   display: flex;
   flex-wrap: wrap;
@@ -812,11 +1090,12 @@ body.theme-dark .agy-claude-starter-pill {
   background-color: #262522;
   border-color: #3B3935;
   color: #C4C0B6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 body.theme-dark .agy-claude-starter-pill:hover {
   background-color: #302F2C;
   border-color: #D97757;
   color: #ECE9E2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
-

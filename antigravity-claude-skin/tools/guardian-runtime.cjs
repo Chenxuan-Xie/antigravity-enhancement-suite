@@ -18,6 +18,8 @@ function guardianAlive(pid) {
 }
 
 function ensureGuardian() {
+    const settingsPath = path.resolve(root,'..','suite','settings.cjs');
+    if (fs.existsSync(settingsPath) && !require(settingsPath).readSettings().guardian) return { disabled: true };
     let pid;
     try { pid = Number(fs.readFileSync(pidFile, 'utf8').trim()); } catch {}
     if (guardianAlive(pid)) return { running: true, pid };

@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleAccountApiRequest } from "./api-handler.mjs";
+import { getActiveModelRequestCount } from '../../antigravity-model-switcher/core/api-handler.mjs';
+import suiteSettings from '../../suite/settings.cjs';
+import { execFile } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PANEL_DIR = path.join(__dirname, "..", "plugin", "sidecars", "panel");
@@ -66,6 +69,8 @@ export function ensureLocalSwitcherServer() {
             port: PORT,
             pid: process.pid,
             inproc: Boolean(globalThis.__AGY_INPROC_SWITCHER__),
+            runtimeRoot: path.resolve(__dirname,'../..'),
+            activeRequests: getActiveModelRequestCount(),
           })
         );
         return;
@@ -130,3 +135,22 @@ export function ensureLocalSwitcherServer() {
 }
 
 ensureLocalSwitcherServer();
+
+// Recovery is optional. Without it, an installed suite backend retires when
+// its app is closed, rather than becoming an unwanted permanent background job.
+if(process.platform==='win32'&&!globalThis.__AGY_INPROC_SWITCHER__){
+  let checking=false;
+  const lifecycle=setInterval(()=>{
+    if(checking||getActiveModelRequestCount()>0)return;
+    try{
+      if(suiteSettings.readSettings().guardian)return;
+      const manifestFile=path.join(suiteSettings.root,'data','install-manifest.json');if(!fs.existsSync(manifestFile))return;
+      const manifest=JSON.parse(fs.readFileSync(manifestFile,'utf8'));
+      const exe=path.join(path.dirname(manifest.resourcesDir),'Antigravity.exe').replace(/'/g,"''");
+      checking=true;
+      execFile('powershell.exe',['-NoProfile','-NonInteractive','-Command',`if(Get-CimInstance Win32_Process -Filter "Name='Antigravity.exe'" | Where-Object { $_.ExecutablePath -eq '${exe}' }) { 'running' }`],{windowsHide:true,timeout:5000,encoding:'utf8'},(error,stdout)=>{
+        checking=false;if(!error&&stdout.trim()!=='running'&&getActiveModelRequestCount()===0){log('App closed; recovery disabled, retiring backend');process.exit(0);}
+      });
+    }catch(error){checking=false;log('Lifecycle check: '+error.message);}
+  },20000);lifecycle.unref();
+}

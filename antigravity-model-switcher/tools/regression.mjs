@@ -36,6 +36,19 @@ const mock = http.createServer(async (req, res) => {
     requests.push({ path: req.url, body: data });
     const model = data.model;
     const json = (code, payload) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(payload)); };
+    if(['anthropic-usage-fixture','openai-usage-fixture'].includes(model)){
+        res.writeHead(200,{'Content-Type':'text/event-stream'});
+        const event=value=>res.write('data: '+JSON.stringify(value)+'\n\n');
+        if(model==='anthropic-usage-fixture'){
+            event({type:'message_start',message:{usage:{input_tokens:4,cache_read_input_tokens:2}}});
+            event({type:'content_block_delta',delta:{type:'text_delta',text:'usage fixture done'}});
+            event({type:'message_delta',delta:{stop_reason:'end_turn'},usage:{output_tokens:3}});
+            res.end();
+        }else{
+            event({choices:[{delta:{content:'usage fixture done'},finish_reason:'stop'}]});
+            await delay(30);event({choices:[],usage:{prompt_tokens:7,completion_tokens:5}});res.end('data: [DONE]\n\n');
+        }return;
+    }
     if (['claude-live-idle', 'claude-stop-open', 'openai-finish-open'].includes(model)) {
         res.writeHead(200, { 'Content-Type': 'text/event-stream' }); res.flushHeaders();
         const event = value => res.write(`data: ${JSON.stringify(value)}\n\n`);
@@ -519,6 +532,21 @@ try {
         assert(data.phase!=='thinking','A response header is not thinking content');
         assert(raw.includes('event: thinking_delta')&&raw.includes('event: done'));
     });
+    await check('Anthropic streaming merges input/cache usage with the final output count',async()=>{
+        const result=await client.streamChatWithModel(config('anthropic-usage-fixture','anthropic'),[{role:'user',content:'fixture'}]);
+        assert.equal(result.usage.input_tokens,4);assert.equal(result.usage.output_tokens,3);assert.equal(result.usage.cache_read_input_tokens,2);
+    });
+    await check('OpenAI usage after finish_reason is captured without waiting forever',async()=>{
+        const result=await client.streamChatWithModel(config('openai-usage-fixture'),[{role:'user',content:'fixture'}]);
+        assert.equal(result.usage.prompt_tokens,7);assert.equal(result.usage.completion_tokens,5);assert.equal(requests.at(-1).body.stream_options.include_usage,true);
+    });
+    await check('chat SSE returns normalized usage and persists it in the same exchange',async()=>{
+        const model=store.upsertModel(config('anthropic-usage-fixture','anthropic'));
+        const response=await fetch(apiUrl+'/chat/stream',{method:'POST',body:JSON.stringify({modelId:model.id,prompt:'fixture',conversationId:'usage-fixture',enableTools:false})});
+        const done=JSON.parse((await response.text()).split('event: done\ndata: ')[1].split('\n\n')[0]);
+        assert.equal(done.usage.inputTokens,6);assert.equal(done.usage.outputTokens,3);assert.equal(done.usage.complete,true);
+        assert.deepEqual(bridge.readBridgeState('usage-fixture').exchanges[0].usage,done.usage);
+    });
     await check('caller cancellation reaches upstream and disables fallback', async () => {
         const before = requests.length;
         const controller = new AbortController();
@@ -724,7 +752,7 @@ try {
             assert.equal((await fetch(url + '/missing')).status, 404);
         } finally { child.kill(); }
     });
-    await check('installed SDK sidecar starts, honors authentication and binds conversation', async () => {
+    if(!process.env.AGY_SKIP_SDK_TESTS)await check('installed SDK sidecar starts, honors authentication and binds conversation', async () => {
         const reservation = http.createServer();
         await new Promise(resolve => reservation.listen(0, '127.0.0.1', resolve));
         const port = reservation.address().port;
@@ -749,6 +777,9 @@ try {
             assert.equal(selected.status, 200);
             assert.equal((await selected.json()).state.activeMode, 'official');
             assert.equal((await fetch(url + '/preload.js')).status, 200);
+            const imported=await fetch(url+'/api/models/import',{method:'POST',headers:{'X-Sidecar-Token':'fixture-token'},body:JSON.stringify({...config(),modelIds:['sdk-bulk-a','sdk-bulk-b']})});
+            assert.equal(imported.status,200);const importedData=await imported.json();assert.equal(importedData.models.length,2);
+            const provider=await fetch(url+'/api/models/provider',{method:'POST',headers:{'X-Sidecar-Token':'fixture-token'},body:JSON.stringify({id:importedData.models[0].providerId,apiKey:'sdk-fixture-updated-key'})});assert.equal(provider.status,200);
         } finally { child.kill(); }
     });
     console.log(`\n${passed} regression checks passed.`);
