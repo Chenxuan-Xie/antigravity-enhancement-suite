@@ -7,8 +7,8 @@ try{
   const storage=()=>{const values=new Map();return {getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),clear:()=>values.clear(),key:index=>[...values.keys()][index]||null,get length(){return values.size;}};};
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
-  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,greetingName:'',replyFont:'serif',replySize:'standard',showUsage:false,quotaReminder:true};
-  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0;
+  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,greetingName:'',replyFont:'serif',replySize:'standard',showUsage:false,showQuota:true,quotaReminder:true};
+  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false;
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
   const providers=[{id:'fixture-provider',name:'Fixture',baseUrl:'https://fixture.test/v1',protocol:'openai',hasApiKey:true}];
@@ -23,25 +23,27 @@ try{
     else if(value.includes('/api/models/import')){imported=body;payload.state={models:[],activeMode:'official',providers};}
     else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:'auto',exchanges:[],officialTurnCount:0,customExchangeCount:0}};
     else if(value.endsWith('/api/switch')){switches++;accounts=accounts.map(a=>({...a,isCurrent:a.email===body.email}));payload.accounts=accounts;}
-    else if(value.includes('/api/accounts')){if(value.includes('/quota'))quotaCalls++;payload.accounts=accounts;}
+    else if(value.includes('/api/accounts')){if(value.includes('/quota')){quotaCalls++;if(quotaFailure)return new w.Response(JSON.stringify({ok:false,error:'Token refresh failed HTTP 401: unauthorized_client'}),{status:401,headers:{'Content-Type':'application/json'}});}payload.accounts=accounts;}
     return new w.Response(JSON.stringify(payload),{headers:{'Content-Type':'application/json'}});
   };
   try{
     w.eval(${JSON.stringify(bundle)});await pause(160);
-    assert(d.querySelector('#agy-suite-center'),'settings page contains the suite control card');
-    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===7,'four feature switches plus optional recovery, usage and quota reminders are accessible');
-    const explicit=d.querySelector('[data-testid="settings-content"]');explicit.style.display='none';
-    const modal=d.createElement('div');modal.className='settings-modal-container';modal.innerHTML='<div class="overflow-y-auto"><h2>Navigation</h2><button data-testid="settings-nav-item-General">General</button></div><div id="hidden-tab" style="display:none"><div class="overflow-y-auto"><h2>Account</h2></div></div><div id="visible-tab"><div class="overflow-y-auto"><h2>General</h2></div></div>';d.body.appendChild(modal);await pause(50);
-    assert(d.querySelector('#agy-suite-center').parentElement===d.querySelector('#visible-tab .overflow-y-auto'),'control card ignores hidden explicit content and hidden native settings tabs');
-    d.querySelector('#visible-tab').style.display='none';d.querySelector('#hidden-tab').style.display='block';await pause(50);
-    assert(d.querySelector('#agy-suite-center').parentElement===d.querySelector('#hidden-tab .overflow-y-auto'),'switching native settings tabs moves the same card into visible content');
-    assert(d.querySelectorAll('#agy-suite-center').length===1,'switching settings tabs does not duplicate the control card');
+    assert(d.querySelector('#agy-suite-sidebar-button')&&!d.querySelector('#agy-suite-center'),'suite is accessible from the sidebar without adding content to native settings');
+    d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
+    assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
+    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===8,'four modules and independent quota, usage, reminders and recovery switches are accessible');
+    d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    assert(!d.querySelector('#agy-suite-center')&&d.activeElement.id==='agy-suite-sidebar-button','Escape closes the dialog and restores focus to the sidebar');
+    d.querySelector('#agy-suite-sidebar-button').click();
     assert(d.querySelector('#translate-me').textContent==='设置'&&!d.querySelector('#agy-claude-skin')&&!w.__AGY_MODEL_SWITCHER&&!d.querySelector('#agy-account-badge'),'Chinese localization runs independently without skin or account/API modules');
     await w.__agySuite.save({i18n:false,api:true});await pause(150);
+    assert(d.querySelector('#agy-suite-sidebar-button').nextElementSibling?.matches('[data-agy-custom-api-nav="1"]'),'suite entry sits directly above the relay API entry');
     assert(d.querySelector('#translate-me').textContent==='Settings'&&!w.__agyCnI18nActive&&!!w.__AGY_MODEL_SWITCHER,'disabling localization restores English while API remains usable');
     await w.__agySuite.save({skin:true,replyFont:'sans',replySize:'large',greetingName:'<img src=x>'});await pause(60);
     assert(d.querySelector('#agy-claude-skin')&&w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontSize==='18px','skin, font and font size update without page reload');
     assert(d.querySelector('.agy-suite-greeting').textContent.includes('<img src=x>')&&!d.querySelector('.agy-suite-greeting img'),'greeting is rendered as safe text');
+    const logo=d.querySelector('.agy-suite-greeting svg');await w.__agySuite.save({greetingName:'New name'});
+    assert(logo&&d.querySelector('.agy-suite-greeting svg')===logo&&d.querySelector('.agy-suite-greeting-text').textContent.includes('New name'),'changing the greeting name preserves the Antigravity logo');
     w.__AGY_THEME_SWITCHER.setMode('dark');await pause(60);
     assert(w.__agySuite.getSettings().themeMode==='dark'&&d.body.classList.contains('theme-dark'),'theme mode persists through the shared settings API');
     await w.__agySuite.save({skin:false});await pause(40);
@@ -67,6 +69,14 @@ try{
     d.querySelector('#agy-account-badge').click();assert(d.querySelector('#agy-account-menu'),'account capsule opens a one-click switch menu');
     [...d.querySelectorAll('#agy-account-menu button')].find(b=>b.textContent.includes('backup@')).click();await pause(100);
     assert(switches===1&&d.querySelector('#agy-account-badge').textContent.includes('100%'),'choosing backup switches exactly once and refreshes the capsule');
+    assert(d.querySelector('#agy-account-capsule')&&w.getComputedStyle(d.querySelector('#agy-account-badge')).width!=='1000px','quota badge uses a compact capsule instead of a full-width button');
+    await w.__agySuite.save({showQuota:false});await pause(40);
+    assert(!d.querySelector('#agy-account-badge')&&!d.querySelector('#agy-account-menu')&&w.__agyQuotaBadge,'turning quota display off immediately hides the capsule and its menu without disabling accounts');
+    await w.__agySuite.save({showQuota:true});await pause(40);d.querySelector('#agy-account-badge').click();
+    quotaFailure=true;d.querySelector('[data-quota-refresh]').click();await pause(90);
+    assert(d.querySelector('#agy-account-toast')?.textContent.includes('authorization expired')&&!d.querySelector('#agy-account-toast')?.textContent.includes('unauthorized_client'),'manual authorization failure displays a concise recovery message without raw JSON');
+    assert(d.querySelector('#agy-account-menu').textContent.includes('Reauthorize')&&d.querySelector('#agy-account-badge').textContent.includes('100%'),'failed refresh keeps cached quota and marks the affected account for reauthorization');
+    await pause(6100);assert(!d.querySelector('#agy-account-toast'),'authorization error automatically disappears after six seconds');quotaFailure=false;
     await w.__agySuite.save({accounts:false,api:false});await pause(60);
     assert(!d.querySelector('#agy-account-badge')&&!d.querySelector('#agy-account-menu')&&!w.__AGY_MODEL_SWITCHER,'module disable cleans badges, menus and API runtime');
     w.eval(${JSON.stringify(bundle)});await pause(40);

@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="bc9956fb828408d23bf8048618ae4e8e3594a9ace51a19ccfa3f4f89ebbc01be"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="c0cabf4e61b5ba8d37cdc3da13118cce5c190fbbb4b15d1f5a0600fea546e8e5"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -4812,8 +4812,25 @@ window.__agySuiteModules.accounts=function(){
 (() => {
   window.__agyQuotaBadgeCleanup?.();
   const API='http://127.0.0.1:19823';let accounts=[],disposed=false,busy=false,requesting=false,lastQuotaFetch=0,refreshAgain=false;
-  const notices=new Map();let popup=null,toast=null;
+  const notices=new Map(),authIssues=new Map();let popup=null,toast=null,toastTimer=null;
   const text=(cn,en)=>window.__agySuiteSettings?.i18n===false?en:cn;
+  const style=document.createElement('style');style.id='agy-account-capsule-style';style.textContent=`
+    #agy-account-capsule{display:flex;align-items:center;justify-content:flex-end;align-self:flex-end;flex:0 0 auto;margin:4px 12px 8px;max-width:100%}
+    #agy-account-badge{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;width:auto!important;max-width:240px;border:1px solid var(--border,#8883);border-radius:999px;padding:5px 10px;margin:0;background:transparent;color:inherit;font:12px system-ui;cursor:pointer;transition:background .15s,border-color .15s}
+    #agy-account-badge:hover,#agy-account-badge:focus-visible{background:#8882;border-color:#8885;outline:none}
+    #agy-account-badge .quota-dot{width:6px;height:6px;border-radius:50%;background:#5c8b67;flex-shrink:0}#agy-account-badge[data-low=true] .quota-dot{background:#c57d46}
+    #agy-account-badge .quota-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#agy-account-badge .quota-chevron{opacity:.55;font-size:11px}
+    #agy-account-menu{position:fixed;z-index:10000;width:300px;max-width:calc(100vw - 16px);max-height:min(360px,calc(100vh - 24px));overflow:auto;padding:8px;border-radius:12px;border:1px solid var(--border,#8883);background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));box-shadow:0 8px 32px #0002;font:13px system-ui;box-sizing:border-box}
+    #agy-account-menu .quota-menu-title{padding:4px 8px 8px;opacity:.6;font-size:11px}#agy-account-menu button{display:flex;align-items:center;gap:8px;text-align:left;width:100%;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer;transition:background .15s}
+    #agy-account-menu button:hover:not(:disabled),#agy-account-menu button:focus-visible{background:#8882;outline:none}#agy-account-menu button:disabled{cursor:default}#agy-account-menu button[data-current=true]{background:#8881}
+    #agy-account-menu .quota-account-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#agy-account-menu .quota-account-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}#agy-account-menu .quota-account-meta{font-size:11px;opacity:.6}
+    #agy-account-menu .quota-meter{height:3px;border-radius:3px;background:#8882;overflow:hidden}#agy-account-menu .quota-meter span{display:block;height:100%;background:#6a9374;border-radius:3px}#agy-account-menu .quota-meter[data-low=true] span{background:#c57d46}
+    #agy-account-menu .quota-percent{font-variant-numeric:tabular-nums;font-size:12px}#agy-account-menu [data-quota-refresh]{margin-top:6px;border-top:1px solid #8882;border-radius:0 0 8px 8px;color:inherit}#agy-account-menu [data-quota-refresh]:disabled{opacity:.55}
+    #agy-account-toast{position:fixed;right:20px;bottom:24px;z-index:10001;padding:12px 14px;display:flex;align-items:center;gap:10px;background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));border:1px solid var(--border,#8883);border-radius:10px;max-width:min(360px,calc(100vw - 40px));box-shadow:0 4px 20px #0002;font:12px system-ui}#agy-account-toast button{background:transparent;color:inherit;border:0;padding:4px;border-radius:5px;cursor:pointer}#agy-account-toast button:hover{background:#8882}
+  `;document.head.appendChild(style);
+  const friendlyError=message=>/unauthorized|invalid_grant|invalid_client|HTTP 401/i.test(message)?text('账号授权已失效，请在「设置 → 账户」重新授权。','Account authorization expired. Reauthorize in Settings → Account.'):/timeout|timed out/i.test(message)?text('刷新超时，请稍后重试。','Refresh timed out. Try again shortly.'):text('操作失败，请稍后重试。','Operation failed. Please try again.');
+  function closeToast(){clearTimeout(toastTimer);toastTimer=null;toast?.remove();toast=null;}
+  function closeMenu(){popup?.remove();popup=null;document.getElementById('agy-account-badge')?.setAttribute('aria-expanded','false');}
   function percentage(account,label=''){
     const buckets=(account?.quotaSummary?.groups||[]).flatMap(group=>(group.buckets||[]).map(bucket=>({...bucket,group:group.displayName})));
     const valid=buckets.filter(b=>Number.isFinite(b.remainingPercent));
@@ -4827,12 +4844,12 @@ window.__agySuiteModules.accounts=function(){
   const generating=()=>!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]');
   const stale=account=>!Number.isFinite(Date.parse(account?.quotaSummary?.updatedAt))||Date.now()-Date.parse(account.quotaSummary.updatedAt)>600000;
   async function request(endpoint,body){const response=await fetch(API+endpoint,{method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Account service unavailable');return data;}
-  async function switchTo(account){if(busy||generating())return;busy=true;render();try{await request('/api/switch',{email:account.email});popup?.remove();popup=null;toast?.remove();toast=null;await refresh();}catch(error){showError(error.message);}finally{busy=false;render();}}
-  function showError(message){toast?.remove();toast=document.createElement('div');toast.setAttribute('role','status');toast.style.cssText='position:fixed;right:20px;bottom:24px;z-index:10000;padding:16px;background:var(--background,#fff);color:var(--foreground,#222);border:1px solid var(--border,#888);border-radius:10px;max-width:360px;';toast.textContent=message;const close=document.createElement('button');close.textContent=' ×';close.onclick=()=>{toast.remove();toast=null;};toast.appendChild(close);document.body.appendChild(toast);}
+  async function switchTo(account){if(busy||generating())return;busy=true;render();try{await request('/api/switch',{email:account.email});closeMenu();closeToast();await refresh();}catch(error){showError(friendlyError(error.message));}finally{busy=false;render();}}
+  function showError(message){closeToast();toast=document.createElement('div');toast.id='agy-account-toast';toast.setAttribute('role','status');toast.setAttribute('data-ag-localization-skip','true');const content=document.createElement('span');content.textContent=/unauthorized|invalid_grant|invalid_client|HTTP 401/i.test(message)?friendlyError(message):message;toast.appendChild(content);const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭提示','Dismiss notification'));close.onclick=closeToast;toast.appendChild(close);document.body.appendChild(toast);toastTimer=setTimeout(closeToast,6000);}
   function remind(force=false){
     if(window.__agySuiteSettings?.quotaReminder===false||window.__AGY_MODEL_SWITCHER?.getState().activeMode==='custom')return;
     const current=accounts.find(a=>a.isCurrent),percent=percentage(current,label());
-    if(!current||(!force&&(percent===null||percent>=10||stale(current))))return;
+    if(!current||authIssues.has(current.email)||(!force&&(percent===null||percent>=10||stale(current))))return;
     const key=current.email+':'+label();if(Date.now()-(notices.get(key)||0)<1800000)return;
     notices.set(key,Date.now());
     const backup=accounts.filter(a=>!a.isCurrent&&!stale(a)&&percentage(a,label())!==null&&percentage(a,label())>(percent??-1)).sort((a,b)=>percentage(b,label())-percentage(a,label()))[0];
@@ -4840,31 +4857,37 @@ window.__agySuiteModules.accounts=function(){
     if(backup){const button=document.createElement('button');button.textContent=text('切换至备用账号','Switch account');button.disabled=generating();button.onclick=()=>switchTo(backup);toast.appendChild(button);}
   }
   function openMenu(button){
-    popup?.remove();popup=document.createElement('div');popup.id='agy-account-menu';popup.setAttribute('role','menu');popup.setAttribute('data-ag-localization-skip','true');
-    const bounds=button.getBoundingClientRect();popup.style.cssText=`position:fixed;z-index:10000;left:${Math.max(8,Math.min(bounds.left,innerWidth-310))}px;bottom:${Math.max(8,innerHeight-bounds.top+8)}px;width:300px;max-height:320px;overflow:auto;padding:8px;border-radius:10px;border:1px solid var(--border,#8885);background:var(--background,#fff);color:var(--foreground,#222);box-shadow:0 4px 20px #0002;`;
-    for(const account of accounts){const row=document.createElement('button');row.setAttribute('role','menuitem');row.style.cssText='display:block;text-align:left;width:100%;padding:8px;background:transparent;color:inherit;';
-      const percent=percentage(account,label());row.textContent=(account.isCurrent?'✓ ':'')+(account.label||account.email)+' · '+(percent===null?text('配额未知','quota unknown'):percent+'%')+(stale(account)?text('（缓存）',' (cached)'):'');row.disabled=account.isCurrent||busy||generating();row.onclick=()=>switchTo(account);popup.appendChild(row);}
-    const refreshButton=document.createElement('button');refreshButton.textContent=text('刷新当前账号配额','Refresh current quota');refreshButton.onclick=async()=>{refreshButton.disabled=true;lastQuotaFetch=0;await refresh();openMenu(button);};popup.appendChild(refreshButton);
-    popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){popup.remove();popup=null;button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
+    if(disposed||window.__agySuiteSettings?.showQuota===false||!button.isConnected)return;closeMenu();popup=document.createElement('div');popup.id='agy-account-menu';popup.setAttribute('role','menu');popup.setAttribute('data-ag-localization-skip','true');button.setAttribute('aria-expanded','true');
+    const bounds=button.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(bounds.right-300,innerWidth-308))+'px';if(bounds.top>200)popup.style.bottom=Math.max(8,innerHeight-bounds.top+8)+'px';else popup.style.top=Math.min(innerHeight-200,bounds.bottom+8)+'px';
+    const heading=document.createElement('div');heading.className='quota-menu-title';heading.textContent=text('账号与剩余额度','Accounts · remaining quota');popup.appendChild(heading);
+    for(const account of accounts){const row=document.createElement('button');row.type='button';row.setAttribute('role','menuitem');row.dataset.current=String(!!account.isCurrent);
+      const percent=percentage(account,label()),info=document.createElement('span');info.className='quota-account-info';const name=document.createElement('span');name.className='quota-account-name';name.textContent=(account.isCurrent?'✓ ':'')+(account.label||account.email);info.appendChild(name);
+      const meta=document.createElement('span');meta.className='quota-account-meta';meta.textContent=authIssues.has(account.email)?text('需重新授权 · 显示缓存额度','Reauthorize · cached quota'):stale(account)?text('缓存额度','Cached quota'):text('最新额度','Latest quota');info.appendChild(meta);
+      if(percent!==null){const meter=document.createElement('span');meter.className='quota-meter';meter.dataset.low=String(percent<10);const fill=document.createElement('span');fill.style.width=percent+'%';meter.appendChild(fill);info.appendChild(meter);}
+      const value=document.createElement('span');value.className='quota-percent';value.textContent=percent===null?'—':percent+'%';row.append(info,value);row.disabled=account.isCurrent||busy||generating();row.onclick=()=>switchTo(account);popup.appendChild(row);}
+    const refreshButton=document.createElement('button');refreshButton.type='button';refreshButton.setAttribute('role','menuitem');refreshButton.dataset.quotaRefresh='true';refreshButton.disabled=requesting;refreshButton.textContent='↻ '+text('刷新当前账号配额','Refresh current quota');refreshButton.onclick=async()=>{refreshButton.disabled=true;refreshButton.textContent=text('正在刷新…','Refreshing…');const menu=popup;lastQuotaFetch=0;await refresh({notify:true});if(!disposed&&popup===menu&&button.isConnected)openMenu(button);};popup.appendChild(refreshButton);
+    popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){closeMenu();button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
   }
   function render(){
-    if(disposed)return;const composer=document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
-    let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('data-ag-localization-skip','true');button.style.cssText='border:1px solid var(--border,#8885);border-radius:14px;padding:3px 10px;margin:4px 8px;background:transparent;color:inherit;font:12px system-ui;';button.onclick=()=>openMenu(button);}
-    if(button.parentElement!==composer)composer.appendChild(button);
+    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();return;}const composer=document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
+    let host=document.getElementById('agy-account-capsule');if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
+    let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-expanded','false');button.setAttribute('data-ag-localization-skip','true');button.innerHTML='<span class="quota-dot" aria-hidden="true"></span><span class="quota-label"></span><span class="quota-chevron" aria-hidden="true">⌄</span>';button.onclick=()=>{if(popup)closeMenu();else openMenu(button);};}
+    if(button.parentElement!==host)host.appendChild(button);
     const current=accounts.find(a=>a.isCurrent),percent=percentage(current,label());
-    const title=(current?.label||current?.email||text('账号','Account'))+' · '+(percent===null?text('配额未知','quota unknown'):percent+'%')+(current&&stale(current)?text('（缓存）',' (cached)'):'');
-    if(button.textContent!==title)button.textContent=title;button.disabled=busy;button.title=text('点击切换账号；百分比为当前模型匹配配额，无法匹配时显示最低配额。','Switch accounts; matching model quota or the lowest known quota.');
+    const title=(current?.label||current?.email||text('账号','Account'))+' · '+(percent===null?text('配额未知','quota unknown'):percent+'%')+(current&&(stale(current)||authIssues.has(current.email))?text('（缓存）',' (cached)'):'');
+    const caption=button.querySelector('.quota-label');if(caption.textContent!==title)caption.textContent=title;button.dataset.low=String(percent!==null&&percent<10);button.disabled=busy;button.title=text('点击切换账号；百分比为当前模型匹配配额，无法匹配时显示最低配额。','Switch accounts; matching model quota or the lowest known quota.');
   }
-  async function refresh(){if(disposed)return;if(requesting){refreshAgain=true;return;}requesting=true;try{
+  async function refresh({notify=false}={}){if(disposed)return;if(requesting){refreshAgain=true;return;}requesting=true;try{
     let data=await request('/api/accounts');accounts=data.accounts||[];
-    const current=accounts.find(a=>a.isCurrent);if(current&&Date.now()-lastQuotaFetch>300000){lastQuotaFetch=Date.now();data=await request('/api/accounts/quota',{email:current.email});accounts=data.accounts||accounts;}
+    const current=accounts.find(a=>a.isCurrent);if(current&&Date.now()-lastQuotaFetch>300000&&(window.__agySuiteSettings?.showQuota!==false||window.__agySuiteSettings?.quotaReminder!==false)){lastQuotaFetch=Date.now();try{data=await request('/api/accounts/quota',{email:current.email});accounts=data.accounts||accounts;authIssues.delete(current.email);}catch(error){authIssues.set(current.email,friendlyError(error.message));if(notify)showError(friendlyError(error.message));}}
     if(!disposed){render();remind();}
-  }catch(error){if(!disposed)console.warn('[Account badge]',error.message);}finally{requesting=false;if(refreshAgain&&!disposed){refreshAgain=false;refresh();}}}
+  }catch(error){if(!disposed){if(notify)showError(friendlyError(error.message));render();}}finally{requesting=false;if(refreshAgain&&!disposed){refreshAgain=false;refresh();}}}
   function onAccountsUpdated(event){if(Array.isArray(event.detail)){accounts=event.detail;render();remind();}}
   function onMessage(event){if(/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(event.origin)&&event.data?.type==='agy-account-switcher-updated')refresh();}
   window.addEventListener('agy-accounts-updated',onAccountsUpdated);window.addEventListener('message',onMessage);
-  function onPointer(event){if(popup&&!popup.contains(event.target)&&!event.target.closest('#agy-account-badge')){popup.remove();popup=null;}}
+  window.addEventListener('agy-suite-settings-updated',render);
+  function onPointer(event){if(popup&&!popup.contains(event.target)&&!event.target.closest('#agy-account-badge'))closeMenu();}
   document.addEventListener('pointerdown',onPointer);
   const observer=new MutationObserver(mutations=>{
     render();
@@ -4875,7 +4898,7 @@ window.__agySuiteModules.accounts=function(){
   });observer.observe(document.documentElement,{childList:true,subtree:true});
   const timer=setInterval(refresh,60000);refresh();
   window.__agyQuotaBadge={percentage,refresh,getAccounts:()=>accounts};
-  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);document.getElementById('agy-account-badge')?.remove();popup?.remove();toast?.remove();};
+  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();closeToast();style.remove();};
   const cleanup=window.__agyAccountSwitcherCleanup;window.__agyAccountSwitcherCleanup=()=>{window.__agyQuotaBadgeCleanup();cleanup?.();};
 })();
 
@@ -8854,14 +8877,15 @@ window.__agySuiteModules.skin=function(){
 };(() => {
   const API='http://127.0.0.1:19823';
   window.__agySuiteCleanup?.();
-  let disposed=false,settings=null,saving=false,queued={},poll,scheduled=false;
+  let disposed=false,settings=null,saving=false,queued={},poll,scheduled=false,returnFocus=null;
   const active={};
-  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showUsage:['显示 Token 消耗','Show token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
+  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['显示 Token 消耗','Show token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
   const text=(cn,en)=>settings?.i18n?cn:en;
   const style=document.createElement('style');style.id='agy-suite-style';
   document.querySelectorAll('.agy-claude-hero-greeting,.agy-claude-starter-pills').forEach(el=>el.remove());
   style.textContent=`#agy-suite-center{border:1px solid var(--border,#8885);border-radius:12px;padding:18px;margin:16px 0;color:var(--foreground,inherit);background:var(--background,inherit);font:13px system-ui}#agy-suite-center h2{font-size:16px;margin:0 0 12px}#agy-suite-center .suite-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0}#agy-suite-center input[type=checkbox]{appearance:none;width:36px;height:20px;border-radius:12px;background:#8887;cursor:pointer;position:relative;flex-shrink:0}#agy-suite-center input[type=checkbox]:after{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%}#agy-suite-center input:checked{background:#bd684b}#agy-suite-center input:checked:after{left:19px}#agy-suite-center select,#agy-suite-center input[type=text]{border:1px solid var(--border,#8885);border-radius:6px;padding:5px;background:var(--background,inherit);color:inherit;max-width:210px}#agy-suite-center input:focus-visible,#agy-suite-center select:focus-visible{outline:2px solid #bd684b;outline-offset:2px}.agy-suite-greeting{font:28px system-ui;margin:0 0 22px;text-align:center}`;
   document.head.appendChild(style);
+  style.textContent+=`#agy-suite-backdrop{position:fixed;inset:0;z-index:10000;background:#0005;display:flex;align-items:center;justify-content:center;padding:24px}#agy-suite-center{position:relative;width:min(580px,100%);max-height:calc(100vh - 48px);overflow:auto;margin:0;background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));box-sizing:border-box;box-shadow:0 16px 60px #0003}#agy-suite-close{position:absolute;right:12px;top:10px;border:0;background:transparent;color:inherit;border-radius:6px;padding:4px 8px;cursor:pointer}#agy-suite-close:hover,#agy-suite-close:focus-visible{background:#8882}#agy-suite-sidebar-button{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit}#agy-suite-sidebar-button:hover,#agy-suite-sidebar-button:focus-visible{background:var(--sidebar-muted,#8882);outline:none}#agy-suite-sidebar-button svg{flex-shrink:0}#agy-suite-sidebar-button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}`;
   async function request(patch){const res=await fetch(API+'/api/suite/settings',{method:patch?'POST':'GET',headers:{'Content-Type':'application/json'},body:patch?JSON.stringify(patch):undefined,signal:AbortSignal.timeout(25000)});const data=await res.json();if(!res.ok||!data.ok)throw Error(data.error||'Suite service unavailable');return data.settings;}
   function apply(next){
     if(settings&&JSON.stringify(settings)===JSON.stringify(next))return;
@@ -8889,7 +8913,7 @@ window.__agySuiteModules.skin=function(){
     const font=next.replyFont==='default'?(next.skin?'var(--claude-font-serif)':'inherit'):next.replyFont==='sans'?'system-ui, sans-serif':`'ClaudeSerif', 'Noto Serif SC', 'SimSun', serif`;
     const size={small:14,standard:15.5,large:18}[next.replySize];
     typography.textContent=(next.skin||next.replyFont!=='default'||next.replySize!=='standard')?`[data-testid="planner-response-text"],.md-divider-spacing{font-family:${font}!important;font-size:${size}px!important}`:'';
-    renderCenter();mountGreeting();
+    renderCenter();mountSidebar();mountGreeting();window.dispatchEvent(new CustomEvent('agy-suite-settings-updated'));
   }
   async function save(patch){
     Object.assign(queued,patch);if(saving)return;saving=true;
@@ -8904,32 +8928,42 @@ window.__agySuiteModules.skin=function(){
     if(!home||(!settings.skin&&!settings.greetingName)){old?.remove();return;}
     const hour=new Date().getHours();const title=text(hour<12?'早上好':hour<18?'下午好':'晚上好',hour<12?'Good morning':hour<18?'Good afternoon':'Good evening')+(settings.greetingName?text('，',', ')+settings.greetingName:'');
     const greeting=old||document.createElement('div');greeting.className='agy-suite-greeting';greeting.setAttribute('data-ag-localization-skip','true');
-    if(greeting.textContent!==title)greeting.textContent=title;
+    if(!greeting.querySelector('.agy-suite-greeting-text'))greeting.innerHTML='<svg width="44" height="44" viewBox="0 0 180 180" fill="currentColor" aria-hidden="true"><path d="M144.248 149.062C151.748 154.688 162.998 150.938 152.685 140.625C121.748 110.625 128.31 28.125 89.8727 28.125C51.4352 28.125 57.9977 110.625 27.0602 140.625C15.8102 151.875 27.9977 154.688 35.4977 149.062C64.5602 129.375 62.6852 94.6875 89.8727 94.6875C117.06 94.6875 115.185 129.375 144.248 149.062Z"/></svg><span class="agy-suite-greeting-text"></span>';
+    if(greeting.style.display!=='flex')greeting.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px';
+    const greetingText=greeting.querySelector('.agy-suite-greeting-text');if(greetingText.textContent!==title)greetingText.textContent=title;
     if(greeting.parentElement!==home.parentElement)home.parentElement.insertBefore(greeting,home);
   }
-  function findSettingsAnchor(){
-    const visible=el=>!!el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
-    const explicit=[...document.querySelectorAll('[data-testid="settings-content"]')].find(visible);if(explicit)return explicit;
-    const dialog=document.querySelector('.settings-modal-container');
-    if(dialog){
-      const scroller=[...dialog.querySelectorAll('div')].find(el=>visible(el)&&el.classList.contains('overflow-y-auto')&&el.querySelector('h2')&&!el.querySelector('[data-testid^="settings-nav-item-"]'));
-      if(scroller)return scroller;
-      const heading=[...dialog.querySelectorAll('h2')].find(el=>visible(el)&&/^(General|通用|Appearance|外观|Account|账号|账户)$/.test(el.textContent.trim()));
-      if(heading)return heading.parentElement.parentElement;
-    }
-    return null;
+  function mountSidebar(){
+    const api=document.querySelector('[data-agy-custom-api-nav="1"]'),custom=document.querySelector('a[href="/customizations"]');
+    const anchor=api||custom;if(!anchor?.parentElement)return;
+    let button=document.getElementById('agy-suite-sidebar-button');
+    if(!button){button=document.createElement('button');button.id='agy-suite-sidebar-button';button.type='button';button.setAttribute('data-ag-localization-skip','true');button.setAttribute('aria-haspopup','dialog');button.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--agy-bg-primary,var(--background,#fff))"/><circle cx="15" cy="17" r="3" fill="var(--agy-bg-primary,var(--background,#fff))"/></svg><span></span>';button.onclick=openCenter;}
+    const name=text('增强套件控制中心','Enhancement Suite');if(button.lastElementChild.textContent!==name)button.lastElementChild.textContent=name;
+    if(api){if(button.nextElementSibling!==api)api.before(button);}
+    else if(custom.nextElementSibling!==button)custom.after(button);
+  }
+  function closeCenter(){document.getElementById('agy-suite-backdrop')?.remove();returnFocus?.focus();returnFocus=null;}
+  function openCenter(){
+    if(document.getElementById('agy-suite-backdrop'))return;
+    returnFocus=document.activeElement;const backdrop=document.createElement('div');backdrop.id='agy-suite-backdrop';backdrop.setAttribute('data-ag-localization-skip','true');backdrop.addEventListener('click',event=>{if(event.target===backdrop)closeCenter();});document.body.appendChild(backdrop);renderCenter();document.getElementById('agy-suite-close')?.focus();
+  }
+  function onKey(event){
+    const center=document.getElementById('agy-suite-center');if(!center)return;
+    if(event.key==='Escape'){event.preventDefault();closeCenter();}
+    else if(event.key==='Tab'){const focus=[...center.querySelectorAll('button,input,select')].filter(el=>!el.disabled);const first=focus[0],last=focus.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
   }
   function renderCenter(rebuild=true){
     if(!settings)return;
-    const anchor=findSettingsAnchor();
+    const anchor=document.getElementById('agy-suite-backdrop');
     let center=document.getElementById('agy-suite-center');if(!anchor)return;
-    if(!center){center=document.createElement('section');center.id='agy-suite-center';center.setAttribute('data-ag-localization-skip','true');anchor.prepend(center);rebuild=true;}
+    if(!center){center=document.createElement('section');center.id='agy-suite-center';center.setAttribute('data-ag-localization-skip','true');center.setAttribute('role','dialog');center.setAttribute('aria-modal','true');center.setAttribute('aria-labelledby','agy-suite-heading');anchor.prepend(center);rebuild=true;}
     else if(center.parentElement!==anchor)anchor.prepend(center);
     if(!rebuild&&center.dataset.locale===String(settings.i18n)){for(const input of center.querySelectorAll('[data-setting]'))if(input.type==='checkbox')input.checked=settings[input.dataset.setting];else if(input.tagName==='SELECT')input.value=settings[input.dataset.setting];return;}
     const focused=center.contains(document.activeElement)?document.activeElement.dataset.setting:null;
     if(focused&&(document.activeElement.type==='text'||document.activeElement.tagName==='SELECT'))return;
     center.dataset.locale=String(settings.i18n);
-    center.replaceChildren();const heading=document.createElement('h2');heading.textContent=text('✨ 增强套件控制中心','✨ Enhancement Suite');center.appendChild(heading);
+    center.replaceChildren();const heading=document.createElement('h2');heading.id='agy-suite-heading';heading.textContent=text('✨ 增强套件控制中心','✨ Enhancement Suite');center.appendChild(heading);
+    const close=document.createElement('button');close.id='agy-suite-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭','Close'));close.onclick=closeCenter;center.appendChild(close);
     for(const key of Object.keys(labels)){
       const row=document.createElement('label');row.className='suite-row';const label=document.createElement('span');label.textContent=labels[key][settings.i18n?0:1];
       const input=document.createElement('input');input.type='checkbox';input.setAttribute('role','switch');input.setAttribute('aria-label',label.textContent);input.dataset.setting=key;input.checked=settings[key];input.onchange=()=>save({[key]:input.checked});row.append(label,input);center.appendChild(row);
@@ -8943,12 +8977,13 @@ window.__agySuiteModules.skin=function(){
     const status=document.createElement('p');status.setAttribute('role','status');status.textContent=text('关闭功能保留本地配置；关闭自愈守护将移除计划任务，官方更新后可能需要重新安装。','Turning features off keeps local data. Without update recovery, reinstall may be needed after app updates.');center.appendChild(status);
     if(focused)center.querySelector('[data-setting="'+focused+'"]')?.focus();
   }
-  function refreshUI(){if(disposed||scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;if(settings){renderCenter(false);mountGreeting();}});}
+  function refreshUI(){if(disposed||scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;if(settings){renderCenter(false);mountSidebar();mountGreeting();}});}
   const observer=new MutationObserver(refreshUI);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class','hidden']});
   async function refresh(){try{if(!disposed&&!saving)apply(await request());}catch(error){if(!settings)console.warn('[Suite]',error.message);}}
   poll=setInterval(refresh,5000);refresh();
-  window.__agySuite={apply,save,getSettings:()=>settings,refresh};
-  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);style.remove();document.getElementById('agy-suite-center')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
+  document.addEventListener('keydown',onKey);
+  window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter};
+  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="bc9956fb828408d23bf8048618ae4e8e3594a9ace51a19ccfa3f4f89ebbc01be";})();
+window.__agyRendererBundleId="c0cabf4e61b5ba8d37cdc3da13118cce5c190fbbb4b15d1f5a0600fea546e8e5";})();

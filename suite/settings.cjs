@@ -3,14 +3,14 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const file = process.env.AGY_SUITE_SETTINGS_FILE || path.join(root, 'data', 'suite-settings.json');
 const defaults = { version: 1, skin: true, themeMode: 'light', i18n: true, accounts: true, api: true,
-  guardian: false, greetingName: '', replyFont: 'default', replySize: 'standard', showUsage: false, quotaReminder: true };
+  guardian: false, greetingName: '', replyFont: 'default', replySize: 'standard', showUsage: false, showQuota: true, quotaReminder: true };
 function readSettings() {
   if (!fs.existsSync(file)) return { ...defaults };
   const data = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   return validate({ ...defaults, ...data });
 }
 function validate(data) {
-  for (const key of ['skin','i18n','accounts','api','guardian','showUsage','quotaReminder']) {
+  for (const key of ['skin','i18n','accounts','api','guardian','showUsage','showQuota','quotaReminder']) {
     if (typeof data[key] !== 'boolean') throw Error(`${key} must be boolean`);
   }
   if (!['light','dark','system'].includes(data.themeMode)) throw Error('Invalid themeMode setting');

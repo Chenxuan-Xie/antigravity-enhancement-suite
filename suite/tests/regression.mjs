@@ -20,6 +20,9 @@ try{
   check((await call('/api/suite/settings',{unknown:true})).status===400,'unknown settings are rejected');
   await call('/api/suite/settings',{api:true,greetingName:'<test>',replyFont:'sans',replySize:'large'});
   check(settings.readSettings().replySize==='large','appearance settings persist');
+  await call('/api/suite/settings',{showQuota:false});
+  check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');
+  check((await call('/api/suite/settings',{showQuota:'false'})).status===400,'quota display requires a boolean value');
   const input={baseUrl:'https://relay.example/v1',apiKey:'fixture-key',protocol:'auto',modelIds:['claude-test','gpt-test','gpt-test','deepseek-test']};
   const imported=(await call('/api/models/import',input)).data;
   check(imported.ok&&imported.models.length===3,'batch import deduplicates model IDs');
