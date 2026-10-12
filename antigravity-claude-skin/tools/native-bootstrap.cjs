@@ -337,7 +337,15 @@ electron.app.on("browser-window-created", (_event, win) => {
         win.__agyOriginalOverlay = options;
         if (!flags().skin) return origSetOverlay(options);
         const rawColor = String((options && options.color) || "").toLowerCase();
-        const isDark = rawColor === "#131313" || rawColor === "#181818" || rawColor === "#1f1e1d" || rawColor === "#161514";
+        if (rawColor === "#1f1e1d" || rawColor === "#161514") {
+          win.__agyForceDarkOverlay = true;
+        } else if (rawColor === "#faf9f5") {
+          win.__agyForceDarkOverlay = false;
+        }
+        const isDark =
+          win.__agyForceDarkOverlay !== undefined
+            ? win.__agyForceDarkOverlay
+            : rawColor === "#131313" || rawColor === "#181818" || rawColor === "#1f1e1d" || rawColor === "#161514";
         return origSetOverlay({
           color: isDark ? "#1F1E1D" : "#FAF9F5",
           symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
