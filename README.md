@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/hero-banner.png" width="100%" alt="Antigravity Enhancement Suite 首屏总览（左：浅色羊皮纸书卷风 / 右：深色暖炭黑护眼主题）" />
+  <img src="./assets/hero-banner.png?v=3" width="100%" alt="Antigravity Enhancement Suite 首屏总览（左：浅色羊皮纸书卷风 / 右：深色暖炭黑护眼主题）" />
   <br />
   <sub>▲ 左半幅：浅色羊皮纸书卷风 (<code>#FAF9F5</code>) · 右半幅：深色暖炭黑护眼主题 (<code>#1F1E1D</code>)</sub>
 </p>
@@ -45,17 +45,17 @@
 
 ### 1. 白天 / 黑夜双主题皮肤切换与全量汉化（设置页单行切换：白天 / 黑夜 / 跟随系统）
 <p align="center">
-  <img src="./assets/demo-skin-i18n.gif" width="100%" alt="白天与黑夜双主题皮肤切换与全量汉化演示" />
+  <img src="./assets/demo-skin-i18n.gif?v=3" width="100%" alt="白天与黑夜双主题皮肤切换与全量汉化演示" />
 </p>
 
 ### 2. 聊天框一键切中转模型 + 悬停调节思考强度
 <p align="center">
-  <img src="./assets/demo-model-switcher.gif" width="100%" alt="聊天框一键切中转模型与调节思考强度演示" />
+  <img src="./assets/demo-model-switcher.gif?v=3" width="100%" alt="聊天框一键切中转模型与调节思考强度演示" />
 </p>
 
 ### 3. 设置页 2 秒无感切换 Google 账号 + 实时配额查看
 <p align="center">
-  <img src="./assets/demo-account-switcher.gif" width="100%" alt="设置页 2 秒无感切换 Google 账号演示" />
+  <img src="./assets/demo-account-switcher.gif?v=3" width="100%" alt="设置页 2 秒无感切换 Google 账号演示" />
 </p>
 
 ---
@@ -146,7 +146,7 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 ### 一、Claude 书卷双色皮肤与简体中文汉化 (`antigravity-claude-skin`)
 
 1. **设置页一键切换皮肤（白天 / 黑夜 / 跟随系统）**：
-   - 打开左下角 **「设置 (Settings)」**，在顶部 **「切换皮肤（Claude 书卷双色主题）」** 卡片中即可实时切换三档模式：
+   - 打开左下角 **「设置 (Settings) → 通用」**，在列表第一行 **「切换皮肤」**（`白天` / `黑夜` / `跟随系统`）中即可实时切换三档模式：
      - **☀️ 白天（羊皮纸浅色 `#FAF9F5`）**：复刻 Claude Desktop 标志性羊皮纸暖白画布与焦糖赤陶点缀；
      - **🌙 黑夜（暖炭黑深色 `#1F1E1D`）**：复刻 Claude Desktop 经典暖炭黑深色护眼画布（侧栏 `#161514`、卡片 `#282725`、米白正文 `#ECE9E2`），彻底告别刺眼纯黑与反差眩光；
      - **💻 跟随系统**：自动监听 Windows 10/11 系统深浅色设置并实时无感切换（连同 Windows 原生右上角窗口控制栏自动同步变色）。
@@ -249,23 +249,6 @@ antigravity-enhancement-suite/
 ├── antigravity-account-switcher/       # [模块二] Google 多账号一键无感热切换与配额查看插件
 └── antigravity-model-switcher/         # [模块三] 第三方 API / 中转站无缝切换与同会话上下文衔接插件
 ```
-
-## ✅ 验证与兼容范围
-
-2026-10-12 本地验证：73 项模型/会话/SDK 回归、32 项套件/安装/服务商/账号 SDK 检查、49 项原聊天浏览器检查、18 项套件浏览器交互检查、13 项删除隔离检查、23 项模拟更新恢复检查，以及当前原生设置页挂载点检查。安装测试使用包含中文的隔离目录，覆盖首次安装、覆盖重装、保留数据、删除下载目录、固定运行时卸载和保留无关插件配置；所有测试均未调用付费模型或切换真实账号。
-
-```powershell
-node suite/tests/regression.mjs
-node antigravity-model-switcher/tools/regression.mjs
-node antigravity-claude-skin/tools/regression-resilience.cjs
-# 以下浏览器验证需要 Antigravity 正在运行，使用一次性 iframe 和模拟 API
-node suite/tests/verify-ui.mjs
-node suite/tests/verify-native-settings.mjs
-node antigravity-model-switcher/tools/verify-ui.mjs
-node antigravity-model-switcher/tools/verify-delete-ui.mjs
-```
-
-GitHub Actions 在 Windows + Node 22 上检查构建、安装、服务商、模型与模拟更新；未安装 Antigravity 的 CI 环境跳过内置 SDK 检查。界面适配依赖当前 Antigravity 的设置、编辑器与聊天状态格式；自愈能恢复外置启动器，不能保证官方未来重大内部改版无需适配。第三方网关可能不提供模型列表、思考内容、Token 统计或某些参数；保留明确错误和缺失状态，不声称具备接口未提供的能力。
 
 ---
 
