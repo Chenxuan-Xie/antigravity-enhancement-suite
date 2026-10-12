@@ -6,12 +6,17 @@
   const STORAGE_KEY = "__agy_claude_theme_mode__";
   const WIDGET_ID = "agy-settings-skin-switcher";
   const STYLE_ID = "agy-settings-skin-switcher-style";
+  let disposed = false;
 
   if (typeof window.__agyThemeSwitcherCleanup === "function") {
     try {
       window.__agyThemeSwitcherCleanup();
     } catch (_) {}
   }
+
+  const originalTheme = [document.documentElement,document.body].filter(Boolean).map(el=>({el,
+    classes:new Map(['dark','dark-theme','theme-dark','theme-light','theme-standalone'].map(name=>[name,el.classList.contains(name)])),
+    attrs:new Map(['data-claude-theme','data-claude-theme-mode','data-ag-theme-seeded'].map(name=>[name,el.getAttribute(name)]))}));
 
   function getSavedMode() {
     try {
@@ -51,19 +56,7 @@
   function updateTitleBarOverlay(isDark) {
     try {
       if (window.electronNative && typeof window.electronNative.setTitleBarOverlay === "function") {
-        const orig = window.electronNative.__origSetTitleBarOverlay || window.electronNative.setTitleBarOverlay.bind(window.electronNative);
-        if (!window.electronNative.__origSetTitleBarOverlay) {
-          window.electronNative.__origSetTitleBarOverlay = orig;
-          window.electronNative.setTitleBarOverlay = function (opts) {
-            const darkNow = resolveIsDark(getSavedMode());
-            return orig({
-              color: darkNow ? "#1F1E1D" : "#FAF9F5",
-              symbolColor: darkNow ? "#ECE9E2" : "#3D3A34",
-              height: (opts && opts.height) || 30
-            });
-          };
-        }
-        orig({
+        window.electronNative.setTitleBarOverlay({
           color: isDark ? "#1F1E1D" : "#FAF9F5",
           symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
           height: 30
@@ -75,6 +68,7 @@
   let lastAppliedOverlayTheme = null;
 
   function applyThemeClasses(mode) {
+    if (disposed) return;
     const targetMode = mode || getSavedMode();
     const isDark = resolveIsDark(targetMode);
     const root = document.documentElement;
@@ -248,6 +242,7 @@
   }
 
   function checkAndMount() {
+    if (disposed) return;
     ensureStyle();
     const card = findSettingsCardContainer();
     if (!card) return;
@@ -284,6 +279,7 @@
     if (rafScheduled) return;
     rafScheduled = true;
     requestAnimationFrame(() => {
+      if (disposed) return;
       rafScheduled = false;
       applyThemeClasses(getSavedMode());
       checkAndMount();
@@ -303,6 +299,8 @@
   };
 
   window.__agyThemeSwitcherCleanup = () => {
+    if (disposed) return;
+    disposed = true;
     try {
       observer.disconnect();
     } catch (_) {}
@@ -313,5 +311,8 @@
     if (w) w.remove();
     const s = document.getElementById(STYLE_ID);
     if (s) s.remove();
+    for(const entry of originalTheme){for(const [name,present] of entry.classes)entry.el.classList.toggle(name,present);for(const [name,value] of entry.attrs){if(value===null)entry.el.removeAttribute(name);else entry.el.setAttribute(name,value);}}
+    const wasDark=originalTheme.some(entry=>entry.classes.get('dark')||entry.classes.get('theme-dark')||entry.classes.get('dark-theme'));
+    try{window.electronNative?.setTitleBarOverlay?.({color:wasDark?'#131313':'#FAFAFA',symbolColor:wasDark?'#FAFAFA':'#383A42',height:30});}catch{}
   };
 })();

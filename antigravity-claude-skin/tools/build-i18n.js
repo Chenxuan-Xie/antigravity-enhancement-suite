@@ -258,7 +258,7 @@ function buildI18nBundle() {
   js += `\nwindow.__agySuiteTheme=${JSON.stringify(fs.readFileSync(path.join(skinRoot,'claude-theme.css'),'utf8'))};\n`;
   const themeSwitcherPath = path.join(skinRoot, 'src', 'theme-switcher.js');
   if (fs.existsSync(themeSwitcherPath)) {
-    js += '\n;\n' + fs.readFileSync(themeSwitcherPath, 'utf8') + '\n';
+    js += '\nwindow.__agySuiteModules.skin=function(){\n' + fs.readFileSync(themeSwitcherPath, 'utf8') + '\n};';
   }
   js += fs.readFileSync(path.join(skinRoot,'..','suite','control-center.js'),'utf8');
   const bundleId = crypto.createHash('sha256').update(js).digest('hex');

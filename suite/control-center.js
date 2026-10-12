@@ -13,26 +13,29 @@
   function apply(next){
     if(settings&&JSON.stringify(settings)===JSON.stringify(next))return;
     settings=next;window.__agySuiteSettings=settings;
-    for(const key of ['i18n','accounts','api']){
+    for(const key of ['i18n','accounts','api','skin']){
       if(active[key]===next[key])continue;
       if(key==='api'&&!next.api&&window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)continue;
-      if(next[key])window.__agySuiteModules[key]();
+      if(next[key])window.__agySuiteModules[key]?.();
       else if(key==='i18n')window.__agyCnRestore?.();
       else if(key==='accounts')window.__agyAccountSwitcherCleanup?.();
+      else if(key==='skin') {window.__agyThemeSwitcherCleanup?.();delete window.__AGY_THEME_SWITCHER;}
       else {window.__AGY_MODEL_SWITCHER_CLEANUP?.();delete window.__AGY_MODEL_SWITCHER;}
       active[key]=next[key];
     }
     let skin=document.getElementById('agy-claude-skin');
     if(next.skin){if(!skin){skin=document.createElement('style');skin.id='agy-claude-skin';document.head.appendChild(skin);}if(skin.textContent!==window.__agySuiteTheme)skin.textContent=window.__agySuiteTheme;}
     else {skin?.remove();window.__agyClaudeObserver?.disconnect();delete window.__agyClaudeObserver;document.querySelectorAll('.agy-claude-hero-greeting,.agy-claude-starter-pills').forEach(el=>el.remove());}
-    if(next.themeMode&&window.__AGY_THEME_SWITCHER?.setMode)window.__AGY_THEME_SWITCHER.setMode(next.themeMode,{fromSuite:true});
+    if(next.skin&&next.themeMode)window.__AGY_THEME_SWITCHER?.setMode(next.themeMode,{fromSuite:true});
     localStorage.setItem('__agy_greeting_name__',next.greetingName);
     let typography=document.getElementById('agy-suite-typography');
     if(!typography){typography=document.createElement('style');typography.id='agy-suite-typography';document.head.appendChild(typography);}
     if(document.head.lastElementChild!==typography)document.head.appendChild(typography);
-    const font=next.replyFont==='sans'?'system-ui, sans-serif':`'ClaudeSerif', 'Noto Serif SC', 'SimSun', serif`;
+    let fontStyle=document.getElementById('agy-suite-fonts');
+    if(next.replyFont==='serif'&&!next.skin){if(!fontStyle){fontStyle=document.createElement('style');fontStyle.id='agy-suite-fonts';document.head.appendChild(fontStyle);}fontStyle.textContent=window.__agySuiteTheme.slice(0,window.__agySuiteTheme.indexOf(':root'));}else fontStyle?.remove();
+    const font=next.replyFont==='default'?(next.skin?'var(--claude-font-serif)':'inherit'):next.replyFont==='sans'?'system-ui, sans-serif':`'ClaudeSerif', 'Noto Serif SC', 'SimSun', serif`;
     const size={small:14,standard:15.5,large:18}[next.replySize];
-    typography.textContent=(next.skin||next.replyFont!=='serif'||next.replySize!=='standard')?`[data-testid="planner-response-text"],.md-divider-spacing{font-family:${font}!important;font-size:${size}px!important}`:'';
+    typography.textContent=(next.skin||next.replyFont!=='default'||next.replySize!=='standard')?`[data-testid="planner-response-text"],.md-divider-spacing{font-family:${font}!important;font-size:${size}px!important}`:'';
     renderCenter();mountGreeting();
   }
   async function save(patch){
@@ -76,7 +79,7 @@
       const row=document.createElement('label');row.className='suite-row';const label=document.createElement('span');label.textContent=labels[key][settings.i18n?0:1];
       const input=document.createElement('input');input.type='checkbox';input.setAttribute('role','switch');input.setAttribute('aria-label',label.textContent);input.dataset.setting=key;input.checked=settings[key];input.onchange=()=>save({[key]:input.checked});row.append(label,input);center.appendChild(row);
     }
-    for(const [key,cn,en,options] of [['themeMode','切换皮肤（白天/黑夜/跟随系统）','Skin theme mode',[['light','☀️ 白天（羊皮纸浅色）','☀️ Light (Warm Parchment)'],['dark','🌙 黑夜（暖炭黑深色）','🌙 Dark (Warm Charcoal)'],['system','💻 跟随系统','💻 Follow System']]],['greetingName','首页问候语称呼','Greeting name',null],['replyFont','AI 回复字体','Reply font',[['serif','书卷衬线体','Serif'],['sans','现代无衬线体','Sans serif']]],['replySize','字号','Reply size',[['small','小','Small'],['standard','标准','Standard'],['large','大','Large']]]]){
+    for(const [key,cn,en,options] of [['themeMode','切换皮肤（白天/黑夜/跟随系统）','Skin theme mode',[['light','☀️ 白天（羊皮纸浅色）','☀️ Light (Warm Parchment)'],['dark','🌙 黑夜（暖炭黑深色）','🌙 Dark (Warm Charcoal)'],['system','💻 跟随系统','💻 Follow System']]],['greetingName','首页问候语称呼','Greeting name',null],['replyFont','AI 回复字体','Reply font',[['default','跟随主题','Follow theme'],['serif','书卷衬线体','Serif'],['sans','现代无衬线体','Sans serif']]],['replySize','字号','Reply size',[['small','小','Small'],['standard','标准','Standard'],['large','大','Large']]]]){
       const row=document.createElement('label');row.className='suite-row';row.appendChild(document.createTextNode(text(cn,en)));
       const input=document.createElement(options?'select':'input');if(!options){input.type='text';input.maxLength=60;}
       else for(const [value,zh,english] of options){const option=document.createElement('option');option.value=value;option.textContent=text(zh,english);input.appendChild(option);}

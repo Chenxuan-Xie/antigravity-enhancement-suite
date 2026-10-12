@@ -17,7 +17,7 @@ function copyRuntime(from,to){
     if(parts.includes('data'))return path.basename(file)==='data'||file.endsWith('.example.json');
     return !/\.(log|pid|bak|tmp)(\.|$)/.test(file);
   });
-  for(const name of ['install-all.ps1','uninstall-all.ps1','live-reload.ps1'])fs.copyFileSync(path.join(from,name),path.join(to,name));
+  for(const name of ['install-all.ps1','uninstall-all.ps1','live-reload.ps1','双击一键安装.cmd','双击一键卸载.cmd'])fs.copyFileSync(path.join(from,name),path.join(to,name));
 }
 function migrateData(from,to){
   for(const name of ['antigravity-account-switcher','antigravity-model-switcher']){
