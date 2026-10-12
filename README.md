@@ -4,6 +4,19 @@
   <strong>Claude 羊皮纸书卷风换肤 · 简体中文全量汉化 · Google 多账号秒级热切换 · 第三方 API / 中转站同会话无缝切换</strong>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/%E9%80%82%E7%94%A8%E7%89%88%E6%9C%AC-Antigravity%20v2.22%2B-D97757?style=flat-square" alt="适用版本 Antigravity v2.22+" />
+  <img src="https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-Windows%2010%2F11-0078D6?style=flat-square" alt="平台 Windows 10/11" />
+  <img src="https://img.shields.io/badge/%E6%B1%89%E5%8C%96%E8%AF%8D%E6%9D%A1-2126%2B-2E7D47?style=flat-square" alt="汉化词条 2126+" />
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
+</p>
+
+<p align="center">
+  <img src="./assets/hero-banner.png" width="100%" alt="Antigravity Enhancement Suite 首屏总览（左：浅色羊皮纸书卷风 / 右：深色暖炭黑护眼主题）" />
+  <br />
+  <sub>▲ 左半幅：浅色羊皮纸书卷风 (<code>#FAF9F5</code>) · 右半幅：深色暖炭黑护眼主题 (<code>#1F1E1D</code>)</sub>
+</p>
+
 ---
 
 ## 📖 项目简介
@@ -23,6 +36,25 @@
    - 支持接入任意 **OpenAI 兼容接口** 与 **Anthropic (Claude Code) 接口** 的第三方 API 或中转站，支持一键拉取站点可用模型列表。
    - **原生聊天框直接使用**：直接在聊天输入框左下角的模型菜单中选择自定义模型、调节 **思考强度（默认 / 低 / 中 / 高 / 最大）**。
    - **同一对话无缝混用**：支持在同一个对话中途随时从官方模型切换到第三方 API 模型（或随时切回官方模型），上下文自动衔接不断裂，并支持本地文件读写、代码搜索与命令执行等 Agent 工具。
+
+---
+
+## ✨ 核心功能动态演示
+
+### 1. 换肤与汉化前后对比（人文衬线体排版 + 原生右键菜单汉化）
+<p align="center">
+  <img src="./assets/demo-skin-i18n.gif" width="100%" alt="换肤与汉化前后对比演示" />
+</p>
+
+### 2. 聊天框一键切中转模型 + 悬停调节思考强度
+<p align="center">
+  <img src="./assets/demo-model-switcher.gif" width="100%" alt="聊天框一键切中转模型与调节思考强度演示" />
+</p>
+
+### 3. 设置页 2 秒无感切换 Google 账号 + 实时配额查看
+<p align="center">
+  <img src="./assets/demo-account-switcher.gif" width="100%" alt="设置页 2 秒无感切换 Google 账号演示" />
+</p>
 
 ---
 
