@@ -51,19 +51,7 @@
   function updateTitleBarOverlay(isDark) {
     try {
       if (window.electronNative && typeof window.electronNative.setTitleBarOverlay === "function") {
-        const orig = window.electronNative.__origSetTitleBarOverlay || window.electronNative.setTitleBarOverlay.bind(window.electronNative);
-        if (!window.electronNative.__origSetTitleBarOverlay) {
-          window.electronNative.__origSetTitleBarOverlay = orig;
-          window.electronNative.setTitleBarOverlay = function (opts) {
-            const darkNow = resolveIsDark(getSavedMode());
-            return orig({
-              color: darkNow ? "#1F1E1D" : "#FAF9F5",
-              symbolColor: darkNow ? "#ECE9E2" : "#3D3A34",
-              height: (opts && opts.height) || 30
-            });
-          };
-        }
-        orig({
+        window.electronNative.setTitleBarOverlay({
           color: isDark ? "#1F1E1D" : "#FAF9F5",
           symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
           height: 30

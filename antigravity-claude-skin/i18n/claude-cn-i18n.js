@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="93230098eb6293f23776b31611ef6decb9a6d323ee912f63cf0847d28e8b6b30"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="8c7822207f21aed39d123f0f3f51d6fbf632758be12768d49e52b02f28f005d1"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -8585,19 +8585,7 @@ window.__agySuiteTheme="/* =====================================================
   function updateTitleBarOverlay(isDark) {
     try {
       if (window.electronNative && typeof window.electronNative.setTitleBarOverlay === "function") {
-        const orig = window.electronNative.__origSetTitleBarOverlay || window.electronNative.setTitleBarOverlay.bind(window.electronNative);
-        if (!window.electronNative.__origSetTitleBarOverlay) {
-          window.electronNative.__origSetTitleBarOverlay = orig;
-          window.electronNative.setTitleBarOverlay = function (opts) {
-            const darkNow = resolveIsDark(getSavedMode());
-            return orig({
-              color: darkNow ? "#1F1E1D" : "#FAF9F5",
-              symbolColor: darkNow ? "#ECE9E2" : "#3D3A34",
-              height: (opts && opts.height) || 30
-            });
-          };
-        }
-        orig({
+        window.electronNative.setTitleBarOverlay({
           color: isDark ? "#1F1E1D" : "#FAF9F5",
           symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
           height: 30
@@ -8945,4 +8933,4 @@ window.__agySuiteTheme="/* =====================================================
   window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);style.remove();document.getElementById('agy-suite-center')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="93230098eb6293f23776b31611ef6decb9a6d323ee912f63cf0847d28e8b6b30";})();
+window.__agyRendererBundleId="8c7822207f21aed39d123f0f3f51d6fbf632758be12768d49e52b02f28f005d1";})();

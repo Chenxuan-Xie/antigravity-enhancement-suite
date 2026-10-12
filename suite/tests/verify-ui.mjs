@@ -3,7 +3,8 @@ const bundle=fs.readFileSync(new URL('../../antigravity-claude-skin/i18n/claude-
 const cdp=await connectToAntigravity();
 try{
  const results=await cdp.evaluate(`(async()=>{
-  const frame=document.createElement('iframe');frame.style.display='none';document.body.appendChild(frame);const w=frame.contentWindow,d=w.document;
+  const savedGreeting=localStorage.getItem('__agy_greeting_name__'),savedAccounts=localStorage.getItem('__agy_saved_accounts__');
+  const frame=document.createElement('iframe');frame.id='agy-suite-regression-fixture';frame.style.display='none';document.body.appendChild(frame);const w=frame.contentWindow,d=w.document;
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
   let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,greetingName:'',replyFont:'serif',replySize:'standard',showUsage:false,quotaReminder:true};
   let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0;
@@ -61,7 +62,7 @@ try{
     w.eval(${JSON.stringify(bundle)});await pause(40);
     assert(!w.__AGY_MODEL_SWITCHER&&d.querySelectorAll('#agy-suite-center').length===1,'identical bundle reinjection respects disabled modules and stays idempotent');
     return results;
-  }finally{w.__agySuiteCleanup?.();w.__agyAccountSwitcherCleanup?.();w.__AGY_MODEL_SWITCHER_CLEANUP?.();w.__agyCnRestore?.();frame.remove();}
+  }finally{w.__agySuiteCleanup?.();w.__agyAccountSwitcherCleanup?.();w.__AGY_MODEL_SWITCHER_CLEANUP?.();w.__agyCnRestore?.();frame.remove();for(const [key,value] of [['__agy_greeting_name__',savedGreeting],['__agy_saved_accounts__',savedAccounts]]){if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}}
  })()`,30000);
  for(const result of results)console.log('PASS '+result);console.log(results.length+' suite browser checks passed.');
 }finally{cdp.close();}
