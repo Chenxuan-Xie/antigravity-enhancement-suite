@@ -13,8 +13,11 @@ export async function connectToAntigravity() {
     let sequence = 0;
     const pending = new Map();
     const listeners = new Set();
+    let frameId,contextId;
     socket.addEventListener('message', event => {
         const message = JSON.parse(String(event.data));
+        if(message.method==='Runtime.executionContextsCleared')contextId=undefined;
+        if(message.method==='Runtime.executionContextCreated'){const context=message.params.context;if(context.auxData?.isDefault&&context.auxData.frameId===frameId)contextId=context.id;}
         if (message.method) listeners.forEach(listener => listener(message));
         if (!message.id || !pending.has(message.id)) return;
         const { resolve, reject, timer } = pending.get(message.id);
@@ -29,11 +32,12 @@ export async function connectToAntigravity() {
         pending.set(id, { resolve, reject, timer });
         socket.send(JSON.stringify({ id, method, params }));
     });
+    try{frameId=(await call('Page.getFrameTree')).frameTree.frame.id;await call('Runtime.enable');}catch(error){socket.close();throw error;}
     return {
         call,
         onEvent(listener) { listeners.add(listener); return () => listeners.delete(listener); },
         async evaluate(expression, timeoutMs = 15000) {
-            const result = await call('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, timeoutMs);
+            const result = await call('Runtime.evaluate', { expression, contextId, awaitPromise: true, returnByValue: true }, timeoutMs);
             if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
             return result.result?.value;
         },

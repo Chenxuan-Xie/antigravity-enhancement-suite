@@ -5,6 +5,9 @@ function normalizeProxy(value){
   if(!value)return '';
   try{const url=new URL(/^[a-z]+:\/\//i.test(value)?value:'http://'+value);return ['http:','https:','socks5:','socks5h:'].includes(url.protocol)&&url.hostname?url.href:'';}catch{return '';}
 }
+function loopbackBypass(existing=''){
+  return [...new Set([...existing.split(';').map(value=>value.trim()).filter(Boolean),'localhost','127.0.0.1','[::1]'])].join(';');
+}
 
 function proxyEnvironment(env,registry=''){
   const result={};
@@ -37,4 +40,4 @@ function languageServerProxy(source,environment){
   const code=source.replace(/\bconst\s+env\s*=\s*\{[^;\r\n]*\bshellEnvSync\b[^;\r\n]*\};/g,match=>{matched++;return match+'\nObject.assign(env, '+expression+');';});
   return {code:matched===1?code:source,compatible:matched===1,changed:matched===1};
 }
-module.exports={proxyEnvironment,getProxyEnvironment,languageServerProxy};
+module.exports={proxyEnvironment,getProxyEnvironment,languageServerProxy,loopbackBypass};

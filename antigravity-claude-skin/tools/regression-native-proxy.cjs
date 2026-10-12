@@ -1,8 +1,9 @@
 'use strict';
 const assert=require('node:assert/strict'),vm=require('node:vm');
-const {proxyEnvironment,languageServerProxy}=require('./native-proxy.cjs');
+const {proxyEnvironment,languageServerProxy,loopbackBypass}=require('./native-proxy.cjs');
 let checks=0;
 const check=(value,message)=>{assert(value,message);checks++;console.log('PASS '+message);};
+check(loopbackBypass('internal.test;localhost')==='internal.test;localhost;127.0.0.1;[::1]','Electron loopback bypass preserves user rules and prevents local app pages going through the proxy');
 const enabled='ProxyEnable REG_DWORD 0x1\nProxyServer REG_SZ 127.0.0.1:8800';
 const detected=proxyEnvironment({},enabled);
 check(detected.HTTP_PROXY==='http://127.0.0.1:8800/'&&detected.HTTPS_PROXY===detected.HTTP_PROXY,'Windows system proxy reaches both HTTP and HTTPS language-server requests');

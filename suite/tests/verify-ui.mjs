@@ -8,7 +8,7 @@ try{
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
   let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,greetingName:'',replyFont:'serif',replySize:'standard',showUsage:false,showQuota:true,quotaReminder:true};
-  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false;
+  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[];
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
   const providers=[{id:'fixture-provider',name:'Fixture',baseUrl:'https://fixture.test/v1',protocol:'openai',hasApiKey:true}];
@@ -19,16 +19,18 @@ try{
   editor.__lexicalEditor={update:fn=>fn(),getEditorState:()=>({_nodeMap:new Map([['root',root]])}),_commands:new Map()};
   w.fetch=async(url,options={})=>{
     const value=String(url),body=JSON.parse(options.body||'{}');let payload={ok:true};
-    if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}payload.settings=settings;}
+    if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}else if(holdInitial)await new Promise(resolve=>{releaseInitial=resolve;});payload.settings=settings;}
     else if(value.includes('/api/models/discover')){discoverCalls++;payload.models=['model-a','model-b','model-c'];payload.endpointUrl='https://fixture.test/v1/models';}
     else if(value.includes('/api/models/import')){imported=body;payload.state={models:[],activeMode:'official',providers};}
-    else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:'auto',exchanges:[],officialTurnCount:0,customExchangeCount:0}};
+    else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:new URL(value).searchParams.get('conversationId')||'auto',exchanges:usageExchanges,officialTurnCount:0,customExchangeCount:usageExchanges.length}};
     else if(value.endsWith('/api/switch')){switches++;accounts=accounts.map(a=>({...a,isCurrent:a.email===body.email}));payload.accounts=accounts;}
     else if(value.includes('/api/accounts')){if(value.includes('/quota')){quotaCalls++;if(quotaFailure)return new w.Response(JSON.stringify({ok:false,error:'Token refresh failed HTTP 401: unauthorized_client'}),{status:401,headers:{'Content-Type':'application/json'}});}payload.accounts=accounts;}
     return new w.Response(JSON.stringify(payload),{headers:{'Content-Type':'application/json'}});
   };
   try{
-    w.eval(${JSON.stringify(bundle)});await pause(160);
+    w.__agySuiteInitialSettings={...settings};w.eval(${JSON.stringify(bundle)});
+    assert(w.__agySuite?.getSettings().skin===false&&!d.querySelector('#agy-claude-skin')&&d.querySelector('#agy-suite-sidebar-button'),'saved official appearance and control center apply synchronously before backend settings are available');
+    holdInitial=false;releaseInitial();await pause(160);
     assert(d.querySelector('#agy-suite-sidebar-button')&&!d.querySelector('#agy-suite-center'),'suite is accessible from the sidebar without adding content to native settings');
     d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
     assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
@@ -64,6 +66,17 @@ try{
     const api=w.__AGY_MODEL_SWITCHER,get=api.getState;api.getState=()=>({...get(),isSendingCustomChat:true});const before=posts;
     await w.__agySuite.save({api:false});api.getState=get;
     assert(posts===before&&w.__AGY_MODEL_SWITCHER===api,'turning off API during generation is blocked before saving or cleanup');
+    await w.__agySuite.save({showUsage:true});
+    assert(d.querySelector('[data-agy-custom-api-nav="1"]').nextElementSibling?.id==='agy-ms-usage'&&d.querySelectorAll('#agy-ms-usage tbody tr').length===2,'token usage switch immediately shows a sidebar table below the relay API entry even for an empty chat');
+    assert(d.querySelector('#agy-ms-usage').textContent.includes('No relay requests')&&[...d.querySelectorAll('#agy-ms-usage td')].every(cell=>cell.textContent==='—'),'empty chats show a truthful explanation and missing usage instead of fabricated zeros');
+    usageExchanges=[{usage:{inputTokens:120,outputTokens:30,reportedRounds:1,totalRounds:1,complete:true}},{usage:{inputTokens:80,outputTokens:20,reportedRounds:1,totalRounds:1,complete:true}}];await api.refreshState();
+    assert([...d.querySelectorAll('#agy-ms-usage tbody tr:first-child td')].map(cell=>cell.textContent).join(',')==='80,20,100'&&[...d.querySelectorAll('#agy-ms-usage tbody tr:last-child td')].map(cell=>cell.textContent).join(',')==='200,50,250','table reports the latest turn and all reported chat tokens with correct totals');
+    usageExchanges.push({usage:{inputTokens:0,outputTokens:null,reportedRounds:1,totalRounds:1,complete:false}});await api.refreshState();
+    assert([...d.querySelectorAll('#agy-ms-usage tbody tr:first-child td')].map(cell=>cell.textContent).join(',')==='0,—,—'&&d.querySelector('#agy-ms-usage p').textContent.includes('complete usage'),'zero token counts are preserved and incomplete provider data is clearly marked');
+    const table=d.querySelector('#agy-ms-usage table');api.syncAllUI();assert(d.querySelector('#agy-ms-usage table')===table,'unchanged token statistics preserve table nodes without repeated rendering');
+    api.getState().bridge.conversationId='other-chat';api.syncAllUI();assert([...d.querySelectorAll('#agy-ms-usage td')].every(cell=>cell.textContent==='—'),'stale history from another conversation cannot appear in the usage table');
+    await api.refreshState();await w.__agySuite.save({showUsage:false});assert(!d.querySelector('#agy-ms-usage'),'token display hides immediately without disabling the relay');
+    usageExchanges=[];
     api.openModal();await pause(30);
     assert(d.querySelectorAll('#agy-ms-provider-preset option').length===7,'native model dialog provides all six service presets');
     const preset=d.querySelector('#agy-ms-provider-preset');preset.value='deepseek';preset.dispatchEvent(new w.Event('change'));

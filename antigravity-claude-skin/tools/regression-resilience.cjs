@@ -61,6 +61,7 @@ async function main() {
             setInterval:()=>({unref(){}}),
             require: name => /suite[\\/]settings\.cjs$/.test(name) ? {readSettings:()=>({skin:true,i18n:true})} : name === 'electron' ? electron : name === 'fs' ? fakeFs : name === 'path' ? path : name === 'node:module' ? fakeModule :
                 name === './guardian-runtime.cjs' ? { ensureGuardian: () => {} } : name === './runtime-transforms.cjs' ? { languageServerPolicy } :
+                name === './native-proxy.cjs' ? require('./native-proxy.cjs') :
                 (loaded.push(name), {}) };
         vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'native-bootstrap.cjs'), 'utf8'), context);
         context.module.exports(resources);

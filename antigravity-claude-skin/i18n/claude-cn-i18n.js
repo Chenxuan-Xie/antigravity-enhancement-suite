@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="3402f5d91cd60eac70aa20a4215c51e9a890a19cf583f5a49d735d0aa45d6e3b"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="639a544cb2c09892de324d44621da2d4c5a758c7230562d0616628a57330b3b0"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -5809,6 +5809,14 @@ window.__agySuiteModules.api=function(){
         styleEl.id = 'agy-model-switcher-styles';
         styleEl.setAttribute(SKIP_I18N_ATTR, 'true');
         styleEl.textContent = `
+            #agy-ms-usage{box-sizing:border-box;margin:6px 4px 10px;padding:10px 11px;border:1px solid #8883;border-radius:10px;color:var(--agy-text-primary,var(--foreground,inherit));background:var(--agy-bg-primary,var(--background,transparent));font:11px/1.5 system-ui;overflow-x:auto}
+            #agy-ms-usage .agy-ms-usage-heading{font-weight:600;margin-bottom:7px;font-size:12px}
+            #agy-ms-usage table{width:100%;border-collapse:collapse;white-space:nowrap;font-variant-numeric:tabular-nums}
+            #agy-ms-usage th,#agy-ms-usage td{padding:4px 3px;text-align:right;font-weight:400}
+            #agy-ms-usage th:first-child{text-align:left;padding-left:0}
+            #agy-ms-usage thead{opacity:.55;font-size:10px}
+            #agy-ms-usage tbody tr+tr{border-top:1px solid #8882}
+            #agy-ms-usage p{font-size:10px;opacity:.55;margin:7px 0 0;white-space:normal}
             /* 当选中自定义模型时，隐藏触发按钮里的原生模型名，仅显示自定义模型名与右侧箭头 */
             button[data-testid="model-selector-trigger"].agy-ms-custom-trigger-active > *:not(.agy-ms-trigger-custom-label):not(svg) {
                 display: none !important;
@@ -8385,25 +8393,36 @@ window.__agySuiteModules.api=function(){
     function syncUsageDisplay() {
         let element=document.getElementById('agy-ms-usage');
         if(!window.__agySuiteSettings?.showUsage){element?.remove();return;}
-        const composer=document.querySelector('[data-testid="agent-input-box"]');
-        if(!composer)return;
-        const exchanges=state.bridge.exchanges||[],last=exchanges.at(-1);
-        if(!last){element?.remove();return;}
-        if(!element){element=document.createElement('div');element.id='agy-ms-usage';element.setAttribute(SKIP_I18N_ATTR,'true');element.className='text-xs text-muted-foreground px-2 py-1';}
-        if(element.parentElement!==composer)composer.appendChild(element);
+        const nav=document.querySelector('[data-agy-custom-api-nav="1"]');
+        if(!nav){element?.remove();return;}
+        const cn=window.__agySuiteSettings?.i18n!==false;
+        const label=(zh,en)=>cn?zh:en;
+        const exchanges=state.bridge?.conversationId===getActiveConversationId()&&!state.bridge.deletedAt?state.bridge.exchanges||[]:[],last=exchanges.at(-1);
         const known=exchanges.filter(ex=>ex.usage?.reportedRounds>0);
-        const total=key=>known.reduce((sum,ex)=>sum+(ex.usage[key]||0),0);
+        const total=key=>{const values=known.map(ex=>ex.usage[key]).filter(value=>Number.isFinite(value)&&value>=0);return values.length?values.reduce((sum,value)=>sum+value,0):null;};
         const number=value=>value===null||value===undefined?'—':value.toLocaleString();
-        const usage=last.usage;
+        const usage=last?.usage;
         const partial=exchanges.some(ex=>!ex.usage?.complete);
-        const message=`Token：本轮输入 ${number(usage?.inputTokens)} / 输出 ${number(usage?.outputTokens)} · 会话累计输入 ${known.length?total('inputTokens').toLocaleString():'—'} / 输出 ${known.length?total('outputTokens').toLocaleString():'—'}${partial?'（部分请求未返回统计）':''}`;
-        if(element.textContent!==message)element.textContent=message;
+        const sum=(input,output)=>Number.isFinite(input)&&Number.isFinite(output)?input+output:null;
+        const input=total('inputTokens'),output=total('outputTokens');
+        const rows=[[label('本轮','Last turn'),usage?.inputTokens,usage?.outputTokens],[label('会话累计','Chat total'),input,output]];
+        const note=!exchanges.length?label('仅统计中转 API，本会话暂无中转请求','Relay API only. No relay requests in this chat'):!known.length?label('中转接口未返回 Token 统计','Relay provider did not report token usage'):partial?label('部分中转请求未返回完整统计','Some relay requests did not report complete usage'):label('仅统计中转 API，包含工具调用','Relay API only, including tool calls');
+        const signature=JSON.stringify({cn,rows,note});
+        if(!element){element=document.createElement('section');element.id='agy-ms-usage';element.setAttribute(SKIP_I18N_ATTR,'true');element.setAttribute('aria-label',label('中转 Token 消耗','Relay token usage'));}
+        if(element.dataset.signature!==signature){
+            element.dataset.signature=signature;
+            const title=document.createElement('div');title.className='agy-ms-usage-heading';title.textContent=label('中转 API Token 消耗','Relay API token usage');
+            const table=document.createElement('table'),head=table.createTHead().insertRow();
+            for(const text of ['',label('输入','Input'),label('输出','Output'),label('合计','Total')]){const th=document.createElement('th');th.scope='col';th.textContent=text;head.appendChild(th);}
+            const body=table.createTBody();for(const [name,input,output] of rows){const row=body.insertRow(),th=document.createElement('th');th.scope='row';th.textContent=name;row.appendChild(th);for(const value of [input,output,sum(input,output)])row.insertCell().textContent=number(value);}
+            const footer=document.createElement('p');footer.textContent=note;element.replaceChildren(title,table,footer);
+        }
+        if(nav.nextElementSibling!==element)nav.after(element);
     }
 
     function syncAllUI() {
         if (disposed) return;
         syncRunStatus();
-        syncUsageDisplay();
         const notice = document.getElementById('agy-ms-error-notice');
         if (notice && notice.getAttribute('data-agy-conversation-id') !== getActiveConversationId()) notice.remove();
         for (const cid of deletedConversations) {
@@ -8412,6 +8431,7 @@ window.__agySuiteModules.api=function(){
             } catch {}
         }
         injectSidebarNavEntry();
+        syncUsageDisplay();
         syncComposerFooterUI();
         injectIntoNativeModelSelectorPanel();
         bindLexicalEnterInterceptor();
@@ -8452,6 +8472,7 @@ window.__agySuiteModules.api=function(){
             syncTimerScheduled = false;
             try {
                 injectSidebarNavEntry();
+                syncUsageDisplay();
                 if (document.querySelector('div[data-testid="model-selector-panel"]')) {
                     injectIntoNativeModelSelectorPanel();
                 }
@@ -8470,6 +8491,8 @@ window.__agySuiteModules.api=function(){
     observer.observe(document.body, { childList: true, subtree: true });
 
     const pollTimer = setInterval(refreshState, 4000);
+    const onSuiteSettings=()=>syncUsageDisplay();
+    window.addEventListener('agy-suite-settings-updated',onSuiteSettings);
     installNativeDeletionTracking();
     syncAllUI();
     refreshState();
@@ -8498,6 +8521,7 @@ window.__agySuiteModules.api=function(){
 
     window.__AGY_MODEL_SWITCHER_CLEANUP = () => {
         document.getElementById('agy-ms-usage')?.remove();
+        window.removeEventListener('agy-suite-settings-updated',onSuiteSettings);
         disposed = true;
         activeRunStatus?.element.remove();
         activeRunStatus = null;
@@ -8571,11 +8595,13 @@ window.__agySuiteModules.skin=function(){
     } catch (_) {}
   }
 
-  const originalTheme = [document.documentElement,document.body].filter(Boolean).map(el=>({el,
+  const originalTheme = window.__agySuiteStartupTheme || [document.documentElement,document.body].filter(Boolean).map(el=>({el,
     classes:new Map(['dark','dark-theme','theme-dark','theme-light','theme-standalone'].map(name=>[name,el.classList.contains(name)])),
     attrs:new Map(['data-claude-theme','data-claude-theme-mode','data-ag-theme-seeded'].map(name=>[name,el.getAttribute(name)]))}));
+  delete window.__agySuiteStartupTheme;
 
   function getSavedMode() {
+    if (window.__agySuiteSettings && ["light", "dark", "system"].includes(window.__agySuiteSettings.themeMode)) return window.__agySuiteSettings.themeMode;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved === "light" || saved === "dark" || saved === "system") {
@@ -8879,7 +8905,7 @@ window.__agySuiteModules.skin=function(){
   window.__agySuiteCleanup?.();
   let disposed=false,settings=null,saving=false,queued={},pending={},saveTask=null,statusMessage='',statusError=false,poll,scheduled=false,returnFocus=null;
   const active={};
-  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['显示 Token 消耗','Show token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
+  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['中转 API Token 消耗','Relay API token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
   const text=(cn,en)=>settings?.i18n?cn:en;
   const style=document.createElement('style');style.id='agy-suite-style';
   document.querySelectorAll('.agy-claude-hero-greeting,.agy-claude-starter-pills').forEach(el=>el.remove());
@@ -8977,7 +9003,7 @@ window.__agySuiteModules.skin=function(){
     const close=document.createElement('button');close.id='agy-suite-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭','Close'));close.onclick=closeCenter;center.appendChild(close);
     const section=(title,classes)=>{const h=document.createElement('h3');h.textContent=title;const content=document.createElement('div');content.className=classes;center.append(h,content);return content;};
     const modules=section(text('功能模块','FEATURES'),'suite-grid'),appearance=section(text('外观与欢迎语','APPEARANCE'),'suite-form'),options=section(text('显示与后台','DISPLAY & BACKGROUND'),'suite-form');
-    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates']};
+    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates'],showUsage:['仅统计中转 API，官方模型不计入','Relay API only; excludes official models']};
     for(const key of Object.keys(labels)){
       const row=document.createElement('label');row.className='suite-row';const label=document.createElement('span');label.textContent=labels[key][settings.i18n?0:1];
       if(descriptions[key]){const desc=document.createElement('small');desc.className='suite-description';desc.textContent=descriptions[key][settings.i18n?0:1];label.appendChild(desc);}
@@ -8995,10 +9021,11 @@ window.__agySuiteModules.skin=function(){
   function refreshUI(){if(disposed||scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;if(settings){renderCenter(false);mountSidebar();mountGreeting();}});}
   const observer=new MutationObserver(refreshUI);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class','hidden']});
   async function refresh(){try{if(!disposed&&!saving)apply(await request());}catch(error){if(!settings)console.warn('[Suite]',error.message);}}
+  if(window.__agySuiteInitialSettings){const initial=window.__agySuiteInitialSettings;delete window.__agySuiteInitialSettings;apply(initial);}
   poll=setInterval(refresh,5000);refresh();
   document.addEventListener('keydown',onKey);
   window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter,isSaving:()=>saving};
   window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="3402f5d91cd60eac70aa20a4215c51e9a890a19cf583f5a49d735d0aa45d6e3b";})();
+window.__agyRendererBundleId="639a544cb2c09892de324d44621da2d4c5a758c7230562d0616628a57330b3b0";})();

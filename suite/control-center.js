@@ -3,7 +3,7 @@
   window.__agySuiteCleanup?.();
   let disposed=false,settings=null,saving=false,queued={},pending={},saveTask=null,statusMessage='',statusError=false,poll,scheduled=false,returnFocus=null;
   const active={};
-  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['显示 Token 消耗','Show token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
+  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['中转 API Token 消耗','Relay API token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
   const text=(cn,en)=>settings?.i18n?cn:en;
   const style=document.createElement('style');style.id='agy-suite-style';
   document.querySelectorAll('.agy-claude-hero-greeting,.agy-claude-starter-pills').forEach(el=>el.remove());
@@ -101,7 +101,7 @@
     const close=document.createElement('button');close.id='agy-suite-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭','Close'));close.onclick=closeCenter;center.appendChild(close);
     const section=(title,classes)=>{const h=document.createElement('h3');h.textContent=title;const content=document.createElement('div');content.className=classes;center.append(h,content);return content;};
     const modules=section(text('功能模块','FEATURES'),'suite-grid'),appearance=section(text('外观与欢迎语','APPEARANCE'),'suite-form'),options=section(text('显示与后台','DISPLAY & BACKGROUND'),'suite-form');
-    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates']};
+    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates'],showUsage:['仅统计中转 API，官方模型不计入','Relay API only; excludes official models']};
     for(const key of Object.keys(labels)){
       const row=document.createElement('label');row.className='suite-row';const label=document.createElement('span');label.textContent=labels[key][settings.i18n?0:1];
       if(descriptions[key]){const desc=document.createElement('small');desc.className='suite-description';desc.textContent=descriptions[key][settings.i18n?0:1];label.appendChild(desc);}
@@ -119,6 +119,7 @@
   function refreshUI(){if(disposed||scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;if(settings){renderCenter(false);mountSidebar();mountGreeting();}});}
   const observer=new MutationObserver(refreshUI);observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class','hidden']});
   async function refresh(){try{if(!disposed&&!saving)apply(await request());}catch(error){if(!settings)console.warn('[Suite]',error.message);}}
+  if(window.__agySuiteInitialSettings){const initial=window.__agySuiteInitialSettings;delete window.__agySuiteInitialSettings;apply(initial);}
   poll=setInterval(refresh,5000);refresh();
   document.addEventListener('keydown',onKey);
   window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter,isSaving:()=>saving};

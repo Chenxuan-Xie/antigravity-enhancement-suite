@@ -903,6 +903,14 @@
         styleEl.id = 'agy-model-switcher-styles';
         styleEl.setAttribute(SKIP_I18N_ATTR, 'true');
         styleEl.textContent = `
+            #agy-ms-usage{box-sizing:border-box;margin:6px 4px 10px;padding:10px 11px;border:1px solid #8883;border-radius:10px;color:var(--agy-text-primary,var(--foreground,inherit));background:var(--agy-bg-primary,var(--background,transparent));font:11px/1.5 system-ui;overflow-x:auto}
+            #agy-ms-usage .agy-ms-usage-heading{font-weight:600;margin-bottom:7px;font-size:12px}
+            #agy-ms-usage table{width:100%;border-collapse:collapse;white-space:nowrap;font-variant-numeric:tabular-nums}
+            #agy-ms-usage th,#agy-ms-usage td{padding:4px 3px;text-align:right;font-weight:400}
+            #agy-ms-usage th:first-child{text-align:left;padding-left:0}
+            #agy-ms-usage thead{opacity:.55;font-size:10px}
+            #agy-ms-usage tbody tr+tr{border-top:1px solid #8882}
+            #agy-ms-usage p{font-size:10px;opacity:.55;margin:7px 0 0;white-space:normal}
             /* 当选中自定义模型时，隐藏触发按钮里的原生模型名，仅显示自定义模型名与右侧箭头 */
             button[data-testid="model-selector-trigger"].agy-ms-custom-trigger-active > *:not(.agy-ms-trigger-custom-label):not(svg) {
                 display: none !important;
@@ -3479,25 +3487,36 @@
     function syncUsageDisplay() {
         let element=document.getElementById('agy-ms-usage');
         if(!window.__agySuiteSettings?.showUsage){element?.remove();return;}
-        const composer=document.querySelector('[data-testid="agent-input-box"]');
-        if(!composer)return;
-        const exchanges=state.bridge.exchanges||[],last=exchanges.at(-1);
-        if(!last){element?.remove();return;}
-        if(!element){element=document.createElement('div');element.id='agy-ms-usage';element.setAttribute(SKIP_I18N_ATTR,'true');element.className='text-xs text-muted-foreground px-2 py-1';}
-        if(element.parentElement!==composer)composer.appendChild(element);
+        const nav=document.querySelector('[data-agy-custom-api-nav="1"]');
+        if(!nav){element?.remove();return;}
+        const cn=window.__agySuiteSettings?.i18n!==false;
+        const label=(zh,en)=>cn?zh:en;
+        const exchanges=state.bridge?.conversationId===getActiveConversationId()&&!state.bridge.deletedAt?state.bridge.exchanges||[]:[],last=exchanges.at(-1);
         const known=exchanges.filter(ex=>ex.usage?.reportedRounds>0);
-        const total=key=>known.reduce((sum,ex)=>sum+(ex.usage[key]||0),0);
+        const total=key=>{const values=known.map(ex=>ex.usage[key]).filter(value=>Number.isFinite(value)&&value>=0);return values.length?values.reduce((sum,value)=>sum+value,0):null;};
         const number=value=>value===null||value===undefined?'—':value.toLocaleString();
-        const usage=last.usage;
+        const usage=last?.usage;
         const partial=exchanges.some(ex=>!ex.usage?.complete);
-        const message=`Token：本轮输入 ${number(usage?.inputTokens)} / 输出 ${number(usage?.outputTokens)} · 会话累计输入 ${known.length?total('inputTokens').toLocaleString():'—'} / 输出 ${known.length?total('outputTokens').toLocaleString():'—'}${partial?'（部分请求未返回统计）':''}`;
-        if(element.textContent!==message)element.textContent=message;
+        const sum=(input,output)=>Number.isFinite(input)&&Number.isFinite(output)?input+output:null;
+        const input=total('inputTokens'),output=total('outputTokens');
+        const rows=[[label('本轮','Last turn'),usage?.inputTokens,usage?.outputTokens],[label('会话累计','Chat total'),input,output]];
+        const note=!exchanges.length?label('仅统计中转 API，本会话暂无中转请求','Relay API only. No relay requests in this chat'):!known.length?label('中转接口未返回 Token 统计','Relay provider did not report token usage'):partial?label('部分中转请求未返回完整统计','Some relay requests did not report complete usage'):label('仅统计中转 API，包含工具调用','Relay API only, including tool calls');
+        const signature=JSON.stringify({cn,rows,note});
+        if(!element){element=document.createElement('section');element.id='agy-ms-usage';element.setAttribute(SKIP_I18N_ATTR,'true');element.setAttribute('aria-label',label('中转 Token 消耗','Relay token usage'));}
+        if(element.dataset.signature!==signature){
+            element.dataset.signature=signature;
+            const title=document.createElement('div');title.className='agy-ms-usage-heading';title.textContent=label('中转 API Token 消耗','Relay API token usage');
+            const table=document.createElement('table'),head=table.createTHead().insertRow();
+            for(const text of ['',label('输入','Input'),label('输出','Output'),label('合计','Total')]){const th=document.createElement('th');th.scope='col';th.textContent=text;head.appendChild(th);}
+            const body=table.createTBody();for(const [name,input,output] of rows){const row=body.insertRow(),th=document.createElement('th');th.scope='row';th.textContent=name;row.appendChild(th);for(const value of [input,output,sum(input,output)])row.insertCell().textContent=number(value);}
+            const footer=document.createElement('p');footer.textContent=note;element.replaceChildren(title,table,footer);
+        }
+        if(nav.nextElementSibling!==element)nav.after(element);
     }
 
     function syncAllUI() {
         if (disposed) return;
         syncRunStatus();
-        syncUsageDisplay();
         const notice = document.getElementById('agy-ms-error-notice');
         if (notice && notice.getAttribute('data-agy-conversation-id') !== getActiveConversationId()) notice.remove();
         for (const cid of deletedConversations) {
@@ -3506,6 +3525,7 @@
             } catch {}
         }
         injectSidebarNavEntry();
+        syncUsageDisplay();
         syncComposerFooterUI();
         injectIntoNativeModelSelectorPanel();
         bindLexicalEnterInterceptor();
@@ -3546,6 +3566,7 @@
             syncTimerScheduled = false;
             try {
                 injectSidebarNavEntry();
+                syncUsageDisplay();
                 if (document.querySelector('div[data-testid="model-selector-panel"]')) {
                     injectIntoNativeModelSelectorPanel();
                 }
@@ -3564,6 +3585,8 @@
     observer.observe(document.body, { childList: true, subtree: true });
 
     const pollTimer = setInterval(refreshState, 4000);
+    const onSuiteSettings=()=>syncUsageDisplay();
+    window.addEventListener('agy-suite-settings-updated',onSuiteSettings);
     installNativeDeletionTracking();
     syncAllUI();
     refreshState();
@@ -3592,6 +3615,7 @@
 
     window.__AGY_MODEL_SWITCHER_CLEANUP = () => {
         document.getElementById('agy-ms-usage')?.remove();
+        window.removeEventListener('agy-suite-settings-updated',onSuiteSettings);
         disposed = true;
         activeRunStatus?.element.remove();
         activeRunStatus = null;

@@ -57,6 +57,7 @@ async function injectLiveViaCdp(options = {}) {
         const socket = new WebSocket(target.webSocketDebuggerUrl);
         const pending = new Map();
         let sequence = 0;
+        let frameId,contextId;
         try {
             await new Promise((resolve, reject) => {
                 const timer = setTimeout(() => { socket.close(); reject(Error('CDP connection timeout')); }, 3000);
@@ -64,22 +65,29 @@ async function injectLiveViaCdp(options = {}) {
                 socket.addEventListener('error', () => { clearTimeout(timer); reject(Error('CDP connection failed')); }, { once: true });
             });
             socket.addEventListener('message', event => {
-                const msg = JSON.parse(String(event.data)), item = pending.get(msg.id);
+                const msg = JSON.parse(String(event.data));
+                if(msg.method==='Runtime.executionContextsCleared')contextId=undefined;
+                if(msg.method==='Runtime.executionContextCreated'){const context=msg.params.context;if(context.auxData?.isDefault&&context.auxData.frameId===frameId)contextId=context.id;}
+                const item = pending.get(msg.id);
                 if (!item) return;
                 pending.delete(msg.id); clearTimeout(item.timer);
                 if (msg.error || msg.result?.exceptionDetails) item.reject(Error('Renderer injection failed'));
-                else item.resolve(msg.result?.result?.value);
+                else item.resolve(msg.result);
             });
-            const evaluate = expression => new Promise((resolve, reject) => {
+            const call = (method,params) => new Promise((resolve, reject) => {
                 const id = ++sequence;
                 const timer = setTimeout(() => { pending.delete(id); reject(Error('CDP evaluation timeout')); }, 8000);
                 pending.set(id, { resolve, reject, timer });
-                socket.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, returnByValue: true, awaitPromise: true } }));
+                socket.send(JSON.stringify({ id, method, params }));
             });
+            frameId=(await call('Page.getFrameTree',{})).frameTree.frame.id;
+            await call('Runtime.enable',{});
+            const evaluate=async expression=>(await call('Runtime.evaluate',{expression,contextId,returnByValue:true,awaitPromise:true})).result?.value;
             const condition = await evaluate(`({busy:!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]'),ready:document.readyState!=='loading',installed:window.__agyInstalledBundleHash===${JSON.stringify(hash)}&&window.__agyInstalledCssHash===${JSON.stringify(cssHash)}&&window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&!!window.__agySuite})`);
             if (condition.busy || !condition.ready || (options.onlyIfMissing && condition.installed)) continue;
             if(options.settings)await evaluate(`window.__agySuite?.apply(${JSON.stringify(options.settings)})`);
-            await evaluate(bundle);
+            const initial=options.settings||require(path.resolve(skinRoot,'..','suite','settings.cjs')).readSettings();
+            await evaluate('if(!window.__agySuite||window.__agyRendererBundleId!=='+JSON.stringify(bundleId)+')window.__agySuiteInitialSettings='+JSON.stringify(initial)+';\n'+bundle);
             const installed = await evaluate(`(()=>{if(window.__agyRendererBundleId!==${JSON.stringify(bundleId)})return false;window.__agyInstalledBundleHash=${JSON.stringify(hash)};window.__agyInstalledCssHash=${JSON.stringify(cssHash)};return true})()`);
             if (installed) injected++;
         } finally {

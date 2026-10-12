@@ -18,10 +18,12 @@ const ASAR_DIR = path.join(resourcesDir, "app.asar");
 const HOOK_DIR = path.join(resourcesDir, "app");
 const suiteSettings = require(path.resolve(SKIN_ROOT,'..','suite','settings.cjs'));
 const flags = () => {try{return suiteSettings.readSettings();}catch{return {skin:false,i18n:false,accounts:false,api:false,guardian:false};}};
+const startup = require('./renderer-startup.cjs');
 const asarPkg = JSON.parse(fs.readFileSync(path.join(ASAR_DIR, "package.json"), "utf8"));
 // The external bootstrap has no ASAR byte budget. Keep debugging loopback-only.
 if (!electron.app.commandLine.hasSwitch('remote-debugging-port')) electron.app.commandLine.appendSwitch('remote-debugging-port', '0');
 electron.app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1');
+electron.app.commandLine.appendSwitch('proxy-bypass-list',require('./native-proxy.cjs').loopbackBypass(electron.app.commandLine.getSwitchValue?.('proxy-bypass-list')||''));
 try { require('./guardian-runtime.cjs').ensureGuardian(); } catch (error) { console.error('[Guardian]', error.message); }
 const Module = require('node:module');
 const loadJs = Module._extensions['.js'];
@@ -86,8 +88,7 @@ try {
   if (typeof origAttach === "function") {
     loadingOverlay.attachLoadingOverlay = function (win, fg, bg) {
       if (!flags().skin) return origAttach.call(this,win,fg,bg);
-      const isDark = bg === "#131313" || bg === "#1F1E1D";
-      const claudeBg = isDark ? "#1F1E1D" : "#FAF9F5";
+      const claudeBg = startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors).background;
       const claudeFg = "#D97757";
       return origAttach.call(this, win, claudeFg, claudeBg);
     };
@@ -332,7 +333,7 @@ function injectSkinAndI18nIntoWindow(win) {
   try {
     if (fs.existsSync(I18N_JS_PATH)) {
       const i18nJs = fs.readFileSync(I18N_JS_PATH, "utf8");
-      win.webContents.executeJavaScript(i18nJs).catch(() => {});
+      win.webContents.executeJavaScript('if(!window.__agySuite)window.__agySuiteInitialSettings='+JSON.stringify(flags())+';\n'+i18nJs).catch(() => {});
     }
   } catch (err) {
     console.error("[ClaudeSkin+CN] Failed to inject skin/i18n:", err);
@@ -342,24 +343,16 @@ function injectSkinAndI18nIntoWindow(win) {
 // 4. Intercept every BrowserWindow creation for zero-flash titleBarOverlay + Skin & CN DOM injection
 electron.app.on("browser-window-created", (_event, win) => {
   try {
+    try{win.__agyEarlyRenderer=startup.installEarlyRenderer(win,()=>({settings:flags(),css:fs.readFileSync(SKIN_CSS_PATH,'utf8'),bundle:fs.readFileSync(I18N_JS_PATH,'utf8')}));}catch(error){console.warn('[Suite] Early appearance unavailable:',error.message);}
     if (process.platform === "win32" && typeof win.setTitleBarOverlay === "function") {
       const origSetOverlay = win.setTitleBarOverlay.bind(win);
       win.setTitleBarOverlay = function (options) {
         if(!['#faf9f5','#1f1e1d','#161514'].includes(String(options?.color||'').toLowerCase()))win.__agyOriginalOverlay = options;
         if (!flags().skin) return origSetOverlay(options);
-        const rawColor = String((options && options.color) || "").toLowerCase();
-        if (rawColor === "#1f1e1d" || rawColor === "#161514") {
-          win.__agyForceDarkOverlay = true;
-        } else if (rawColor === "#faf9f5") {
-          win.__agyForceDarkOverlay = false;
-        }
-        const isDark =
-          win.__agyForceDarkOverlay !== undefined
-            ? win.__agyForceDarkOverlay
-            : rawColor === "#131313" || rawColor === "#181818" || rawColor === "#1f1e1d" || rawColor === "#161514";
+        const palette=startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors);
         return origSetOverlay({
-          color: isDark ? "#1F1E1D" : "#FAF9F5",
-          symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
+          color: palette.background,
+          symbolColor: palette.foreground,
           height: (options && options.height) || 30
         });
       };
@@ -367,7 +360,7 @@ electron.app.on("browser-window-created", (_event, win) => {
     }
     win.__agyOriginalBackground=win.getBackgroundColor?.();
     if (flags().skin && typeof win.setBackgroundColor === "function") {
-      win.setBackgroundColor("#FAF9F5");
+      win.setBackgroundColor(startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors).background);
     }
     win.webContents.on("dom-ready", () => injectSkinAndI18nIntoWindow(win));
     win.webContents.on("did-finish-load", () => injectSkinAndI18nIntoWindow(win));
@@ -384,6 +377,8 @@ const suiteTimer = setInterval(() => {
     const menu=electron.Menu.getApplicationMenu();if(menu)electron.Menu.setApplicationMenu(menu);
     for(const win of electron.BrowserWindow.getAllWindows()) {
       if(win.__agyOriginalOverlay)win.setTitleBarOverlay(win.__agyOriginalOverlay);
+      win.__agyEarlyRenderer?.refresh().catch(()=>{});
+      if(flags().skin)win.setBackgroundColor?.(startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors).background);
       if(!flags().skin&&win.__agyOriginalBackground)win.setBackgroundColor?.(win.__agyOriginalBackground);
       injectSkinAndI18nIntoWindow(win);
     }
