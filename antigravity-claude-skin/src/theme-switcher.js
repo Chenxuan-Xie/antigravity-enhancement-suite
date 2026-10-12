@@ -1,9 +1,6 @@
 /**
  * Antigravity Claude Desktop Skin — Theme Mode Switcher (白天 / 黑夜 / 跟随系统)
- * Supports real-time zero-reload switching between:
- *  - 'light'  : Claude Warm Parchment (白天 · 浅色羊皮纸 #FAF9F5)
- *  - 'dark'   : Claude Warm Charcoal  (黑夜 · 深色暖炭黑 #1F1E1D)
- *  - 'system' : Follow OS prefers-color-scheme (跟随系统自动切换)
+ * Mounts as a single clean native row inside Settings -> General (通用) / Appearance (外观)
  */
 (() => {
   const STORAGE_KEY = "__agy_claude_theme_mode__";
@@ -103,7 +100,7 @@
       lastAppliedOverlayTheme = isDark;
       updateTitleBarOverlay(isDark);
     }
-    syncWidgetState(targetMode, isDark);
+    syncWidgetState(targetMode);
   }
 
   function setThemeMode(mode, options = {}) {
@@ -122,140 +119,57 @@
 
   const css = `
     #${WIDGET_ID} {
-      margin: 0 0 16px 0;
-      padding: 14px 18px;
-      border-radius: 12px;
-      border: 1px solid rgba(20, 20, 19, 0.11);
-      background: rgba(255, 255, 255, 0.78);
-      color: #141413;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-    }
-    body.theme-dark #${WIDGET_ID},
-    html.dark #${WIDGET_ID} {
-      background: rgba(40, 39, 37, 0.88);
-      border-color: rgba(236, 233, 226, 0.13);
-      color: #ECE9E2;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    }
-    #${WIDGET_ID} * {
-      box-sizing: border-box;
-    }
-    .agy-ts-row {
+      padding: 8px 12px;
+      width: 100%;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      flex-wrap: wrap;
+      gap: 16px;
+      box-sizing: border-box;
     }
-    .agy-ts-info {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      min-width: 200px;
-      flex: 1;
-    }
-    .agy-ts-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .agy-ts-label {
       font-size: 14px;
-      font-weight: 600;
-      margin: 0;
-    }
-    .agy-ts-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #D97757;
-      box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.18);
-      flex-shrink: 0;
-    }
-    .agy-ts-badge {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 1px 8px;
-      border-radius: 999px;
-      background: rgba(217, 119, 87, 0.13);
-      color: #D97757;
-      border: 1px solid rgba(217, 119, 87, 0.28);
-    }
-    .agy-ts-sub {
-      font-size: 12px;
-      opacity: 0.72;
-      margin: 0;
-      line-height: 1.45;
+      line-height: 20px;
+      color: var(--foreground, inherit);
+      user-select: none;
     }
     .agy-ts-seg {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 10px;
-      background: rgba(20, 20, 19, 0.055);
-      border: 1px solid rgba(20, 20, 19, 0.08);
-    }
-    body.theme-dark .agy-ts-seg,
-    html.dark .agy-ts-seg {
-      background: rgba(20, 19, 18, 0.65);
-      border-color: rgba(236, 233, 226, 0.10);
+      gap: 2px;
+      padding: 2px;
+      border-radius: 8px;
+      background: var(--muted, rgba(20, 20, 19, 0.06));
+      border: 1px solid var(--border, rgba(20, 20, 19, 0.08));
     }
     .agy-ts-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 7px;
-      border: 1px solid transparent;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: none;
       background: transparent;
-      color: inherit;
+      color: var(--muted-foreground, inherit);
       font-size: 12.5px;
       font-weight: 500;
+      line-height: 18px;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.14s ease;
       white-space: nowrap;
-      opacity: 0.78;
     }
     .agy-ts-btn:hover {
-      opacity: 1;
-      background: rgba(217, 119, 87, 0.08);
+      color: var(--foreground, inherit);
     }
     .agy-ts-btn.active {
-      opacity: 1;
+      background: var(--card, #FFFFFF);
+      color: var(--foreground, #141413);
       font-weight: 600;
-      background: #FAF9F5;
-      color: #141413;
-      border-color: rgba(217, 119, 87, 0.45);
-      box-shadow: 0 1px 4px rgba(20, 20, 19, 0.08);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
     }
     body.theme-dark .agy-ts-btn.active,
     html.dark .agy-ts-btn.active {
-      background: #2E2C29;
+      background: #35332F;
       color: #ECE9E2;
-      border-color: #D97757;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    }
-    .agy-ts-btn svg {
-      width: 14px;
-      height: 14px;
-      color: #D97757;
-      flex-shrink: 0;
-    }
-    .agy-ts-swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
-    }
-    .agy-ts-swatch-light {
-      background: #FAF9F5;
-      border: 1.5px solid #B5AEA0;
-    }
-    .agy-ts-swatch-dark {
-      background: #1F1E1D;
-      border: 1.5px solid #D97757;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     }
   `;
 
@@ -269,20 +183,10 @@
     if (el.textContent !== css) el.textContent = css;
   }
 
-  function syncWidgetState(mode, isDark) {
+  function syncWidgetState(mode) {
     const widget = document.getElementById(WIDGET_ID);
     if (!widget) return;
     const m = mode || getSavedMode();
-    const dark = typeof isDark === "boolean" ? isDark : resolveIsDark(m);
-    const badge = widget.querySelector('[data-ts-role="badge"]');
-    if (badge) {
-      const modeLabel = m === "light" ? "白天模式" : m === "dark" ? "黑夜模式" : "跟随系统";
-      const skinLabel = dark ? "暖炭黑深色" : "羊皮纸浅色";
-      const nextText = `${modeLabel} · ${skinLabel}`;
-      if (badge.textContent !== nextText) {
-        badge.textContent = nextText;
-      }
-    }
     widget.querySelectorAll("[data-theme-mode]").forEach((btn) => {
       const btnMode = btn.getAttribute("data-theme-mode");
       const isActive = btnMode === m;
@@ -300,31 +204,11 @@
     root.setAttribute("data-ag-i18n-skip", "true");
     root.setAttribute("data-ag-localization-skip", "true");
     root.innerHTML = `
-      <div class="agy-ts-row">
-        <div class="agy-ts-info">
-          <div class="agy-ts-title">
-            <span class="agy-ts-dot"></span>
-            <span>切换皮肤（Claude 书卷双色主题）</span>
-            <span class="agy-ts-badge" data-ts-role="badge">白天模式 · 羊皮纸浅色</span>
-          </div>
-          <p class="agy-ts-sub">在 Claude 经典浅色羊皮纸（#FAF9F5）与深色暖炭黑（#1F1E1D）之间实时切换，共享人文衬线排版</p>
-        </div>
-        <div class="agy-ts-seg" role="group" aria-label="切换皮肤模式">
-          <button type="button" class="agy-ts-btn" data-theme-mode="light" title="浅色羊皮纸书卷风 (#FAF9F5)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-            <span>白天</span>
-            <span class="agy-ts-swatch agy-ts-swatch-light"></span>
-          </button>
-          <button type="button" class="agy-ts-btn" data-theme-mode="dark" title="深色暖炭黑书卷风 (#1F1E1D)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-            <span>黑夜</span>
-            <span class="agy-ts-swatch agy-ts-swatch-dark"></span>
-          </button>
-          <button type="button" class="agy-ts-btn" data-theme-mode="system" title="跟随 Windows 系统深浅色自动切换">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
-            <span>跟随系统</span>
-          </button>
-        </div>
+      <span class="agy-ts-label">切换皮肤</span>
+      <div class="agy-ts-seg" role="group" aria-label="切换皮肤">
+        <button type="button" class="agy-ts-btn" data-theme-mode="light">白天</button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="dark">黑夜</button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="system">跟随系统</button>
       </div>
     `;
 
@@ -338,53 +222,42 @@
     return root;
   }
 
-  function findSettingsMountTarget() {
+  function findSettingsCardContainer() {
     const dialog = document.querySelector(".settings-modal-container");
-    if (dialog) {
-      const headings = Array.from(dialog.querySelectorAll("h2, h3"));
-      const targetHeading = headings.find((h) => {
-        const t = (h.textContent || "").trim();
-        return /^(General|通用|Appearance|外观|Account|账号|账户)$/.test(t);
-      });
-      if (targetHeading) {
-        const sectionWrap = targetHeading.closest(".space-y-2") || targetHeading.parentElement;
-        if (sectionWrap && sectionWrap.parentElement) {
-          return { parent: sectionWrap.parentElement, before: sectionWrap };
-        }
-      }
-      const scroller = Array.from(dialog.querySelectorAll("div")).find(
-        (el) =>
-          el.classList.contains("overflow-y-auto") &&
-          !el.querySelector('[data-testid^="settings-nav-item-"]')
-      );
-      if (scroller) {
-        return { parent: scroller, before: scroller.firstChild };
+    if (!dialog) return null;
+
+    // Look ONLY for section <h3> headings ("通用" / "General" / "外观" / "Appearance"), never the page title <h2>
+    const h3List = Array.from(dialog.querySelectorAll("h3"));
+    const targetH3 = h3List.find((h) => {
+      const t = (h.textContent || "").trim();
+      return /^(General|通用|Appearance|外观)$/.test(t);
+    });
+    if (targetH3) {
+      const section = targetH3.closest(".space-y-2");
+      if (section) {
+        const card = section.querySelector(".divide-y.divide-border") || section.querySelector(".rounded-xl.border");
+        if (card) return card;
       }
     }
 
-    const accSwitcher = document.getElementById("agy-settings-account-switcher");
-    if (accSwitcher && accSwitcher.parentElement) {
-      return { parent: accSwitcher.parentElement, before: accSwitcher };
-    }
+    // Fallback: first .divide-y.divide-border card inside settings-modal-container
+    const firstCard = dialog.querySelector(".divide-y.divide-border");
+    if (firstCard) return firstCard;
 
     return null;
   }
 
   function checkAndMount() {
     ensureStyle();
-    const target = findSettingsMountTarget();
-    if (!target || !target.parent) return;
+    const card = findSettingsCardContainer();
+    if (!card) return;
 
     let widget = document.getElementById(WIDGET_ID);
     if (!widget) {
       widget = buildWidget();
     }
-    if (!target.parent.contains(widget)) {
-      if (target.before && target.before.parentNode === target.parent) {
-        target.parent.insertBefore(widget, target.before);
-      } else {
-        target.parent.prepend(widget);
-      }
+    if (widget.parentElement !== card || card.firstElementChild !== widget) {
+      card.prepend(widget);
     }
     syncWidgetState();
   }
