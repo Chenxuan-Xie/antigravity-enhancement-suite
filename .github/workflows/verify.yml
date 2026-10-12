@@ -28,5 +28,3 @@ jobs:
         run: node antigravity-claude-skin/tools/regression-native-proxy.cjs
       - name: Saved appearance at startup
         run: node antigravity-claude-skin/tools/regression-renderer-startup.cjs
-      - name: Isolated browser first-paint appearance
-        run: node suite/tests/verify-startup-browser.mjs

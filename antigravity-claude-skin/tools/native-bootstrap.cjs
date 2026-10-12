@@ -333,7 +333,7 @@ function injectSkinAndI18nIntoWindow(win) {
   try {
     if (fs.existsSync(I18N_JS_PATH)) {
       const i18nJs = fs.readFileSync(I18N_JS_PATH, "utf8");
-      win.webContents.executeJavaScript('if(!window.__agySuite)window.__agySuiteInitialSettings='+JSON.stringify(flags())+';\n'+i18nJs).catch(() => {});
+      win.webContents.executeJavaScript(startup.rendererSource(flags(),i18nJs)).catch(() => {});
     }
   } catch (err) {
     console.error("[ClaudeSkin+CN] Failed to inject skin/i18n:", err);
@@ -343,7 +343,6 @@ function injectSkinAndI18nIntoWindow(win) {
 // 4. Intercept every BrowserWindow creation for zero-flash titleBarOverlay + Skin & CN DOM injection
 electron.app.on("browser-window-created", (_event, win) => {
   try {
-    try{win.__agyEarlyRenderer=startup.installEarlyRenderer(win,()=>({settings:flags(),css:fs.readFileSync(SKIN_CSS_PATH,'utf8'),bundle:fs.readFileSync(I18N_JS_PATH,'utf8')}));}catch(error){console.warn('[Suite] Early appearance unavailable:',error.message);}
     if (process.platform === "win32" && typeof win.setTitleBarOverlay === "function") {
       const origSetOverlay = win.setTitleBarOverlay.bind(win);
       win.setTitleBarOverlay = function (options) {
@@ -377,7 +376,6 @@ const suiteTimer = setInterval(() => {
     const menu=electron.Menu.getApplicationMenu();if(menu)electron.Menu.setApplicationMenu(menu);
     for(const win of electron.BrowserWindow.getAllWindows()) {
       if(win.__agyOriginalOverlay)win.setTitleBarOverlay(win.__agyOriginalOverlay);
-      win.__agyEarlyRenderer?.refresh().catch(()=>{});
       if(flags().skin)win.setBackgroundColor?.(startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors).background);
       if(!flags().skin&&win.__agyOriginalBackground)win.setBackgroundColor?.(win.__agyOriginalBackground);
       injectSkinAndI18nIntoWindow(win);

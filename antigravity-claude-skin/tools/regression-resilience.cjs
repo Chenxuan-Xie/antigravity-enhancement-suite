@@ -62,10 +62,17 @@ async function main() {
             require: name => /suite[\\/]settings\.cjs$/.test(name) ? {readSettings:()=>({skin:true,i18n:true})} : name === 'electron' ? electron : name === 'fs' ? fakeFs : name === 'path' ? path : name === 'node:module' ? fakeModule :
                 name === './guardian-runtime.cjs' ? { ensureGuardian: () => {} } : name === './runtime-transforms.cjs' ? { languageServerPolicy } :
                 name === './native-proxy.cjs' ? require('./native-proxy.cjs') :
+                name === './renderer-startup.cjs' ? require('./renderer-startup.cjs') :
                 (loaded.push(name), {}) };
         vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'native-bootstrap.cjs'), 'utf8'), context);
         context.module.exports(resources);
         check(loaded.some(file => file.endsWith('new-entry.js')), 'bootstrap runs the current official main entry instead of a fixed dist/main.js');
+        let debuggerAttached=false;
+        const nativeLoad=async url=>url;
+        const windowMock={loadURL:nativeLoad,getBackgroundColor:()=> '#FAFAFA',setBackgroundColor:()=>{},webContents:{loadURL:nativeLoad,on:()=>{},debugger:{isAttached:()=>debuggerAttached,attach:()=>{debuggerAttached=true;},sendCommand:async()=>({identifier:'mock'})}}};
+        events['browser-window-created'](null,windowMock);
+        check(windowMock.loadURL===nativeLoad&&windowMock.webContents.loadURL===nativeLoad&&!debuggerAttached,'window creation leaves official navigation and debugger lifecycle untouched');
+        check(await windowMock.loadURL('https://127.0.0.1:1234/')==='https://127.0.0.1:1234/','official navigation completes without waiting for suite preparation');
         for (const [label, expected] of [['1 agent running', '1 个智能体运行中'], ['12 agents running', '12 个智能体运行中'], ['No agents running', '无运行中的智能体']]) {
             const tray = new electron.Tray(), menu = { items: [{ label }] };
             tray.setContextMenu(menu);

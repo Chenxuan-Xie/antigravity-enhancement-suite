@@ -14,10 +14,9 @@
     } catch (_) {}
   }
 
-  const originalTheme = window.__agySuiteStartupTheme || [document.documentElement,document.body].filter(Boolean).map(el=>({el,
+  const originalTheme = [document.documentElement,document.body].filter(Boolean).map(el=>({el,
     classes:new Map(['dark','dark-theme','theme-dark','theme-light','theme-standalone'].map(name=>[name,el.classList.contains(name)])),
     attrs:new Map(['data-claude-theme','data-claude-theme-mode','data-ag-theme-seeded'].map(name=>[name,el.getAttribute(name)]))}));
-  delete window.__agySuiteStartupTheme;
 
   function getSavedMode() {
     if (window.__agySuiteSettings && ["light", "dark", "system"].includes(window.__agySuiteSettings.themeMode)) return window.__agySuiteSettings.themeMode;

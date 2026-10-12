@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="639a544cb2c09892de324d44621da2d4c5a758c7230562d0616628a57330b3b0"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="5466848f5b89aa1555837084663eba485bb92ffd0382404c392fc8fab14fa7c8"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -8595,10 +8595,9 @@ window.__agySuiteModules.skin=function(){
     } catch (_) {}
   }
 
-  const originalTheme = window.__agySuiteStartupTheme || [document.documentElement,document.body].filter(Boolean).map(el=>({el,
+  const originalTheme = [document.documentElement,document.body].filter(Boolean).map(el=>({el,
     classes:new Map(['dark','dark-theme','theme-dark','theme-light','theme-standalone'].map(name=>[name,el.classList.contains(name)])),
     attrs:new Map(['data-claude-theme','data-claude-theme-mode','data-ag-theme-seeded'].map(name=>[name,el.getAttribute(name)]))}));
-  delete window.__agySuiteStartupTheme;
 
   function getSavedMode() {
     if (window.__agySuiteSettings && ["light", "dark", "system"].includes(window.__agySuiteSettings.themeMode)) return window.__agySuiteSettings.themeMode;
@@ -9028,4 +9027,4 @@ window.__agySuiteModules.skin=function(){
   window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="639a544cb2c09892de324d44621da2d4c5a758c7230562d0616628a57330b3b0";})();
+window.__agyRendererBundleId="5466848f5b89aa1555837084663eba485bb92ffd0382404c392fc8fab14fa7c8";})();
