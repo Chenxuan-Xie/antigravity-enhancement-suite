@@ -8,17 +8,18 @@ try{
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
   let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,greetingName:'',replyFont:'serif',replySize:'standard',showUsage:false,showQuota:true,quotaReminder:true};
-  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false;
+  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false;
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
   const providers=[{id:'fixture-provider',name:'Fixture',baseUrl:'https://fixture.test/v1',protocol:'openai',hasApiKey:true}];
   d.body.innerHTML='<nav><a href="/" data-testid="new-conversation-button">New conversation</a><a href="/customizations">Customizations</a></nav><div data-testid="settings-content"><h1>Settings</h1></div><button id="translate-me">Settings</button><main><div data-testid="agent-input-box"><div data-lexical-editor="true" contenteditable="true"></div><button data-testid="model-selector-trigger">Gemini</button><button data-testid="send-button">Send</button></div></main><div data-testid="planner-response-text">A sample reply</div>';
+  const nativeStyle=d.createElement('style');nativeStyle.textContent='body{background:#fafafa;color:#383a42;font-family:system-ui}';d.head.appendChild(nativeStyle);const nativeBackground=w.getComputedStyle(d.body).backgroundColor,nativeFont=w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily;
   w.requestAnimationFrame=fn=>w.setTimeout(fn,0);
   const editor=d.querySelector('[data-lexical-editor]'),root={getWritable:()=>({clear:()=>{editor.textContent='';}})};
   editor.__lexicalEditor={update:fn=>fn(),getEditorState:()=>({_nodeMap:new Map([['root',root]])}),_commands:new Map()};
   w.fetch=async(url,options={})=>{
     const value=String(url),body=JSON.parse(options.body||'{}');let payload={ok:true};
-    if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;settings={...settings,...body};}payload.settings=settings;}
+    if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}payload.settings=settings;}
     else if(value.includes('/api/models/discover')){discoverCalls++;payload.models=['model-a','model-b','model-c'];payload.endpointUrl='https://fixture.test/v1/models';}
     else if(value.includes('/api/models/import')){imported=body;payload.state={models:[],activeMode:'official',providers};}
     else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:'auto',exchanges:[],officialTurnCount:0,customExchangeCount:0}};
@@ -32,6 +33,7 @@ try{
     d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
     assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
     assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===8,'four modules and independent quota, usage, reminders and recovery switches are accessible');
+    assert(d.querySelectorAll('.suite-feature').length===4&&d.querySelectorAll('#agy-suite-center h3').length===3,'control center groups feature cards, appearance and background preferences');
     d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     assert(!d.querySelector('#agy-suite-center')&&d.activeElement.id==='agy-suite-sidebar-button','Escape closes the dialog and restores focus to the sidebar');
     d.querySelector('#agy-suite-sidebar-button').click();
@@ -39,16 +41,26 @@ try{
     await w.__agySuite.save({i18n:false,api:true});await pause(150);
     assert(d.querySelector('#agy-suite-sidebar-button').nextElementSibling?.matches('[data-agy-custom-api-nav="1"]'),'suite entry sits directly above the relay API entry');
     assert(d.querySelector('#translate-me').textContent==='Settings'&&!w.__agyCnI18nActive&&!!w.__AGY_MODEL_SWITCHER,'disabling localization restores English while API remains usable');
+    holdSettings=true;const apiSwitch=d.querySelector('[data-setting=api]');apiSwitch.click();const noise=d.createElement('div');d.body.appendChild(noise);await pause(40);
+    assert(!apiSwitch.checked&&apiSwitch.disabled&&d.querySelector('[role=status]').textContent==='Saving…'&&w.__AGY_MODEL_SWITCHER,'API switch immediately shows pending feedback without reverting or unloading before confirmation');
+    holdSettings=false;releaseSettings();await pause(60);assert(!w.__AGY_MODEL_SWITCHER&&!apiSwitch.disabled&&d.querySelector('[data-setting=api]')===apiSwitch,'confirmed API save preserves the input node and applies once');
+    await w.__agySuite.save({api:true});noise.remove();
+    failSettings=true;await w.__agySuite.save({showUsage:true});failSettings=false;
+    assert(!d.querySelector('[data-setting=showUsage]').checked&&!d.querySelector('[data-setting=showUsage]').disabled&&d.querySelector('[role=status]').textContent.includes('Fixture save failure'),'failed save restores committed checkbox state and reports the error');
     await w.__agySuite.save({skin:true,replyFont:'sans',replySize:'large',greetingName:'<img src=x>'});await pause(60);
     assert(d.querySelector('#agy-claude-skin')&&w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontSize==='18px','skin, font and font size update without page reload');
     assert(d.querySelector('.agy-suite-greeting').textContent.includes('<img src=x>')&&!d.querySelector('.agy-suite-greeting img'),'greeting is rendered as safe text');
     const logo=d.querySelector('.agy-suite-greeting svg');await w.__agySuite.save({greetingName:'New name'});
     assert(logo&&d.querySelector('.agy-suite-greeting svg')===logo&&d.querySelector('.agy-suite-greeting-text').textContent.includes('New name'),'changing the greeting name preserves the Antigravity logo');
+    assert(w.getComputedStyle(logo).color==='rgb(217, 119, 87)'&&w.getComputedStyle(logo).animationName==='agySuiteLogoBreath'&&w.getComputedStyle(logo).animationDuration==='4.5s','welcome logo uses the original orange slow floating animation');
+    assert(w.getComputedStyle(d.querySelector('.agy-suite-greeting')).fontFamily.includes('system-ui'),'welcome font follows the selected sans serif reply style');
+    await w.__agySuite.save({replyFont:'default'});assert(w.getComputedStyle(d.querySelector('.agy-suite-greeting')).fontFamily.includes('ClaudeSerif'),'default welcome font follows the skin serif font');
     w.__AGY_THEME_SWITCHER.setMode('dark');await pause(60);
     assert(w.__agySuite.getSettings().themeMode==='dark'&&d.body.classList.contains('theme-dark'),'theme mode persists through the shared settings API');
     await w.__agySuite.save({skin:false});await pause(40);
     assert(!w.__AGY_THEME_SWITCHER&&!d.body.classList.contains('theme-dark')&&!d.querySelector('#agy-settings-skin-switcher'),'disabling skin stops theme overrides and restores official theme classes');
     assert(!d.querySelector('#agy-claude-skin')&&w.__AGY_MODEL_SWITCHER,'disabling skin keeps the English API interface active');
+    assert(w.getComputedStyle(d.body).backgroundColor===nativeBackground&&w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily===nativeFont&&!d.querySelector('.agy-suite-greeting'),'skin off restores native background and reply font and hides skin decorations');
     const api=w.__AGY_MODEL_SWITCHER,get=api.getState;api.getState=()=>({...get(),isSendingCustomChat:true});const before=posts;
     await w.__agySuite.save({api:false});api.getState=get;
     assert(posts===before&&w.__AGY_MODEL_SWITCHER===api,'turning off API during generation is blocked before saving or cleanup');

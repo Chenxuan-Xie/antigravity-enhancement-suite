@@ -22,3 +22,7 @@ jobs:
         run: node antigravity-model-switcher/tools/regression.mjs
       - name: Simulated app-update recovery
         run: node antigravity-claude-skin/tools/regression-resilience.cjs
+      - name: Legacy preload retirement
+        run: node antigravity-claude-skin/tools/regression-legacy-preload.cjs
+      - name: Native desktop proxy inheritance
+        run: node antigravity-claude-skin/tools/regression-native-proxy.cjs

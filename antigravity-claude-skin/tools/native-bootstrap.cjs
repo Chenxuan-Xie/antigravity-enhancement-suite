@@ -26,13 +26,24 @@ try { require('./guardian-runtime.cjs').ensureGuardian(); } catch (error) { cons
 const Module = require('node:module');
 const loadJs = Module._extensions['.js'];
 const policyFile = path.join(ASAR_DIR, 'dist', 'languageServer.js');
+const utilsFile=path.join(ASAR_DIR,'dist','utils.js');
+let legacyPreload=false;
+try{legacyPreload=require('./runtime-transforms.cjs').retireLegacyPreload(fs.readFileSync(path.join(ASAR_DIR,'dist','preload.js'),'utf8')).legacy;}catch{}
 Module._extensions['.js'] = function(module, filename) {
+  if(legacyPreload&&path.resolve(filename)===path.resolve(utilsFile)){
+    const result=require('./runtime-transforms.cjs').legacyPreloadPath(fs.readFileSync(filename,'utf8'),path.join(BASE_DIR,'legacy-preload.cjs'));
+    if(result.compatible)return module._compile(result.code,filename);
+    console.warn('[Suite] Legacy preload path changed; keeping original window code');
+  }
   if (path.resolve(filename) !== path.resolve(policyFile)) return loadJs(module, filename);
-  if (flags().accounts === false) return loadJs(module, filename);
   const source = fs.readFileSync(filename, 'utf8');
-  const result = require('./runtime-transforms.cjs').languageServerPolicy(source);
+  const proxy = require('./native-proxy.cjs');
+  const proxied = proxy.languageServerProxy(source);
+  if(!proxied.compatible)console.warn('[Suite] Language server environment changed; keeping official networking code');
+  if (flags().accounts === false) return module._compile(proxied.code,filename);
+  const result = require('./runtime-transforms.cjs').languageServerPolicy(proxied.code);
   if (!result.compatible) console.warn('[Guardian] Language server restart policy changed; keeping official code');
-  return module._compile(result.compatible ? result.code : source, filename);
+  return module._compile(result.compatible ? result.code : proxied.code, filename);
 };
 
 // 0. Auto-start Multi-Account Switcher Local Daemon (127.0.0.1:19823)
@@ -334,7 +345,7 @@ electron.app.on("browser-window-created", (_event, win) => {
     if (process.platform === "win32" && typeof win.setTitleBarOverlay === "function") {
       const origSetOverlay = win.setTitleBarOverlay.bind(win);
       win.setTitleBarOverlay = function (options) {
-        win.__agyOriginalOverlay = options;
+        if(!['#faf9f5','#1f1e1d','#161514'].includes(String(options?.color||'').toLowerCase()))win.__agyOriginalOverlay = options;
         if (!flags().skin) return origSetOverlay(options);
         const rawColor = String((options && options.color) || "").toLowerCase();
         if (rawColor === "#1f1e1d" || rawColor === "#161514") {
@@ -354,6 +365,7 @@ electron.app.on("browser-window-created", (_event, win) => {
       };
       win.setTitleBarOverlay({ color: "#FAFAFA", symbolColor: "#383A42", height: 30 });
     }
+    win.__agyOriginalBackground=win.getBackgroundColor?.();
     if (flags().skin && typeof win.setBackgroundColor === "function") {
       win.setBackgroundColor("#FAF9F5");
     }
@@ -372,6 +384,7 @@ const suiteTimer = setInterval(() => {
     const menu=electron.Menu.getApplicationMenu();if(menu)electron.Menu.setApplicationMenu(menu);
     for(const win of electron.BrowserWindow.getAllWindows()) {
       if(win.__agyOriginalOverlay)win.setTitleBarOverlay(win.__agyOriginalOverlay);
+      if(!flags().skin&&win.__agyOriginalBackground)win.setBackgroundColor?.(win.__agyOriginalBackground);
       injectSkinAndI18nIntoWindow(win);
     }
   }catch(error){console.warn('[Suite]',error.message);}
