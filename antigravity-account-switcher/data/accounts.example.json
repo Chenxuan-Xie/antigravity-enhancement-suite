@@ -1,0 +1,20 @@
+{
+  "_comment": "此文件仅为脱敏示例模板 (accounts.example.json)。实际运行时，系统会自动在同目录下生成 accounts.json 并同步当前已登录的 Google 账号。请勿将您真实的 accounts.json 上传至公开仓库！",
+  "accounts": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "email": "your-account-1@gmail.com",
+      "name": "Example User",
+      "label": "主力开发账号",
+      "picture": "",
+      "access_token": "ya29.YOUR_ACCESS_TOKEN_HERE",
+      "refresh_token": "1//YOUR_REFRESH_TOKEN_HERE",
+      "expiry": "2026-12-31T23:59:59.000Z",
+      "id_token": "",
+      "auth_method": "consumer",
+      "addedAt": "2026-01-01T00:00:00.000Z",
+      "lastActiveAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

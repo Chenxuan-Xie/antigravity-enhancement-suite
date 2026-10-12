@@ -1,0 +1,9 @@
+{
+  "name": "account-switcher",
+  "version": "1.0.0",
+  "displayName": "多账号快速切换器",
+  "description": "一键无缝切换多个 Antigravity Google 账户（免退回登录页、自动续期 Token、支持模型配额实时展示）",
+  "author": { "name": "Antigravity" },
+  "logo": "assets/logo.svg",
+  "sidecars": "./sidecars"
+}

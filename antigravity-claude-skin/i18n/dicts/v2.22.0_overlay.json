@@ -1,0 +1,21 @@
+{
+  "Ask anything, @ to mention, / for workflows": "输入任何问题，输入 @ 提及上下文，输入 / 调用技能与工作流",
+  "Ask anything...": "输入任何问题...",
+  "Type a message...": "输入消息...",
+  "Running command": "正在运行命令",
+  "Ran command": "已运行命令",
+  "Thought Process": "思考过程",
+  "Thinking...": "正在思考...",
+  "Proceed": "继续执行",
+  "Good response": "回答得好",
+  "Bad response": "回答不佳",
+  "Copy response": "复制回复",
+  "Edit message": "编辑消息",
+  "Rerun from here": "从此处重新运行",
+  "Ask anything, @ to mention, / for actions": "提问任何问题，使用 @ 提及，/ 执行操作",
+  "More options": "更多选项",
+  "No more older messages": "没有更多早期消息",
+  "Conversation Log": "会话日志",
+  "Record voice memo": "录制语音备忘录",
+  "Typeahead menu": "自动补全菜单"
+}

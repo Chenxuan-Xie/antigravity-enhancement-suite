@@ -1,0 +1,30 @@
+# =============================================================================
+# Security & Privacy Redlines: NEVER commit personal credentials or chat history
+# =============================================================================
+
+# Account Switcher sensitive credentials & runtime logs
+antigravity-account-switcher/data/*.json
+!antigravity-account-switcher/data/*.example.json
+antigravity-account-switcher/data/*.log
+
+# Model Switcher API keys, conversation bridges & backups
+antigravity-model-switcher/data/*.json
+!antigravity-model-switcher/data/*.example.json
+antigravity-model-switcher/data/*.log
+antigravity-model-switcher/data/bridges/
+antigravity-model-switcher/data/lifecycle-backups/
+
+# Claude Skin runtime backups, PID files, local path caches & DOM inspection snapshots
+antigravity-claude-skin/backup/
+antigravity-claude-skin/inspect/
+antigravity-claude-skin/i18n-repo/
+
+# General Node.js & OS files
+node_modules/
+*.log
+*.bak
+*.tmp*
+.DS_Store
+Thumbs.db
+.env
+.env.*

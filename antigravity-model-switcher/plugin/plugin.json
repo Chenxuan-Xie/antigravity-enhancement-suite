@@ -1,0 +1,20 @@
+{
+  "name": "api-model-switcher",
+  "title": "中转站 API 模型无缝切换器",
+  "version": "1.0.0",
+  "description": "在 Antigravity 中接入第三方 Token 中转站 (OpenAI /v1/chat/completions 与 Claude Code /v1/messages)，支持测试连接、自动注入聊天模型选择菜单，以及同会话 WorkBuddy 风格无缝切换。",
+  "author": {
+    "name": "Antigravity Customizations"
+  },
+  "logo": "./assets/logo.svg",
+  "mcpServers": "./mcp_config.json",
+  "rules": [
+    "./rules/AGENTS.md"
+  ],
+  "skills": [
+    "./skills/model-switch"
+  ],
+  "sidecars": [
+    "./sidecars/panel"
+  ]
+}

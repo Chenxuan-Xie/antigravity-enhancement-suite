@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Antigravity 多账号快速切换</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-title-row">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <h1>多账号快速切换</h1>
+        </div>
+        <div class="header-actions">
+          <button id="refreshQuotaBtn" class="btn-icon" title="刷新所有账号模型额度">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 16h5v5"/>
+            </svg>
+            <span>刷新额度</span>
+          </button>
+          <button id="toggleAddBtn" class="btn-primary-sm">
+            <span>+ 添加一个新的账号</span>
+          </button>
+        </div>
+      </div>
+      <p class="subtitle">点击任意非当前账号即可无感秒切（自动续期凭证并热重载服务，无需退回登录页）</p>
+    </header>
+
+    <!-- Toast / Status Banner -->
+    <div id="statusBanner" class="status-banner hidden"></div>
+
+    <!-- Add Account Drawer -->
+    <section id="addAccountPanel" class="add-panel hidden">
+      <div class="add-panel-header">
+        <h2>添加新 Google 账号（免退出当前账号）</h2>
+        <button id="closeAddBtn" class="btn-close" title="收起">✕</button>
+      </div>
+
+      <div class="form-row">
+        <label for="newAccountLabel">账号备注名称（可选）</label>
+        <input id="newAccountLabel" type="text" placeholder="例如：备用账号 / 工作号 / Pro 账号" />
+      </div>
+
+      <div class="oauth-actions">
+        <button id="startOAuthBtn" class="btn-primary-full">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>1. 打开浏览器登录并授权新账号</span>
+        </button>
+        <button id="copyOAuthUrlBtn" class="btn-secondary-full" title="生成并复制授权链接，可粘贴到无痕窗口或其他浏览器分身中登录新账号">
+          <span>复制授权链接（适合粘贴到无痕窗口 / 其他浏览器）</span>
+        </button>
+      </div>
+
+      <div id="oauthWaitingBox" class="oauth-waiting hidden">
+        <div class="oauth-waiting-row">
+          <span class="spinner"></span>
+          <span id="oauthWaitingText">正在等待浏览器完成 Google 授权… 授权成功后将自动添加</span>
+        </div>
+        <div class="manual-callback-box">
+          <input id="manualCallbackInput" type="text" placeholder="若浏览器未自动跳回，可在此粘贴回调链接或 code" />
+          <button id="submitManualCodeBtn" class="btn-secondary-sm">提交</button>
+        </div>
+      </div>
+
+      <details class="token-import-details">
+        <summary>或者：使用已有 Refresh Token 直接导入</summary>
+        <div class="token-import-box">
+          <input id="refreshTokenInput" type="password" placeholder="粘贴 1// 开头的 Google OAuth Refresh Token" />
+          <button id="importTokenBtn" class="btn-secondary-sm">导入账号</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- Accounts List -->
+    <main id="accountsList" class="accounts-list">
+      <div class="loading-state">正在读取系统账号凭证…</div>
+    </main>
+
+    <footer class="footer-tip">
+      <span>💡 提示：直接点击非当前账号卡片即可立即切换；点击账号备注标签可修改自定义名称。</span>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

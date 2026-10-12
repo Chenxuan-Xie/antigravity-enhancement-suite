@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中转站 API 模型无缝切换器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-title">
+        <span class="logo-badge">⚡</span>
+        <div>
+          <h1>中转站 API 模型无缝切换</h1>
+          <p class="subtitle">支持 OpenAI 与 Claude Code 协议 · WorkBuddy 同会话无缝桥接</p>
+        </div>
+      </div>
+      <button id="refreshBtn" class="btn icon-btn" title="刷新状态">🔄</button>
+    </header>
+
+    <!-- 当前激活状态与无缝桥接卡片 -->
+    <section class="status-card" id="statusCard">
+      <div class="status-top">
+        <div>
+          <span class="status-label">当前对话模型模式</span>
+          <div class="status-value" id="activeModelDisplay">正在加载...</div>
+        </div>
+        <button id="switchOfficialBtn" class="btn btn-sm" style="display:none;">切回官方模型</button>
+      </div>
+      <div class="bridge-bar" id="bridgeInfoBar">
+        <span>🔗 同会话桥接引擎已就绪</span>
+      </div>
+    </section>
+
+    <!-- 新增 / 编辑模型表单 -->
+    <section class="card">
+      <div class="card-header">
+        <h2 id="formTitle">➕ 添加中转站模型</h2>
+        <button id="cancelEditBtn" class="btn btn-xs" style="display:none;">取消编辑</button>
+      </div>
+
+      <div class="presets-row" id="presetsRow">
+        <span class="preset-label">快捷模板:</span>
+      </div>
+
+      <div class="form-group">
+        <label for="modelName">显示名称 (展示在聊天框左下角模型菜单)</label>
+        <input type="text" id="modelName" placeholder="例如：Claude 3.7 中转 / DeepSeek V3" />
+      </div>
+
+      <div class="form-group">
+        <label for="modelId">模型标识 (Model ID) *</label>
+        <input type="text" id="modelId" placeholder="例如：claude-3-7-sonnet-20250219 或 gpt-4o" />
+      </div>
+
+      <div class="form-group">
+        <label for="baseUrl">中转站接口地址 (Base URL) *</label>
+        <input type="text" id="baseUrl" placeholder="例如：https://api.xxx.com/v1" />
+      </div>
+
+      <div class="form-group">
+        <label for="protocol">协议类型</label>
+        <select id="protocol">
+          <option value="auto">🤖 自动识别 (智能兼容 OpenAI 与 Anthropic 协议)</option>
+          <option value="openai">🟢 OpenAI 兼容协议 (/v1/chat/completions)</option>
+          <option value="anthropic">🟣 Anthropic 原生协议 (/v1/messages · 同 cc-switch)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="apiKey">API Key *</label>
+        <div class="input-row">
+          <input type="password" id="apiKey" placeholder="sk-..." />
+          <button type="button" id="toggleKeyBtn" class="btn btn-sm">👁️</button>
+        </div>
+      </div>
+
+      <div id="testResultBox" class="test-result" style="display:none;"></div>
+
+      <div class="btn-group">
+        <button type="button" id="testConnBtn" class="btn btn-success">🔌 测试连接</button>
+        <button type="button" id="saveModelBtn" class="btn btn-primary">💾 保存并加入聊天模型菜单</button>
+      </div>
+    </section>
+
+    <!-- 已配置的自定义模型列表 -->
+    <section class="card">
+      <div class="card-header">
+        <h2>📋 已配置的模型列表 (<span id="modelCount">0</span>)</h2>
+      </div>
+      <div id="modelsList" class="models-list"></div>
+    </section>
+  </div>
+
+  <script src="/preload.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

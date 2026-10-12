@@ -1,0 +1,13 @@
+{
+  "id": "panel",
+  "title": "中转模型切换",
+  "description": "配置中转站 API Key、测试连接并实现同会话无缝切换",
+  "icon": "../../assets/logo.svg",
+  "uiEntrypoints": [
+    "SIDECAR_UI_ENTRYPOINT_AUX_PANE"
+  ],
+  "runtime": {
+    "type": "node",
+    "entry": "main.mjs"
+  }
+}

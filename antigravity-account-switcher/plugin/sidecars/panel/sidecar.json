@@ -1,0 +1,10 @@
+{
+  "name": "panel",
+  "command": "node",
+  "args": ["main.mjs"],
+  "ui": {
+    "title": "账号快速切换",
+    "entry": "index.html",
+    "defaultLocation": "side-pane"
+  }
+}
