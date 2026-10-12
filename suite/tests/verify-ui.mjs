@@ -3,7 +3,7 @@ const bundle=fs.readFileSync(new URL('../../antigravity-claude-skin/i18n/claude-
 const cdp=await connectToAntigravity();
 try{
  const results=await cdp.evaluate(`(async()=>{
-  const frame=document.createElement('iframe');frame.id='agy-suite-regression-fixture';frame.style.display='none';document.body.appendChild(frame);const w=frame.contentWindow,d=w.document;
+  const frame=document.createElement('iframe');frame.id='agy-suite-regression-fixture';frame.style.cssText='position:fixed;left:-10000px;width:1000px;height:900px;pointer-events:none';document.body.appendChild(frame);const w=frame.contentWindow,d=w.document;
   const storage=()=>{const values=new Map();return {getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),clear:()=>values.clear(),key:index=>[...values.keys()][index]||null,get length(){return values.size;}};};
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
@@ -30,6 +30,12 @@ try{
     w.eval(${JSON.stringify(bundle)});await pause(160);
     assert(d.querySelector('#agy-suite-center'),'settings page contains the suite control card');
     assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===7,'four feature switches plus optional recovery, usage and quota reminders are accessible');
+    const explicit=d.querySelector('[data-testid="settings-content"]');explicit.style.display='none';
+    const modal=d.createElement('div');modal.className='settings-modal-container';modal.innerHTML='<div class="overflow-y-auto"><h2>Navigation</h2><button data-testid="settings-nav-item-General">General</button></div><div id="hidden-tab" style="display:none"><div class="overflow-y-auto"><h2>Account</h2></div></div><div id="visible-tab"><div class="overflow-y-auto"><h2>General</h2></div></div>';d.body.appendChild(modal);await pause(50);
+    assert(d.querySelector('#agy-suite-center').parentElement===d.querySelector('#visible-tab .overflow-y-auto'),'control card ignores hidden explicit content and hidden native settings tabs');
+    d.querySelector('#visible-tab').style.display='none';d.querySelector('#hidden-tab').style.display='block';await pause(50);
+    assert(d.querySelector('#agy-suite-center').parentElement===d.querySelector('#hidden-tab .overflow-y-auto'),'switching native settings tabs moves the same card into visible content');
+    assert(d.querySelectorAll('#agy-suite-center').length===1,'switching settings tabs does not duplicate the control card');
     assert(d.querySelector('#translate-me').textContent==='设置'&&!d.querySelector('#agy-claude-skin')&&!w.__AGY_MODEL_SWITCHER&&!d.querySelector('#agy-account-badge'),'Chinese localization runs independently without skin or account/API modules');
     await w.__agySuite.save({i18n:false,api:true});await pause(150);
     assert(d.querySelector('#translate-me').textContent==='Settings'&&!w.__agyCnI18nActive&&!!w.__AGY_MODEL_SWITCHER,'disabling localization restores English while API remains usable');
