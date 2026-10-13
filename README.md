@@ -1,7 +1,7 @@
 # Antigravity Enhancement Suite (Antigravity 全能增强套件)
 
 <p align="center">
-  <strong>Claude 羊皮纸书卷风换肤 · 简体中文全量汉化 · Google 多账号秒级热切换 · 第三方 API / 中转站同会话无缝切换</strong>
+  <strong>Claude 书卷风换肤 · 简体中文汉化 · Google 多账号热切换 · 中转 API 同会话切换 · 按需独立启用</strong>
 </p>
 
 <p align="center">
@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <img src="./assets/hero-banner.png?v=3" width="100%" alt="Antigravity Enhancement Suite 首屏总览（左：浅色羊皮纸书卷风 / 右：深色暖炭黑护眼主题）" />
+  <img src="./assets/hero-banner.png" width="100%" alt="当前版本首页：左侧增强套件控制中心、中转 API 与 Token 统计，橙色 Antigravity 欢迎图标" />
   <br />
-  <sub>▲ 左半幅：浅色羊皮纸书卷风 (<code>#FAF9F5</code>) · 右半幅：深色暖炭黑护眼主题 (<code>#1F1E1D</code>)</sub>
+  <sub>▲ 当前版本浅色首页；控制中心位于左侧「接入中转 API」上方。</sub>
 </p>
 
 ---
@@ -31,31 +31,101 @@
 2. 🇨🇳 **简体中文全量汉化 (`antigravity-claude-skin/i18n`)**
    - 融合 [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) 并补齐 Antigravity v2.22.0+ 最新词库（共 **2,126+ 条** 翻译规则）。
    - 完整覆盖 **主界面、设置页、顶栏菜单、右键菜单与系统托盘菜单**，同时严格保护代码块、终端与用户输入内容不被误翻。
-3. 👥 **Google 多账号秒级切换与配额查看 (`antigravity-account-switcher`)**
+3. 👥 **Google 多账号热切换与配额查看 (`antigravity-account-switcher`)**
    - 在原生 **「设置 -> 账号」** 页面与右侧边栏面板内嵌可视化多账号管理卡片。
-   - **2 秒无感切换**：无需退出登录或关闭当前窗口，一键即可切换至其他已保存的 Google 账号，并支持实时查看各账号的**模型剩余配额百分比**。
+   - **快捷切换**：输入框旁的账号胶囊可直接选择已保存账号、刷新模型配额；切换通常无需关闭当前窗口，耗时取决于后台服务重启与网络状态。
 4. 🔌 **第三方 API / 中转站模型无缝切换 (`antigravity-model-switcher`)**
-   - 支持接入任意 **OpenAI 兼容接口** 与 **Anthropic (Claude Code) 接口** 的第三方 API 或中转站，支持一键拉取站点可用模型列表。
-   - **原生聊天框直接使用**：直接在聊天输入框左下角的模型菜单中选择自定义模型、调节 **思考强度（默认 / 低 / 中 / 高 / 最大）**。
-   - **同一对话无缝混用**：支持在同一个对话中途随时从官方模型切换到第三方 API 模型（或随时切回官方模型），上下文自动衔接不断裂，并支持本地文件读写、代码搜索与命令执行等 Agent 工具。
+   - 支持 **OpenAI 兼容接口** 与 **Anthropic Messages 接口**，提供服务商预设、共享地址与密钥，以及拉取模型后的多选批量导入。
+   - **原生聊天框直接使用**：在输入框模型菜单中选择中转模型；支持的模型可展开思考强度子菜单，选项随协议和模型变化。
+   - **同一对话混用**：支持官方与中转模型切换、本地历史与上下文桥接，以及文件读写、代码搜索和命令执行等 Agent 工具。接口能力、上下文长度和服务商限制仍影响实际体验。
 
 ---
 
-## ✨ 核心功能动态演示
+## ✨ 当前界面与新增功能
 
-### 1. 白天 / 黑夜双主题皮肤切换与全量汉化（设置页单行切换：白天 / 黑夜 / 跟随系统）
+> 以下图片于 **2026-10-13** 更新，使用当前桌面布局与套件正式组件，在隔离预览中渲染。账号、称呼、服务商、聊天、配额与 Token 数字均为虚构示例，不含真实个人信息或 API Key；测试通过数和消耗数字不是实测结果。
+
+三段动图以 **20 帧/秒录制**，合并静止的重复帧以减少体积，保留原有停留时长；高清静态图可展开查看。
+
+### 1. 左侧控制中心：四个模块独立开关
+
+点击左侧「增强套件控制中心」即可管理皮肤、汉化、多账号与 API。面板还提供主题、欢迎语称呼、回复字体和字号，以及额度显示、Token 统计、低配额提醒和可选自愈守护。设置自动保存到本机；只开启汉化也可保留官方配色。
+
 <p align="center">
-  <img src="./assets/demo-skin-i18n.gif?v=3" width="100%" alt="白天与黑夜双主题皮肤切换与全量汉化演示" />
+  <img src="./assets/suite-control-center.png" width="100%" alt="当前增强套件控制中心：独立模块开关、外观和欢迎语、显示与后台设置" />
 </p>
 
-### 2. 聊天框一键切中转模型 + 悬停调节思考强度
+### 2. 暖白 / 暖炭黑主题与欢迎语（动态图）
+
+控制中心可选择白天、黑夜或跟随系统。欢迎语字体同步外观设置，橙色 Antigravity 标识缓慢浮动；退出重进沿用保存的皮肤开关和主题模式，关闭皮肤保持官方外观。
+
 <p align="center">
-  <img src="./assets/demo-model-switcher.gif?v=3" width="100%" alt="聊天框一键切中转模型与调节思考强度演示" />
+  <img src="./assets/demo-skin-i18n.gif" width="100%" alt="当前界面 20 帧每秒动态演示：打开左侧控制中心，切换黑夜与白天主题" />
 </p>
 
-### 3. 设置页 2 秒无感切换 Google 账号 + 实时配额查看
+<details>
+<summary>查看深色主题高清截图</summary>
 <p align="center">
-  <img src="./assets/demo-account-switcher.gif?v=3" width="100%" alt="设置页 2 秒无感切换 Google 账号演示" />
+  <img src="./assets/theme-dark.png" width="100%" alt="当前暖炭黑首页，橙色 Antigravity 欢迎标识和左侧中转 Token 统计" />
+</p>
+</details>
+
+### 3. 服务商共享密钥与多模型批量导入
+
+左侧「接入中转 API」打开模型管理。选择服务商预设、填写地址与 Key 后，可保存站点配置供多个模型复用；更换站点 Key 无需逐个修改模型。
+
+<p align="center">
+  <img src="./assets/api-model-manager.png" width="100%" alt="当前 API 模型管理：服务商预设、已保存服务商与模型列表，全部为虚构示例" />
+</p>
+
+拉取站点模型后，勾选多个模型一次导入；不提供模型列表的接口仍可手动添加。
+
+<p align="center">
+  <img src="./assets/provider-batch-import.png" width="100%" alt="当前模型多选导入界面：三个虚构模型已勾选，共享示例服务商配置" />
+</p>
+
+### 4. 输入框模型切换与思考强度（动态图）
+
+官方与已添加的中转模型出现在同一个模型菜单中。悬停支持思考强度的中转模型可展开子菜单；移到其他模型时对应子菜单关闭。各模型保存自己的强度设置，接口是否接受该参数取决于服务商。
+
+<p align="center">
+  <img src="./assets/demo-model-switcher.gif" width="100%" alt="当前界面 20 帧每秒动态演示：中转模型思考强度选择，以及切回官方模型" />
+</p>
+
+<details>
+<summary>查看模型菜单高清截图</summary>
+<p align="center">
+  <img src="./assets/model-reasoning-menu.png" width="100%" alt="当前模型菜单：官方与中转模型，以及中转 Claude 的思考强度子菜单" />
+</p>
+</details>
+
+### 5. 账号额度胶囊与快捷切换菜单
+
+输入区右下方显示紧凑的当前账号胶囊，点击展开账号、配额进度条与刷新按钮。显示额度和低配额提醒可分别关闭；低于 10% 时提供切换建议，由用户决定是否切号。
+
+<p align="center">
+  <img src="./assets/account-quota-menu.png" width="100%" alt="当前账号额度菜单：虚构主账号与备用账号、配额进度条和刷新入口" />
+</p>
+
+完整账号设置页仍保留账号列表、分模型配额、添加账号和切换入口。下面演示使用两个虚构账号，不会登录或切换真实账号；演示速度不代表真实切换耗时。
+
+<p align="center">
+  <img src="./assets/demo-account-switcher.gif" width="100%" alt="当前原生账号设置页 20 帧每秒动态演示：虚构账号切换、当前状态变化与配额刷新" />
+</p>
+
+<details>
+<summary>查看原生账号设置高清截图</summary>
+<p align="center">
+  <img src="./assets/account-settings.png" width="100%" alt="当前原生账号设置页：虚构邮箱和头像、账号切换卡片与分模型配额" />
+</p>
+</details>
+
+### 6. 原生中转会话与 Token 表格
+
+中转回复展示接口返回的思考内容与工具执行状态。开启「中转 API Token 消耗」后，左侧「接入中转 API」下方展示本轮及会话累计的输入、输出和合计。**只记录中转 API，官方模型不计入**；接口未返回统计时显示「—」和原因，部分缺失会标注。
+
+<p align="center">
+  <img src="./assets/relay-chat-and-usage.png" width="100%" alt="当前中转会话：原生对话布局、虚构示例回复、底部输入框和左侧 Token 表格" />
 </p>
 
 ---
@@ -145,8 +215,8 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 
 ### 一、Claude 书卷双色皮肤与简体中文汉化 (`antigravity-claude-skin`)
 
-1. **设置页一键切换皮肤（白天 / 黑夜 / 跟随系统）**：
-   - 打开左下角 **「设置 (Settings) → 通用」**，在列表第一行 **「切换皮肤」**（`白天` / `黑夜` / `跟随系统`）中即可实时切换三档模式：
+1. **控制中心切换皮肤（白天 / 黑夜 / 跟随系统）**：
+   - 点击左侧 **「增强套件控制中心」→「外观与欢迎语」**，通过 **「切换皮肤」** 下拉菜单选择三档模式；顶部「Claude 皮肤」开关控制是否使用套件皮肤：
      - **☀️ 白天（羊皮纸浅色 `#FAF9F5`）**：复刻 Claude Desktop 标志性羊皮纸暖白画布与焦糖赤陶点缀；
      - **🌙 黑夜（暖炭黑深色 `#1F1E1D`）**：复刻 Claude Desktop 经典暖炭黑深色护眼画布（侧栏 `#161514`、卡片 `#282725`、米白正文 `#ECE9E2`），彻底告别刺眼纯黑与反差眩光；
      - **💻 跟随系统**：自动监听 Windows 10/11 系统深浅色设置并实时无感切换（连同 Windows 原生右上角窗口控制栏自动同步变色）。
@@ -165,12 +235,12 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 
 ---
 
-### 二、Google 多账号秒级切换 (`antigravity-account-switcher`)
+### 二、Google 多账号热切换 (`antigravity-account-switcher`)
 
-安装后，系统会自动识别并记录您当前已登录的 Google 账号。您可以通过以下两个位置管理账号：
+启用账号模块后，系统会识别您当前已登录的 Google 账号。可通过快捷菜单或完整管理面板使用：
 - **快捷入口**：聊天输入框旁的账号配额胶囊，点击即可打开切换菜单；显示当前模型匹配的配额，无法匹配时显示最低已知配额，缓存数据会标注「缓存」。每分钟检查账号状态，当前账号配额按需每 5 分钟刷新，也可手动刷新。
 - **低配额提醒**：新鲜配额低于 10% 或检测到原生额度限制提示时，提供备用账号切换按钮；不会自动切号，生成过程中不能切换。提醒可在控制中心关闭。
-- **额度显示开关**：控制中心的「显示账号额度」独立控制输入区的紧凑账号胶囊，关闭后立即隐藏胶囊与菜单，保留账号配置。「显示 Token 消耗」和「配额低水位提醒」分别控制其他功能。菜单支持悬停与键盘选中；授权失败保留缓存额度并标记需重新授权，错误轻提示可手动关闭且在 6 秒后自动消失。
+- **额度显示开关**：控制中心的「显示账号额度」独立控制输入区的紧凑账号胶囊，关闭后立即隐藏胶囊与菜单，保留账号配置。「中转 API Token 消耗」和「配额低水位提醒」分别控制其他功能。菜单支持悬停与键盘选中；授权失败保留缓存额度并标记需重新授权，错误轻提示可手动关闭且在 6 秒后自动消失。
 - **方式一（推荐）**：打开 Antigravity **「设置 (`Ctrl+,`) -> 账号」**，页面顶部会直接显示 **「多账号无缝热切换」** 面板。
 - **方式二**：点击窗口右侧边栏打开 **Account Switcher** 插件面板。
 
@@ -180,7 +250,7 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
    - **粘贴回调链接 / 授权码**：若浏览器未自动跳回，可将授权后浏览器地址栏的完整链接粘贴到手动输入框中完成添加。
    - **导入 Refresh Token**：支持直接粘贴已有的 Google `refresh_token`（以 `1//` 开头）快速导入账号。
 2. **一键无感切换**：
-   - 点击目标账号右侧的 **「切换」** 按钮，后台会自动更新系统凭据并仅重启后台语言服务进程，**约 2 秒内即可完成账号切换**，当前打开的代码窗口与对话均不会关闭。
+   - 点击目标账号右侧的 **「切换」** 按钮，后台更新当前凭据并重启后台语言服务，保留窗口与对话；完成时间取决于网络及语言服务启动状态。生成期间请先停止任务再切换。
 3. **查看模型剩余配额**：
    - 点击 **「刷新配额」** 即可查看每个账号下各模型的剩余额度百分比与重置时间，方便在额度用尽时及时切换备用账号。
 
@@ -188,7 +258,7 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 
 ### 三、第三方 API / 中转站模型无缝切换 (`antigravity-model-switcher`)
 
-支持将任意兼容 **OpenAI (`/v1/chat/completions`)** 或 **Anthropic / Claude (`/v1/messages`)** 协议的第三方 API 或中转站接入 Antigravity 原生聊天框。
+支持将兼容 **OpenAI (`/v1/chat/completions`)** 或 **Anthropic / Claude (`/v1/messages`)** 协议的第三方 API 或中转站接入 Antigravity 原生聊天框，具体模型与工具能力取决于接口。
 
 #### 1. 添加您的 API Key 与模型
 先在添加弹窗选择服务商预设：**OneAPI / NewAPI、自定义、DeepSeek、OpenRouter、硅基流动、OpenAI、Anthropic**。官方预设填写地址与协议，自定义站点的地址由用户提供。填写一次 Key，拉取模型列表后勾选多个模型并批量导入；不提供模型列表的站点仍可手动填写 Model ID。
@@ -197,7 +267,7 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 
 预设地址参考 [DeepSeek 文档](https://api-docs.deepseek.com/)、[OpenRouter 文档](https://openrouter.ai/docs/api/api-reference/models/get-models)、[硅基流动文档](https://api-docs.siliconflow.cn/docs/userguide/quickstart)、[OpenAI 文档](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) 和 [Anthropic 文档](https://platform.claude.com/docs/en/api/messages/create)。实际模型列表与参数透传能力取决于所选服务商。
 您可以通过以下任意一种方式添加模型：
-- **在聊天框直接添加**：点击底部聊天输入框左下角的 **模型选择菜单**，在菜单底部的 **「⚡ 第三方 API / 中转站模型」** 区域点击 **「+ 添加 / 管理中转模型」**。
+- **在左侧添加（推荐）**：点击 **「接入中转 API」** 打开模型管理；输入框的模型菜单用于选择已添加的模型。
 - **在右侧面板添加**：打开右侧边栏的 **API Model Switcher** 面板进行配置。
 - 密钥建议在专用表单中填写，避免进入聊天历史。
 
@@ -212,14 +282,20 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 
 #### 2. 切换模型与调节思考强度
 - **一键切换**：在聊天输入框左下角的模型菜单中，点击您添加的中转模型即可切换过去；随时点击官方模型即可切回官方通道。
-- **调节思考强度**：对于支持深度思考的模型（如 Claude 3.7/4.x、OpenAI o1/o3/GPT-5、DeepSeek R1 等），将鼠标悬停在菜单里的模型名称上，会展开 **思考强度子菜单（默认 / 低 / 中 / 高 / 最大）**，可按需自由选择。
-- **同会话上下文自动衔接**：在同一个对话中，无论您是先用官方模型聊了几轮再切到中转模型，还是先用中转模型聊完再切回官方模型，插件都会自动帮您同步前文对话内容，不会出现报错或失忆。
+- **调节思考强度**：支持的模型名称右侧显示子菜单箭头，悬停展开可用选项，例如 Claude 的「默认 / 低 / 中 / 高 / 最大」。选项随协议、模型变化，选择结果按模型保存；不支持的模型不显示强度子菜单。
+- **同会话上下文衔接**：通过本地记录桥接官方与中转对话，切换后继续使用前文。长对话仍受服务商上下文窗口限制，协议或工具不兼容时需要按错误提示调整配置。
 
 #### 3. 查看 Token 消耗
 
 在控制中心开启「中转 API Token 消耗」，左侧「接入中转 API」下方出现统计表，展示本轮和会话累计的输入、输出与合计 Token；开关即时生效。**仅统计中转 API，官方模型不计入。** 统计包含一次任务中的各次中转工具与模型请求，Anthropic 缓存输入也计入输入数。只显示接口实际返回的数据；空会话、旧记录或不返回统计的接口会显示说明和「—」，部分缺失会标明，不估算费用。历史统计随会话保存，切换会话显示各自的数据；API 管理面板也可查看累计统计。
 
 中转请求的运行提示区分收到思考内容、正在输出、执行工具和等待响应；网络保活不代表模型在思考。默认按连续 120 秒无上游响应超时，持续输出和工具执行不受固定轮数上限影响。
+
+#### 4. 会话保存与任务运行
+
+- **本地会话留存**：中转消息按会话标识保存，纯中转聊天也会进入会话列表；切换会话或退出重进后可继续查看。重复标题仍是不同会话，删除按会话标识处理。
+- **流式过程展示**：逐步显示回复、接口返回的思考内容与工具状态；停止按钮可取消当前任务。是否返回思考内容由服务商决定，不会将单纯等待显示为已收到思考。
+- **持续执行**：工具循环没有固定 48 轮上限，可持续到模型完成、用户停止或遇到错误。上游超时、额度、输出长度和上下文窗口等限制仍然存在，不代表无限上下文或永远不中断。
 
 ---
 
@@ -253,6 +329,8 @@ antigravity-enhancement-suite/
 ├── antigravity-account-switcher/       # [模块二] Google 多账号一键无感热切换与配额查看插件
 └── antigravity-model-switcher/         # [模块三] 第三方 API / 中转站无缝切换与同会话上下文衔接插件
 ```
+
+维护图片时先运行 `node suite/tools/read-docs-templates.mjs`：采集当前首页、已完成的聊天和原生账号设置布局，在复制的 DOM 中去除私人内容，结束恢复原页面。采集期间请保持应用空闲、输入框为空。再运行 `node suite/tools/capture-docs.mjs --animations`，只使用匿名模板，在独立 Chrome / Edge 中渲染截图和三段 20 帧/秒动图；编码动图还需要 Python 与 Pillow。预览不会调用真实中转 API 或切换真实账号，模板与原始帧位于忽略提交的 `artifacts/`。发布前仍应逐张检查图片和关键帧。
 
 ---
 
