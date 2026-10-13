@@ -91,6 +91,18 @@ try{
     await w.__agySuite.save({accounts:true});await pause(120);
     assert(d.querySelector('#agy-account-badge')?.textContent.includes('8%')&&quotaCalls===1,'account capsule shows matching quota and refreshes current account data');
     assert(d.querySelector('[role=status]')&&[...d.querySelectorAll('button')].some(b=>b.textContent==='Switch account'),'low quota offers a manual backup switch');
+    const quotaCase=(weekly,fiveHour,order=false)=>({...accounts[0],quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini Models',buckets:(order?[['5h',fiveHour],['weekly',weekly]]:[['weekly',weekly],['5h',fiveHour]]).map(([window,remainingPercent])=>({window,remainingPercent,displayName:window==='5h'?'Five Hour Limit Remaining':'Weekly Limit Remaining'}))},{displayName:'Claude and GPT models',buckets:[{window:'weekly',displayName:'Weekly Limit Remaining',remainingPercent:4},{window:'5h',displayName:'Five Hour Limit Remaining',remainingPercent:70}]}]}});
+    const quota=w.__agyQuotaBadge;
+    const fiveHour=quotaCase(80,20);w.dispatchEvent(new w.CustomEvent('agy-accounts-updated',{detail:[fiveHour]}));
+    assert(quota.selection(fiveHour,'Gemini 3.8 Flash High').window==='5h'&&quota.percentage(fiveHour,'Gemini 3.8 Flash High')===20&&d.querySelector('#agy-account-badge').textContent.includes('5h 20%'),'real upstream group and period-only bucket labels select the lower 5h quota without using another model pool');
+    d.querySelector('#agy-account-badge').click();assert(d.querySelector('.quota-percent').textContent==='5h 20%','switch menu identifies the selected quota period');d.body.dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true}));
+    const weekly=quotaCase(15,60);w.dispatchEvent(new w.CustomEvent('agy-accounts-updated',{detail:[weekly]}));
+    assert(quota.selection(weekly,'Gemini').window==='weekly'&&d.querySelector('#agy-account-badge').textContent.includes('week 15%'),'capsule shows the weekly quota when it is lower');
+    assert(quota.selection(quotaCase(50,50,true),'Gemini').window==='weekly','equal quotas prefer weekly even when 5h arrives first');
+    assert(quota.selection(quotaCase(null,0),'Gemini').percent===0&&quota.selection(quotaCase(null,0),'Gemini').window==='5h'&&quota.selection(quotaCase(25,null),'Gemini').window==='weekly','missing periods are ignored and exhausted zero-percent quotas stay valid');
+    assert(quota.percentage(fiveHour,'Claude Opus 4.6')===4&&quota.percentage(fiveHour,'GPT-OSS 120B')===4&&quota.percentage(fiveHour,'Unknown model')===4,'Claude and GPT share their pool while unknown models fall back to the lowest known quota');
+    assert(quota.selection(quotaCase(null,null),'Gemini')===null,'matched model groups with no reported values cannot borrow another model pool');
+    w.dispatchEvent(new w.CustomEvent('agy-accounts-updated',{detail:accounts}));
     d.querySelector('#agy-account-badge').click();assert(d.querySelector('#agy-account-menu'),'account capsule opens a one-click switch menu');
     [...d.querySelectorAll('#agy-account-menu button')].find(b=>b.textContent.includes('backup@')).click();await pause(100);
     assert(switches===1&&d.querySelector('#agy-account-badge').textContent.includes('100%'),'choosing backup switches exactly once and refreshes the capsule');

@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="5466848f5b89aa1555837084663eba485bb92ffd0382404c392fc8fab14fa7c8"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="dbc5912bdf244c04c7c9d6e3a0f907bafa9a3d902853807832f94d5439981854"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -4831,16 +4831,26 @@ window.__agySuiteModules.accounts=function(){
   const friendlyError=message=>/unauthorized|invalid_grant|invalid_client|HTTP 401/i.test(message)?text('账号授权已失效，请在「设置 → 账户」重新授权。','Account authorization expired. Reauthorize in Settings → Account.'):/timeout|timed out/i.test(message)?text('刷新超时，请稍后重试。','Refresh timed out. Try again shortly.'):text('操作失败，请稍后重试。','Operation failed. Please try again.');
   function closeToast(){clearTimeout(toastTimer);toastTimer=null;toast?.remove();toast=null;}
   function closeMenu(){popup?.remove();popup=null;document.getElementById('agy-account-badge')?.setAttribute('aria-expanded','false');}
-  function percentage(account,label=''){
+  function selection(account,label=''){
     const buckets=(account?.quotaSummary?.groups||[]).flatMap(group=>(group.buckets||[]).map(bucket=>({...bucket,group:group.displayName})));
-    const valid=buckets.filter(b=>Number.isFinite(b.remainingPercent));
-    const normal=value=>String(value).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'');
+    const normal=value=>String(value).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'').replace(/models?$|模型$/,'');
     const target=normal(label);
-    const matched=valid.filter(b=>target&&normal(b.displayName||b.group)&&(target.includes(normal(b.displayName||b.group))||normal(b.displayName||b.group).includes(target)));
-    const list=matched.length?matched:valid;
-    return list.length?Math.min(...list.map(b=>Math.max(0,Math.min(100,b.remainingPercent)))):null;
+    const matches=value=>String(value||'').split(/\s+and\s+|[\/&,|]/i).some(part=>{const name=normal(part);return target&&name&&(target.includes(name)||name.includes(target));});
+    const matched=buckets.filter(b=>matches(b.group)||matches(b.displayName));
+    const list=(matched.length?matched:buckets).filter(b=>Number.isFinite(b.remainingPercent));
+    let selected=null;
+    for(const bucket of list){
+      const period=String(bucket.window||'').toLowerCase();
+      const window=period==='5h'?'5h':/^(week|weekly)$/.test(period)?'weekly':null;
+      const percent=Math.max(0,Math.min(100,bucket.remainingPercent));
+      if(!selected||percent<selected.percent||(percent===selected.percent&&window==='weekly'&&selected.window!=='weekly'))selected={percent,window};
+    }
+    return selected;
   }
-  const label=()=>document.querySelector('[data-testid="model-selector-trigger"]')?.textContent||'';
+  const percentage=(account,label='')=>selection(account,label)?.percent??null;
+  const periodLabel=quota=>quota?.window==='5h'?'5h':quota?.window==='weekly'?text('周','week'):'';
+  const quotaLabel=quota=>quota?[periodLabel(quota),quota.percent+'%'].filter(Boolean).join(' '):'—';
+  const label=()=>{const button=document.querySelector('[data-testid="model-selector-trigger"]');return button?.querySelector('.agy-ms-trigger-custom-label')?.textContent||button?.innerText||button?.textContent||'';};
   const generating=()=>!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]');
   const stale=account=>!Number.isFinite(Date.parse(account?.quotaSummary?.updatedAt))||Date.now()-Date.parse(account.quotaSummary.updatedAt)>600000;
   async function request(endpoint,body){const response=await fetch(API+endpoint,{method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Account service unavailable');return data;}
@@ -4861,10 +4871,10 @@ window.__agySuiteModules.accounts=function(){
     const bounds=button.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(bounds.right-300,innerWidth-308))+'px';if(bounds.top>200)popup.style.bottom=Math.max(8,innerHeight-bounds.top+8)+'px';else popup.style.top=Math.min(innerHeight-200,bounds.bottom+8)+'px';
     const heading=document.createElement('div');heading.className='quota-menu-title';heading.textContent=text('账号与剩余额度','Accounts · remaining quota');popup.appendChild(heading);
     for(const account of accounts){const row=document.createElement('button');row.type='button';row.setAttribute('role','menuitem');row.dataset.current=String(!!account.isCurrent);
-      const percent=percentage(account,label()),info=document.createElement('span');info.className='quota-account-info';const name=document.createElement('span');name.className='quota-account-name';name.textContent=(account.isCurrent?'✓ ':'')+(account.label||account.email);info.appendChild(name);
+      const quota=selection(account,label()),percent=quota?.percent??null,info=document.createElement('span');info.className='quota-account-info';const name=document.createElement('span');name.className='quota-account-name';name.textContent=(account.isCurrent?'✓ ':'')+(account.label||account.email);info.appendChild(name);
       const meta=document.createElement('span');meta.className='quota-account-meta';meta.textContent=authIssues.has(account.email)?text('需重新授权 · 显示缓存额度','Reauthorize · cached quota'):stale(account)?text('缓存额度','Cached quota'):text('最新额度','Latest quota');info.appendChild(meta);
       if(percent!==null){const meter=document.createElement('span');meter.className='quota-meter';meter.dataset.low=String(percent<10);const fill=document.createElement('span');fill.style.width=percent+'%';meter.appendChild(fill);info.appendChild(meter);}
-      const value=document.createElement('span');value.className='quota-percent';value.textContent=percent===null?'—':percent+'%';row.append(info,value);row.disabled=account.isCurrent||busy||generating();row.onclick=()=>switchTo(account);popup.appendChild(row);}
+      const value=document.createElement('span');value.className='quota-percent';value.textContent=quotaLabel(quota);row.append(info,value);row.disabled=account.isCurrent||busy||generating();row.onclick=()=>switchTo(account);popup.appendChild(row);}
     const refreshButton=document.createElement('button');refreshButton.type='button';refreshButton.setAttribute('role','menuitem');refreshButton.dataset.quotaRefresh='true';refreshButton.disabled=requesting;refreshButton.textContent='↻ '+text('刷新当前账号配额','Refresh current quota');refreshButton.onclick=async()=>{refreshButton.disabled=true;refreshButton.textContent=text('正在刷新…','Refreshing…');const menu=popup;lastQuotaFetch=0;await refresh({notify:true});if(!disposed&&popup===menu&&button.isConnected)openMenu(button);};popup.appendChild(refreshButton);
     popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){closeMenu();button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
@@ -4874,9 +4884,9 @@ window.__agySuiteModules.accounts=function(){
     let host=document.getElementById('agy-account-capsule');if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
     let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-expanded','false');button.setAttribute('data-ag-localization-skip','true');button.innerHTML='<span class="quota-dot" aria-hidden="true"></span><span class="quota-label"></span><span class="quota-chevron" aria-hidden="true">⌄</span>';button.onclick=()=>{if(popup)closeMenu();else openMenu(button);};}
     if(button.parentElement!==host)host.appendChild(button);
-    const current=accounts.find(a=>a.isCurrent),percent=percentage(current,label());
-    const title=(current?.label||current?.email||text('账号','Account'))+' · '+(percent===null?text('配额未知','quota unknown'):percent+'%')+(current&&(stale(current)||authIssues.has(current.email))?text('（缓存）',' (cached)'):'');
-    const caption=button.querySelector('.quota-label');if(caption.textContent!==title)caption.textContent=title;button.dataset.low=String(percent!==null&&percent<10);button.disabled=busy;button.title=text('点击切换账号；百分比为当前模型匹配配额，无法匹配时显示最低配额。','Switch accounts; matching model quota or the lowest known quota.');
+    const current=accounts.find(a=>a.isCurrent),quota=selection(current,label()),percent=quota?.percent??null;
+    const title=(current?.label||current?.email||text('账号','Account'))+' · '+(quota?quotaLabel(quota):text('配额未知','quota unknown'))+(current&&(stale(current)||authIssues.has(current.email))?text('（缓存）',' (cached)'):'');
+    const caption=button.querySelector('.quota-label');if(caption.textContent!==title)caption.textContent=title;button.dataset.low=String(percent!==null&&percent<10);button.disabled=busy;button.title=text('点击切换账号；显示当前模型周与 5h 额度中剩余更低的一项，相同时显示周额度；无法匹配模型时显示最低已知额度。','Switch accounts; shows the lower weekly or 5h quota for this model, weekly on ties. Unknown models use the lowest known quota.');
   }
   async function refresh({notify=false}={}){if(disposed)return;if(requesting){refreshAgain=true;return;}requesting=true;try{
     let data=await request('/api/accounts');accounts=data.accounts||[];
@@ -4897,7 +4907,7 @@ window.__agySuiteModules.accounts=function(){
     }
   });observer.observe(document.documentElement,{childList:true,subtree:true});
   const timer=setInterval(refresh,60000);refresh();
-  window.__agyQuotaBadge={percentage,refresh,getAccounts:()=>accounts};
+  window.__agyQuotaBadge={percentage,selection,refresh,getAccounts:()=>accounts};
   window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();closeToast();style.remove();};
   const cleanup=window.__agyAccountSwitcherCleanup;window.__agyAccountSwitcherCleanup=()=>{window.__agyQuotaBadgeCleanup();cleanup?.();};
 })();
@@ -9027,4 +9037,4 @@ window.__agySuiteModules.skin=function(){
   window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="5466848f5b89aa1555837084663eba485bb92ffd0382404c392fc8fab14fa7c8";})();
+window.__agyRendererBundleId="dbc5912bdf244c04c7c9d6e3a0f907bafa9a3d902853807832f94d5439981854";})();
