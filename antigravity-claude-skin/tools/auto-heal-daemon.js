@@ -4,7 +4,7 @@ const { installNativeAppHook, injectLiveViaCdp, writeIfChanged } = require('./in
 const { guardianAlive, ensureSwitcherDaemon, pidFile } = require('./guardian-runtime.cjs');
 const { resolveResourcesDir } = require('./agy-paths.cjs');
 const root = path.resolve(__dirname, '..');
-const resourcesDir = resolveResourcesDir();
+let resourcesDir = resolveResourcesDir();
 const logFile = path.join(root, 'backup', 'auto-heal.log');
 const healthFile = path.join(root, 'backup', 'guardian-health.json');
 let busy = false, stableArchive, failure = '', stopped = false;
@@ -51,14 +51,34 @@ async function tick() {
         const suite = path.resolve(root,'..','suite','settings.cjs');
         if (fs.existsSync(suite) && !require(suite).readSettings().guardian) { stop(); process.exit(0); }
         status.backend = await ensureSwitcherDaemon();
+        const currentResources = resolveResourcesDir();
+        if (currentResources !== resourcesDir) {
+            for (const watcher of watchers.values()) watcher.close();
+            watchers.clear();
+            resourcesDir = currentResources;
+            stableArchive = undefined;
+            log('Installation directory changed; following the current official app');
+        }
+        status.resourcesDir = resourcesDir;
         ensureWatchers();
         const archive = path.join(resourcesDir, 'app.asar');
         if (fs.existsSync(archive)) {
-            const stat = fs.statSync(archive), stamp = `${stat.size}:${stat.mtimeMs}`;
+            const stat = fs.statSync(archive), stamp = `${resourcesDir}:${stat.size}:${stat.mtimeMs}`;
             // Do not read/install from an archive which the updater is still writing.
             if (stableArchive?.stamp === stamp && Date.now() - stableArchive.since >= 1500) {
                 const hook = installNativeAppHook({ resourcesDir });
                 status.hook = hook;
+                const launcherFile = path.resolve(root, '..', 'suite', 'launch.cjs');
+                if (fs.existsSync(launcherFile)) {
+                    status.launcher = require(launcherFile).installDesktopLauncher(resourcesDir);
+                }
+                const manifestFile = path.resolve(root, '..', 'data', 'install-manifest.json');
+                if (fs.existsSync(manifestFile)) {
+                    const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+                    if (manifest.runtime === path.resolve(root, '..') && manifest.resourcesDir !== resourcesDir) {
+                        writeIfChanged(manifestFile, JSON.stringify({ ...manifest, resourcesDir }, null, 2) + '\n');
+                    }
+                }
                 if (hook.changed) log(`Restored external bootstrap for ${hook.version}; official ASAR unchanged`);
             } else if (stableArchive?.stamp !== stamp) stableArchive = { stamp, since: Date.now() };
         }

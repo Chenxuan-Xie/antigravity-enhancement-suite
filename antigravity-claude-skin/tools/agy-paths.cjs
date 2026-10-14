@@ -37,7 +37,35 @@ function isValidResourcesDir(dir) {
   }
 }
 
-function resolveResourcesDir() {
+let lastWindowsProbe;
+function probeWindowsResourcesDir(refresh = false) {
+  if (process.platform !== 'win32') return;
+  // The updater can install to a different directory while the old ASAR survives.
+  // Recheck periodically, without spawning PowerShell on every path lookup.
+  if (!refresh && lastWindowsProbe && Date.now() - lastWindowsProbe.time < 30000) return lastWindowsProbe.dir;
+  let dir;
+  try {
+    const script = [
+      "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);",
+      "$p=Get-CimInstance Win32_Process -Filter \"Name='Antigravity.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.ExecutablePath -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1;",
+      "if($p){Split-Path -Parent $p.ExecutablePath;exit}",
+      "$link=Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Antigravity.lnk';",
+      "if(Test-Path -LiteralPath $link){$shortcut=(New-Object -ComObject WScript.Shell).CreateShortcut($link);$target=$shortcut.TargetPath;if((Split-Path -Leaf $target) -ine 'Antigravity.exe'){$target=($shortcut.IconLocation -replace ',\\d+$','').Trim('\"')};if($target -and (Split-Path -Leaf $target) -ieq 'Antigravity.exe' -and (Test-Path -LiteralPath $target)){Split-Path -Parent $target;exit}}",
+      "$keys=@('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*');",
+      "$item=Get-ItemProperty $keys -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match '^Antigravity(?: |$)' } | Select-Object -First 1;",
+      "if($item.InstallLocation){$item.InstallLocation}elseif($item.DisplayIcon){Split-Path -Parent (($item.DisplayIcon -replace ',\\d+$','').Trim('\"'))}"
+    ].join(' ');
+    const appDir = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+      windowsHide: true, encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore']
+    }).trim();
+    const candidate = appDir && path.join(appDir, 'resources');
+    if (isValidResourcesDir(candidate)) dir = candidate;
+  } catch {}
+  lastWindowsProbe = { time: Date.now(), dir };
+  return dir;
+}
+
+function resolveResourcesDir(options = {}) {
   if (process.env.AGY_RESOURCES_DIR && isValidResourcesDir(process.env.AGY_RESOURCES_DIR)) {
     return path.resolve(process.env.AGY_RESOURCES_DIR);
   }
@@ -46,14 +74,20 @@ function resolveResourcesDir() {
     if (isValidResourcesDir(candidate)) return path.resolve(candidate);
   }
 
-  const cached = readInstallPathsCache();
-  if (cached.resourcesDir && isValidResourcesDir(cached.resourcesDir)) {
-    return cached.resourcesDir;
-  }
-
   if (process.resourcesPath && isValidResourcesDir(process.resourcesPath)) {
+    saveInstallPathsCache({ resourcesDir: process.resourcesPath });
     return process.resourcesPath;
   }
+
+  const detected = probeWindowsResourcesDir(options.refresh);
+  if (detected) {
+    const cached = readInstallPathsCache();
+    if (cached.resourcesDir !== detected) saveInstallPathsCache({ resourcesDir: detected });
+    return detected;
+  }
+
+  const cached = readInstallPathsCache();
+  if (cached.resourcesDir && isValidResourcesDir(cached.resourcesDir)) return cached.resourcesDir;
 
   const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
   const programFiles = process.env.PROGRAMFILES || "C:\\Program Files";
@@ -61,6 +95,7 @@ function resolveResourcesDir() {
 
   const candidates = [
     path.join(localAppData, "Programs", "Antigravity", "resources"),
+    path.join(os.homedir(), "AppData", "Local", "Programs", "Antigravity", "resources"),
     path.join(localAppData, "Antigravity", "resources"),
     path.join(programFiles, "Antigravity", "resources"),
     path.join(programFilesX86, "Antigravity", "resources"),
@@ -74,31 +109,6 @@ function resolveResourcesDir() {
       saveInstallPathsCache({ resourcesDir: dir });
       return dir;
     }
-  }
-
-  // Probe running Antigravity.exe process or Windows Registry Uninstall keys
-  if (process.platform === "win32") {
-    try {
-      const psScript = [
-        "$p = Get-CimInstance Win32_Process -Filter \"Name='Antigravity.exe'\" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty ExecutablePath;",
-        "if ($p) { Split-Path -Parent $p; exit }",
-        "$regPaths = @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*');",
-        "$item = Get-ItemProperty $regPaths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match 'Antigravity' } | Select-Object -First 1;",
-        "if ($item.InstallLocation) { $item.InstallLocation } elseif ($item.DisplayIcon) { Split-Path -Parent ($item.DisplayIcon -replace '\"','') }"
-      ].join(" ");
-      const detectedAppDir = execFileSync(
-        "powershell.exe",
-        ["-NoProfile", "-NonInteractive", "-Command", psScript],
-        { windowsHide: true, encoding: "utf8", timeout: 5000 }
-      ).trim();
-      if (detectedAppDir) {
-        const resDir = path.join(detectedAppDir, "resources");
-        if (isValidResourcesDir(resDir)) {
-          saveInstallPathsCache({ resourcesDir: resDir });
-          return resDir;
-        }
-      }
-    } catch {}
   }
 
   // Default fallback to standard Per-User Electron installer location

@@ -1,7 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { discoverCdp } = require('./cdp-discovery.cjs');
+const { discoverCdp, isCommittedAppFrame } = require('./cdp-discovery.cjs');
+const recoverStartup = require('./startup-recovery.cjs').createStartupRecovery();
 const { skinRoot, resolveResourcesDir, resolveNodeBin, saveInstallPathsCache } = require('./agy-paths.cjs');
 
 const resourcesDir = resolveResourcesDir();
@@ -34,7 +35,7 @@ function writeIfChanged(file, content) {
 }
 
 function installNativeAppHook(options = {}) {
-    const resources = options.resourcesDir || resourcesDir;
+    const resources = options.resourcesDir || resolveResourcesDir();
     const pkg = readAsarPackageJson(path.join(resources, 'app.asar'));
     const main = pkg.main || 'dist/main.js';
     if (path.isAbsolute(main) || main.split(/[\\/]/).includes('..')) throw Error('Unexpected official entry point');
@@ -52,7 +53,7 @@ async function injectLiveViaCdp(options = {}) {
     const hash = crypto.createHash('sha256').update(bundle).digest('hex');
     const cssHash = crypto.createHash('sha256').update(css).digest('hex');
     const bundleId = JSON.parse(bundle.match(/window\.__agyRendererBundleId===("[^"]+")/)[1]);
-    let injected = 0;
+    let injected = 0, recovered = 0;
     for (const target of endpoint.targets.filter(t => t.type === 'page' && /^https?:\/\/127\.0\.0\.1(?::|\/)/.test(t.url || ''))) {
         const socket = new WebSocket(target.webSocketDebuggerUrl);
         const pending = new Map();
@@ -80,10 +81,17 @@ async function injectLiveViaCdp(options = {}) {
                 pending.set(id, { resolve, reject, timer });
                 socket.send(JSON.stringify({ id, method, params }));
             });
-            frameId=(await call('Page.getFrameTree',{})).frameTree.frame.id;
+            const frame=(await call('Page.getFrameTree',{})).frameTree.frame;
+            // Runtime.enable can initialize Electron's isolated world too early.
+            // Wait for the real document to commit before touching JS contexts.
+            if (!isCommittedAppFrame(frame, target.url)) {
+                if (await recoverStartup(frame, target, call)) recovered++;
+                continue;
+            }
+            frameId=frame.id;
             await call('Runtime.enable',{});
             const evaluate=async expression=>(await call('Runtime.evaluate',{expression,contextId,returnByValue:true,awaitPromise:true})).result?.value;
-            const condition = await evaluate(`({busy:!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]'),ready:document.readyState!=='loading',installed:window.__agyInstalledBundleHash===${JSON.stringify(hash)}&&window.__agyInstalledCssHash===${JSON.stringify(cssHash)}&&window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&!!window.__agySuite})`);
+            const condition = await evaluate(`({busy:!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]'),ready:document.readyState!=='loading'&&location.origin===${JSON.stringify(frame.securityOrigin)}&&!!document.body?.childElementCount,installed:window.__agyInstalledBundleHash===${JSON.stringify(hash)}&&window.__agyInstalledCssHash===${JSON.stringify(cssHash)}&&window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&!!window.__agySuite})`);
             if (condition.busy || !condition.ready || (options.onlyIfMissing && condition.installed)) continue;
             if(options.settings)await evaluate(`window.__agySuite?.apply(${JSON.stringify(options.settings)})`);
             const initial=options.settings||require(path.resolve(skinRoot,'..','suite','settings.cjs')).readSettings();
@@ -95,7 +103,7 @@ async function injectLiveViaCdp(options = {}) {
             socket.close();
         }
     }
-    return { port: endpoint.port, injected };
+    return { port: endpoint.port, injected, recovered };
 }
 
 function ensureBackups() { fs.mkdirSync(path.join(skinRoot, 'backup'), { recursive: true }); }

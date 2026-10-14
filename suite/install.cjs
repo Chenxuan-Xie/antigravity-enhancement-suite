@@ -104,6 +104,7 @@ async function install(options){
   const paths=require(path.join(runtime,'antigravity-claude-skin','tools','agy-paths.cjs'));
   paths.saveInstallPathsCache({nodeBin:process.execPath,resourcesDir:paths.resolveResourcesDir()});
   core.installNativeAppHook();
+  if(!test)require(path.join(runtime,'suite','launch.cjs')).installDesktopLauncher(paths.resolveResourcesDir());
   write(path.join(runtime,'data','install-manifest.json'),JSON.stringify({runtime,configDir,resourcesDir:paths.resolveResourcesDir(),version:2,installedAt:new Date().toISOString()},null,2));
   if(!test){
     execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(runtime,'antigravity-claude-skin','tools','register-guardian.ps1'),...(selected.guardian?[]:['-Disable'])],{stdio:'inherit',windowsHide:true});
@@ -123,6 +124,7 @@ async function uninstall(options){
   }
   const disabled=settings.writeSettings({skin:false,i18n:false,accounts:false,api:false,guardian:false});
   if(options.test!=='true'){
+    require(path.join(runtime,'suite','launch.cjs')).restoreDesktopLauncher();
     const core=require(path.join(runtime,'antigravity-claude-skin','tools','install-core.js'));
     await core.injectLiveViaCdp({settings:disabled}).catch(()=>{});
   }

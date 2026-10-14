@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { installNativeAppHook } = require('./install-core');
-const { discoverCdp } = require('./cdp-discovery.cjs');
+const { discoverCdp, isCommittedAppFrame } = require('./cdp-discovery.cjs');
 const { languageServerPolicy } = require('./runtime-transforms.cjs');
 const http = require('node:http');
 const fixtureRoot = path.join(__dirname, '..', 'backup', 'resilience-fixture');
@@ -24,6 +24,13 @@ const digest = () => crypto.createHash('sha256').update(fs.readFileSync(archive)
 async function main() {
     fs.mkdirSync(resources, { recursive: true });
     try {
+        const frame = { url: 'https://127.0.0.1:1234/', securityOrigin: 'https://127.0.0.1:1234', loaderId: 'loaded', mimeType: 'text/html' };
+        check(isCommittedAppFrame(frame, frame.url), 'committed native page allows runtime injection');
+        for (const url of ['', 'about:blank', 'chrome-error://chromewebdata/', 'data:text/html,splash', 'https://127.0.0.1:5678/']) {
+            check(!isCommittedAppFrame({ ...frame, url }, frame.url), 'startup/error/previous-port frame stays untouched: ' + url);
+        }
+        check(!isCommittedAppFrame({ ...frame, loaderId: '' }, frame.url), 'document without a committed loader stays untouched');
+        check(!isCommittedAppFrame(frame, 'https://accounts.google.com/'), 'external login page stays untouched');
         for (const [version, size] of [['2.22.0', 50], ['2.23.0', 7000], ['3.0.0', 1]]) {
             mockAsar(version, size);
             const before = digest();

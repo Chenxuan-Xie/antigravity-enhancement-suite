@@ -58,4 +58,13 @@ async function discoverCdp(options = {}) {
     return endpoint;
 }
 
-module.exports = { discoverCdp, scanOwnedPorts, probe };
+function isCommittedAppFrame(frame, targetUrl) {
+    try {
+        const target = new URL(targetUrl), current = new URL(frame.url);
+        return ['http:', 'https:'].includes(target.protocol) && target.hostname === '127.0.0.1' &&
+            current.origin === target.origin && frame.securityOrigin === target.origin &&
+            !!frame.loaderId && frame.mimeType === 'text/html';
+    } catch { return false; }
+}
+
+module.exports = { discoverCdp, scanOwnedPorts, probe, isCommittedAppFrame };

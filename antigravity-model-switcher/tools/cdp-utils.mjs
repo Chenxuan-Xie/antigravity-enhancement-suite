@@ -32,7 +32,7 @@ export async function connectToAntigravity() {
         pending.set(id, { resolve, reject, timer });
         socket.send(JSON.stringify({ id, method, params }));
     });
-    try{frameId=(await call('Page.getFrameTree')).frameTree.frame.id;await call('Runtime.enable');}catch(error){socket.close();throw error;}
+    try{const frame=(await call('Page.getFrameTree')).frameTree.frame;if(!discovery.isCommittedAppFrame(frame,page.url))throw Error('Antigravity 主页面尚未加载完成；请等待启动完成后重试');frameId=frame.id;await call('Runtime.enable');}catch(error){socket.close();throw error;}
     return {
         call,
         onEvent(listener) { listeners.add(listener); return () => listeners.delete(listener); },
