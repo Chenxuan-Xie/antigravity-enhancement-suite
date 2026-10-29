@@ -20,6 +20,8 @@ jobs:
         env:
           AGY_SKIP_SDK_TESTS: '1'
         run: node antigravity-model-switcher/tools/regression.mjs
+      - name: Scoped account credentials
+        run: node antigravity-account-switcher/tools/regression-credentials.mjs
       - name: Simulated app-update recovery
         run: node antigravity-claude-skin/tools/regression-resilience.cjs
       - name: Installation directory migration

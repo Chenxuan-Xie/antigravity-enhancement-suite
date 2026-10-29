@@ -34,31 +34,60 @@ function ensureDaemonAlive() {
   } catch {}
 }
 
-function writeCredentialAndStorage(email, payloadBase64) {
-  // 1. Write to Windows Credential Manager (gemini:antigravity)
+function credentialTargets(explicitScope = "") {
+  let scope = explicitScope;
+  if (!scope) {
+    try {
+      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+      scope = fs.readFileSync(path.join(appData, "Antigravity", "credential-user-scope"), "utf8").trim();
+    } catch {}
+  }
+  return [...new Set([scope ? `antigravity-${scope}` : "", "gemini:antigravity"])].filter(Boolean);
+}
+
+function writeCredentialUserScope(scope) {
+  if (!scope) return;
   try {
-    execFileSync(
-      "powershell.exe",
-      [
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        WIN_CRED_PS1,
-        "-Action",
-        "write",
-        "-Target",
-        "gemini:antigravity",
-        "-UserName",
-        "antigravity",
-        "-PayloadBase64",
-        payloadBase64,
-      ],
-      { windowsHide: true, encoding: "utf8", timeout: 8000 }
-    );
+    const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+    const scopeFile = path.join(appData, "Antigravity", "credential-user-scope");
+    fs.mkdirSync(path.dirname(scopeFile), { recursive: true });
+    fs.writeFileSync(scopeFile, scope, "utf8");
+    log(`Credential scope set: ${scope}`);
   } catch (err) {
-    log(`CredWrite error: ${err.message}`);
+    log(`credential-user-scope write error: ${err.message}`);
+  }
+}
+
+function writeCredentialAndStorage(email, payloadBase64, scope = "") {
+  // 1. Point Antigravity 2.28+ at the target account's scoped credential and
+  // write both the scoped target and the legacy `gemini:antigravity` target.
+  writeCredentialUserScope(scope);
+  for (const target of credentialTargets(scope)) {
+    try {
+      execFileSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          WIN_CRED_PS1,
+          "-Action",
+          "write",
+          "-Target",
+          target,
+          "-UserName",
+          "antigravity",
+          "-PayloadBase64",
+          payloadBase64,
+        ],
+        { windowsHide: true, encoding: "utf8", timeout: 8000 }
+      );
+      log(`CredWrite ok: ${target}`);
+    } catch (err) {
+      log(`CredWrite error (${target}): ${err.message}`);
+    }
   }
 
   // 2. Update %APPDATA%\Antigravity\app_storage.json
@@ -127,9 +156,11 @@ async function main() {
   const args = process.argv.slice(2);
   let email = "";
   let payloadBase64 = "";
+  let scope = "";
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--email" && args[i + 1]) email = args[++i];
     else if (args[i] === "--payload-b64" && args[i + 1]) payloadBase64 = args[++i];
+    else if (args[i] === "--scope" && args[i + 1]) scope = args[++i];
   }
 
   if (!email || !payloadBase64) {
@@ -137,12 +168,12 @@ async function main() {
     process.exit(1);
   }
 
-  log(`Starting seamless hot-switch to ${email}...`);
+  log(`Starting seamless hot-switch to ${email}${scope ? ` (scope ${scope})` : ""}...`);
   ensureDaemonAlive();
   await sleep(180);
 
   // Step 1: Pre-write credentials before killing language_server
-  writeCredentialAndStorage(email, payloadBase64);
+  writeCredentialAndStorage(email, payloadBase64, scope);
 
   // Step 2: Kill only language_server.exe so Electron supervisor respawns it
   const killed = killLanguageServerOnly();
@@ -150,9 +181,9 @@ async function main() {
   // Step 3: Re-assert credentials after language_server death (in case it flushed old token on exit)
   if (killed) {
     await sleep(220);
-    writeCredentialAndStorage(email, payloadBase64);
+    writeCredentialAndStorage(email, payloadBase64, scope);
     await sleep(320);
-    writeCredentialAndStorage(email, payloadBase64);
+    writeCredentialAndStorage(email, payloadBase64, scope);
   }
 
   ensureDaemonAlive();

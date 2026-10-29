@@ -19,6 +19,7 @@ const reasoning = await import('../core/reasoning-config.mjs');
 const { executeAgentTool } = await import('../core/agent-tools.mjs');
 const { inspectAgentTurn, compactAgentMessages } = await import('../core/agent-turn-policy.mjs');
 const { handleModelApiRequest } = await import('../core/api-handler.mjs');
+const contextExpander = await import('../core/context-expander.mjs');
 const requests = [];
 let closedHangingResponses = 0;
 let passed = 0;
@@ -174,6 +175,49 @@ const runAgent = async (stream, script) => {
 };
 
 try {
+    await check('native @ file mentions are expanded into relay context', async () => {
+        const mentionFile = path.join(temporary, 'mention-fixture.txt');
+        fs.writeFileSync(mentionFile, 'alpha\nbeta\ngamma');
+        fresh();
+        const model = store.upsertModel(config('context-file-fixture'));
+        const before = requests.length;
+        const res = await callApi('/chat', {
+            modelId: model.id, conversationId: 'context-file-fixture',
+            prompt: `请阅读 [mention-fixture.txt](${mentionFile};file)`, enableTools: false
+        });
+        assert.equal(res.status, 200);
+        const sent = requests[before].body.messages.find(message => message.role === 'user');
+        assert.match(sent.content, /<CONTEXT_FILE/);
+        assert.match(sent.content, /alpha\nbeta\ngamma/);
+        assert.match(sent.content, /请阅读 @mention-fixture\.txt/);
+    });
+
+    await check('native line-range and quote mentions keep precise context in SSE chats', async () => {
+        const mentionFile = path.join(temporary, 'mention-lines.txt');
+        fs.writeFileSync(mentionFile, 'zero\none\ntwo\nthree');
+        fresh();
+        const model = store.upsertModel(config('context-lines-fixture'));
+        const before = requests.length;
+        const prompt = `看这两行 [mention-lines.txt#L2-L3](${mentionFile}#L2-L3;fileLineRange)，并参考 [Quote](label:Quote:${encodeURIComponent('原始引用')};textBlock)`;
+        const res = await fetch(apiUrl + '/chat/stream', { method: 'POST', body: JSON.stringify({
+            modelId: model.id, conversationId: 'context-lines-fixture', prompt, enableTools: false
+        }) });
+        assert.equal(res.status, 200);
+        await res.text();
+        const sent = requests[before].body.messages.find(message => message.role === 'user');
+        assert.match(sent.content, /lines="2-3"/);
+        assert.match(sent.content, /2: one\n3: two/);
+        assert.match(sent.content, /<CONTEXT_QUOTE label="Quote">\n原始引用/);
+        assert.match(sent.content, /@mention-lines\.txt#L2-L3/);
+    });
+
+    await check('slash-command tokens are detected and left for the native agent', async () => {
+        const expanded = contextExpander.expandComposerContext('执行 [/browser](browser;slashCommand)');
+        assert.equal(expanded.hasSlashCommand, true);
+        assert.equal(expanded.contextText, '');
+        assert.match(expanded.prompt, /;slashCommand\)/);
+    });
+
     await check('progress from the reported dialogue continues while conclusions and user questions stop', async () => {
         for (const content of [
             '这个问题不能靠推测回答，得看代码。我先摸清项目结构和持久化/注入机制。',

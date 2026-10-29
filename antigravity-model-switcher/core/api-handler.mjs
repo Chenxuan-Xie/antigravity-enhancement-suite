@@ -38,6 +38,7 @@ import {
     describeToolCall,
     executeAgentTool
 } from './agent-tools.mjs';
+import { expandComposerContext } from './context-expander.mjs';
 import { createAgentTurnPolicy, compactAgentMessages, TOOL_RESULT_INSTRUCTION } from './agent-turn-policy.mjs';
 import { createUsageAccumulator } from './usage.mjs';
 import suiteSettings from '../../suite/settings.cjs';
@@ -357,7 +358,8 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         if (pathname === '/api/models/chat' && req.method === 'POST') {
             const body = await readJsonBody(req);
             const rawImages = Array.isArray(body.images) ? body.images : [];
-            const prompt = sanitizeUserContent(body.prompt || '') || (rawImages.length > 0 ? '请查看附图并回答。' : '');
+            const expanded = expandComposerContext(sanitizeUserContent(body.prompt || ''));
+            const prompt = expanded.prompt || (rawImages.length > 0 ? '请查看附图并回答。' : '');
             if (!prompt && rawImages.length === 0) {
                 sendJson(res, 400, { ok: false, error: '提问内容不能为空' });
                 return true;
@@ -396,7 +398,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
 
             messages.push({
                 role: 'user',
-                content: prompt,
+                content: expanded.contextText ? `${prompt}${expanded.contextText}` : prompt,
                 images: rawImages
             });
 
@@ -570,7 +572,8 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         if (pathname === '/api/models/chat/stream' && req.method === 'POST') {
             const body = await readJsonBody(req);
             const rawImages = Array.isArray(body.images) ? body.images : [];
-            const prompt = sanitizeUserContent(body.prompt || '') || (rawImages.length > 0 ? '请查看附图并回答。' : '');
+            const expanded = expandComposerContext(sanitizeUserContent(body.prompt || ''));
+            const prompt = expanded.prompt || (rawImages.length > 0 ? '请查看附图并回答。' : '');
 
             res.writeHead(200, {
                 'Content-Type': 'text/event-stream; charset=utf-8',
@@ -649,7 +652,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
 
             messages.push({
                 role: 'user',
-                content: prompt,
+                content: expanded.contextText ? `${prompt}${expanded.contextText}` : prompt,
                 images: rawImages
             });
 

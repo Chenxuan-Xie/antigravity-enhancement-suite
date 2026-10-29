@@ -2276,6 +2276,57 @@
         composer?.draftsRef.current?.delete(draftKey);
     }
 
+    function isVisibleElement(element) {
+        return Boolean(element && element.isConnected && element.getClientRects().length);
+    }
+
+    /**
+     * 原生输入框的 / 动作菜单和 @ 上下文菜单都由 Lexical typeahead 渲染。
+     * 菜单刚打开、仍在搜索时可能只有 role=listbox、还没有 role=option；此时按回车
+     * 必须交给原生菜单处理，不能被中转提交逻辑截走。
+     */
+    function isNativeComposerMenuOpen(editorEl) {
+        if (editorEl?.getAttribute?.('aria-expanded') === 'true') return true;
+        if (isVisibleElement(document.querySelector('[data-mention-menu]'))) return true;
+        if (isVisibleElement(document.querySelector('[role="listbox"]'))) return true;
+        for (const menu of document.querySelectorAll('[role="menu"], [role="dialog"]')) {
+            if (!isVisibleElement(menu)) continue;
+            if (menu.querySelector('[role="menuitem"], [role="option"], [role="menuitemradio"]')) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断 Lexical 输入框里是否存在 Antigravity 原生的 / 命令令牌。
+     * 这类命令必须由官方 Agent 执行（例如浏览器、终端、工作流），中转模型无法替代。
+     */
+    function hasNativeSlashCommand(editorEl) {
+        const text = editorEl?.textContent || '';
+        if (/\]\([^)]*;slashCommand\)/.test(text)) return true;
+        const isSlashNode = node => {
+            if (!node || typeof node !== 'object') return false;
+            if ((node.type === 'contextScopeItemMention' || node.type === 'beautifulMention') && node.trigger === '/') return true;
+            const raw = node.data?.data;
+            if (typeof raw === 'string' && raw.includes('slashCommand')) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object' && parsed.slashCommand) return true;
+                } catch {
+                    // Not the JSON form used by slash-command pills; other node types are checked below.
+                }
+            }
+            return false;
+        };
+        try {
+            const json = editorEl?.__lexicalEditor?.getEditorState?.().toJSON?.();
+            const walk = nodes => Array.isArray(nodes) && nodes.some(node => isSlashNode(node) || walk(node?.children));
+            if (walk(json?.root?.children)) return true;
+        } catch {
+            // 读取 Lexical 状态失败时以文本令牌为准
+        }
+        return false;
+    }
+
     /**
      * 向 Lexical 编辑器末尾同步追加文本（用于从 Custom 模型切回 Official 模型时无缝附带未同步的上下文）
      */
@@ -3336,6 +3387,13 @@
 
         if (!rawPrompt && attachedImages.length === 0) return false;
 
+        // 原生 / 动作菜单或 @ 上下文菜单打开时，回车属于菜单选择，不能提交消息。
+        if (isNativeComposerMenuOpen(editorEl)) return false;
+
+        // / 命令（浏览器、终端、工作流等）只能由官方 Agent 执行；交给原生提交，
+        // 避免把 “[/browser](browser;slashCommand)” 这样的令牌当成普通文本发给中转模型。
+        if (hasNativeSlashCommand(editorEl)) return false;
+
         // 仅当选中的是【自定义中转模型】时拦截并直接发送给中转站 API（不经过官方 Gemini，也不篡改输入框内容）
         if (state.activeMode === 'custom' && getActiveModelObj()) {
             if (e) {
@@ -3421,7 +3479,7 @@
                     if (event && (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.isComposing)) {
                         return false;
                     }
-                    if (document.querySelector('[role="listbox"] [role="option"]')) {
+                    if (isNativeComposerMenuOpen(editorEl)) {
                         return false;
                     }
                     if (!findComposerBox(editorEl)) return false;
@@ -3451,7 +3509,7 @@
             return;
         }
 
-        if (document.querySelector('[role="listbox"] [role="option"]')) {
+        if (isNativeComposerMenuOpen(editorEl)) {
             return;
         }
 

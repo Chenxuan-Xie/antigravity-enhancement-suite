@@ -14,6 +14,40 @@ const ACCOUNTS_FILE = path.join(DATA_DIR, "accounts.json");
 const WIN_CRED_PS1 = path.join(__dirname, "win-cred.ps1");
 const HOT_SWITCH_WORKER = path.join(__dirname, "hot-switch-worker.mjs");
 
+function readCredentialUserScope() {
+  try {
+    const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+    return fs.readFileSync(path.join(appData, "Antigravity", "credential-user-scope"), "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Antigravity 2.28+ 会把凭据写到 `antigravity-<credential-user-scope>`，
+ * 旧版本使用 `gemini:antigravity`。读取时新目标优先，写入时两者都写，
+ * 这样升级/降级都不会丢失当前账号。
+ */
+export function credentialTargets() {
+  const scope = readCredentialUserScope();
+  return [...new Set([scope ? `antigravity-${scope}` : "", "gemini:antigravity"])].filter(Boolean);
+}
+
+/**
+ * Antigravity 2.28+ derives the per-account credential scope as
+ * `u` + first 16 hex chars of SHA-256(id_token.sub).
+ */
+export function credentialScopeForAccount(account = {}) {
+  if (account.credential_scope) return account.credential_scope;
+  try {
+    const claims = decodeJwtPayload(account.id_token);
+    if (claims?.sub) {
+      return "u" + crypto.createHash("sha256").update(String(claims.sub)).digest("hex").slice(0, 16);
+    }
+  } catch {}
+  return "";
+}
+
 import { createRequire } from "node:module";
 const requireCjs = createRequire(import.meta.url);
 
@@ -268,34 +302,36 @@ export function httpsRequestJson(urlStr, options = {}) {
 }
 
 /**
- * Read current credential from Windows Credential Manager (gemini:antigravity)
+ * Read current credential from Windows Credential Manager.
+ * Antigravity 2.28+ uses `antigravity-<scope>`; older versions use `gemini:antigravity`.
  */
 export function readCurrentSystemCredential() {
   try {
-    const out = execFileSync(
-      "powershell.exe",
-      [
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        WIN_CRED_PS1,
-        "-Action",
-        "read",
-        "-Target",
-        "gemini:antigravity",
-      ],
-      { windowsHide: true, encoding: "utf8", timeout: 8000 }
-    ).trim();
-
-    if (!out || out === "NOT_FOUND" || !out.startsWith("OK:")) {
-      return null;
+    let parsed = null;
+    for (const target of credentialTargets()) {
+      const out = execFileSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          WIN_CRED_PS1,
+          "-Action",
+          "read",
+          "-Target",
+          target,
+        ],
+        { windowsHide: true, encoding: "utf8", timeout: 8000 }
+      ).trim();
+      if (!out || out === "NOT_FOUND" || !out.startsWith("OK:")) continue;
+      const b64 = out.slice(3).trim();
+      if (!b64) continue;
+      parsed = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+      break;
     }
-    const b64 = out.slice(3).trim();
-    if (!b64) return null;
-    const rawJson = Buffer.from(b64, "base64").toString("utf8");
-    const parsed = JSON.parse(rawJson);
+    if (!parsed) return null;
     const idClaims = decodeJwtPayload(parsed.id_token);
 
     // Also read app_storage.json fallback email
@@ -310,7 +346,7 @@ export function readCurrentSystemCredential() {
       }
     } catch {}
 
-    const email = (idClaims && idClaims.email) || lastLoginUsername || "";
+    const email = (idClaims && idClaims.email) || parsed.id_token_email || lastLoginUsername || "";
     const name = (idClaims && idClaims.name) || "";
     const picture = (idClaims && idClaims.picture) || "";
     const token = parsed.token || {};
@@ -380,6 +416,7 @@ export function getAccountsWithActiveSync() {
       existing.expiry = sysCred.expiry || existing.expiry;
       existing.id_token = sysCred.id_token || existing.id_token;
       existing.auth_method = sysCred.auth_method || existing.auth_method || "consumer";
+      existing.credential_scope = readCredentialUserScope() || existing.credential_scope;
       existing.lastActiveAt = new Date().toISOString();
     } else {
       store.accounts.push({
@@ -393,6 +430,7 @@ export function getAccountsWithActiveSync() {
         expiry: sysCred.expiry,
         id_token: sysCred.id_token,
         auth_method: sysCred.auth_method || "consumer",
+        credential_scope: readCredentialUserScope() || "",
         addedAt: new Date().toISOString(),
         lastActiveAt: new Date().toISOString(),
       });
@@ -1011,15 +1049,21 @@ export async function switchToAccount(emailOrId) {
   target.lastActiveAt = new Date().toISOString();
   saveAccountsStore(store);
 
-  // Build exact CredentialBlob JSON expected by Antigravity 2.22.0 (`gemini:antigravity`)
+  const targetScope = readCredentialUserScope() ? credentialScopeForAccount(target) : "";
+
+  // Build CredentialBlob JSON compatible with both Antigravity 2.22+ (`gemini:antigravity`)
+  // and 2.28+ (`antigravity-<credential-user-scope>` + id_token_email).
+  const keyringExpiry = target.expiry || new Date(Date.now() + 3600_000).toISOString();
   const keyringPayload = {
     token: {
       access_token: target.access_token,
       token_type: "Bearer",
       refresh_token: target.refresh_token,
-      expiry: target.expiry || new Date(Date.now() + 3600_000).toISOString(),
+      expiry: keyringExpiry,
+      expires_in: Math.max(0, Math.floor((new Date(keyringExpiry).getTime() - Date.now()) / 1000)) || 3600,
     },
     auth_method: target.auth_method || "consumer",
+    id_token_email: target.email,
   };
   if (target.id_token) {
     keyringPayload.id_token = target.id_token;
@@ -1031,7 +1075,8 @@ export async function switchToAccount(emailOrId) {
   ).toString("base64");
 
   // Spawn hot-switch-worker via WMI Win32_Process.Create so it is 100% outside language_server's Job Object!
-  const cmdLine = `"${process.execPath}" "${HOT_SWITCH_WORKER}" --email "${target.email}" --payload-b64 "${payloadBase64}"`;
+  const scopeArg = targetScope ? ` --scope "${targetScope}"` : "";
+  const cmdLine = `"${process.execPath}" "${HOT_SWITCH_WORKER}" --email "${target.email}" --payload-b64 "${payloadBase64}"${scopeArg}`;
   let launchedViaWmi = false;
   try {
     const psCmd = `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${cmdLine.replace(/'/g, "''")}' } | Out-Null`;
@@ -1052,6 +1097,7 @@ export async function switchToAccount(emailOrId) {
         target.email,
         "--payload-b64",
         payloadBase64,
+        ...(targetScope ? ["--scope", targetScope] : []),
       ],
       {
         detached: true,

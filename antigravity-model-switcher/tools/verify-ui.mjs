@@ -37,7 +37,8 @@ try {
         const textNode = { __type: 'text', getTextContent: () => editor.textContent,
             setTextContent: text => { editor.textContent = text; } };
         const rootNode = { getWritable: () => ({ clear: () => { editor.textContent = ''; } }) };
-        const editorState = { _nodeMap: new Map([['root', rootNode], ['text', textNode]]) };
+        let lexicalNodes = [];
+        const editorState = { _nodeMap: new Map([['root', rootNode], ['text', textNode]]), toJSON: () => ({ root: { children: lexicalNodes } }) };
         editor.__lexicalEditor = { update: fn => fn(), getEditorState: () => editorState, _commands: new Map() };
         d.querySelector('[data-testid="send-button"]').addEventListener('click', () => {
             officialSubmissions++;
@@ -233,6 +234,26 @@ try {
             assert(log.textContent.includes('你好世界'), 'final reply is authoritative even after streaming deltas');
             assert(officialSubmissions === 0 && chatCalls === 1, 'API submit never triggers the native official submit');
             assert(log.querySelector('.agy-ms-custom-turn-group').getAttribute('data-agy-conversation-id') === imageCid, 'rendered API turns retain their owning conversation ID');
+            const dispatchEnter = () => editor.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true }));
+            const chatsBeforeSlash = chatCalls;
+            lexicalNodes = [{ type: 'paragraph', children: [{ type: 'contextScopeItemMention', trigger: '@', value: 'contextScopeItemMention',
+                data: { mentionText: 'goal', data: JSON.stringify({ slashCommand: { info: { name: 'goal', modelFacingText: 'long task' } } }) } }] }];
+            editor.textContent = 'goal ';
+            dispatchEnter();
+            await pause(50);
+            assert(chatCalls === chatsBeforeSlash && editor.textContent === 'goal ', '/ commands are delegated to the native agent instead of the relay');
+            lexicalNodes = [];
+            editor.setAttribute('aria-expanded', 'true');
+            editor.textContent = 'typeahead open';
+            dispatchEnter();
+            await pause(50);
+            assert(chatCalls === chatsBeforeSlash && editor.textContent === 'typeahead open', 'enter selects a native typeahead item instead of sending a relay message');
+            editor.setAttribute('aria-expanded', 'false');
+            editor.textContent = 'plain relay';
+            dispatchEnter();
+            await pause(80);
+            assert(chatCalls === chatsBeforeSlash + 1, 'plain enter still submits to the relay model');
+            assert(editor.textContent === '' || editor.textContent.includes('plain relay'), 'relay submission handles the composer safely');
             streamMode = 'incomplete';
             editor.textContent = 'retry question';
             d.querySelector('[data-testid="send-button"]').click();

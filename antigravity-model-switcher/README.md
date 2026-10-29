@@ -18,6 +18,9 @@
 4. **内置本地 Agent 工具与 MCP 服务**：
    - 为第三方模型提供本地文件读取 (`read_file`)、文件写入 (`write_file`)、代码片段替换 (`replace_in_file`)、目录浏览 (`list_dir`)、文本搜索 (`search_files`) 与终端命令执行 (`run_command`) 能力；
    - 内置标准 MCP Server (`api-model-switcher-mcp`)，支持通过自然语言对话直接添加、测试和切换模型。
+5. **原生 `/` 与 `@` 输入兼容 (`core/context-expander.mjs`)**：
+   - `/` 动作菜单打开时，回车只选择菜单项；选中命令后由 Antigravity 官方 Agent 执行，不会被误当成普通文本发给中转模型；
+   - `@` 文件、目录、行号范围和引用块会展开为 `<CONTEXT_FILE>` / `<CONTEXT_DIRECTORY>` / `<CONTEXT_QUOTE>` 上下文，随中转请求一起发送；缺失文件或二进制文件会写入可读的错误说明，不阻塞提问。
 
 ---
 
