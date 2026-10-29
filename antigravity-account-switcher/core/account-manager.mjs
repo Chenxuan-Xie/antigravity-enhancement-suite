@@ -601,6 +601,7 @@ export function upsertAccountRecord({
     if (refresh_token) acc.refresh_token = refresh_token;
     if (expiry) acc.expiry = expiry;
     if (id_token) acc.id_token = id_token;
+    if (id_token) acc.credential_scope = credentialScopeForAccount({ id_token }) || acc.credential_scope;
     acc.updatedAt = new Date().toISOString();
     saveAccountsStore(store);
     return acc;
@@ -619,6 +620,7 @@ export function upsertAccountRecord({
       refresh_token: refresh_token || "",
       expiry: expiry || new Date(Date.now() + 3600_000).toISOString(),
       id_token: id_token || "",
+      credential_scope: credentialScopeForAccount({ id_token }) || "",
       auth_method: "consumer",
       addedAt: new Date().toISOString(),
       lastActiveAt: null,
