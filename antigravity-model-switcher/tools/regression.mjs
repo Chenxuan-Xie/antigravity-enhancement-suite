@@ -188,6 +188,22 @@ try {
         assert.equal(store.getSanitizedState('conversation-b').activeMode, 'custom');
     });
 
+    await check('API model selection is scoped per conversation', async () => {
+        fresh();
+        const first = store.upsertModel(config('api-conversation-a'));
+        const second = store.upsertModel(config('api-conversation-b'));
+        const selectedA = await callApi('/select', { mode: 'custom', modelId: first.id, conversationId: 'api-conversation-a' });
+        const selectedB = await callApi('/select', { mode: 'custom', modelId: second.id, conversationId: 'api-conversation-b' });
+        assert.equal(selectedA.status, 200);
+        assert.equal(selectedB.status, 200);
+        assert.equal(selectedA.data.state.activeModelId, first.id);
+        assert.equal(selectedB.data.state.activeModelId, second.id);
+        const stateA = await (await fetch(apiUrl + '?conversationId=api-conversation-a')).json();
+        const stateB = await (await fetch(apiUrl + '?conversationId=api-conversation-b')).json();
+        assert.equal(stateA.activeModelId, first.id);
+        assert.equal(stateB.activeModelId, second.id);
+    });
+
     await check('native @ file mentions are expanded into relay context', async () => {
         const mentionFile = path.join(temporary, 'mention-fixture.txt');
         fs.writeFileSync(mentionFile, 'alpha\nbeta\ngamma');
