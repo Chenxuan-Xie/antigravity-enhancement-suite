@@ -175,6 +175,19 @@ const runAgent = async (stream, script) => {
 };
 
 try {
+    await check('model selection is scoped to each conversation', async () => {
+        fresh();
+        const first = store.upsertModel(config('per-conversation-a'));
+        const second = store.upsertModel(config('per-conversation-b'));
+        store.setSelectionState({ activeMode: 'custom', activeModelId: first.id, conversationId: 'conversation-a' });
+        store.setSelectionState({ activeMode: 'custom', activeModelId: second.id, conversationId: 'conversation-b' });
+        assert.equal(store.getSanitizedState('conversation-a').activeModelId, first.id);
+        assert.equal(store.getSanitizedState('conversation-b').activeModelId, second.id);
+        store.setSelectionState({ activeMode: 'official', conversationId: 'conversation-a' });
+        assert.equal(store.getSanitizedState('conversation-a').activeMode, 'official');
+        assert.equal(store.getSanitizedState('conversation-b').activeMode, 'custom');
+    });
+
     await check('native @ file mentions are expanded into relay context', async () => {
         const mentionFile = path.join(temporary, 'mention-fixture.txt');
         fs.writeFileSync(mentionFile, 'alpha\nbeta\ngamma');

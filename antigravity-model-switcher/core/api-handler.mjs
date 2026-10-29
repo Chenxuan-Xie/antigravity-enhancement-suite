@@ -238,7 +238,7 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
             sendJson(res, 200, {
                 ok: true,
                 showUsage:suiteSettings.readSettings().showUsage,
-                ...getSanitizedState(),
+                ...getSanitizedState(cid),
                 localSessions: listLocalCustomSessions(),
                 bridge: {
                     conversationId: historyInfo.conversationId,
@@ -298,11 +298,13 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
         // 4. 切换当前对话使用的模型（支持 Official 官方模型 <-> Custom 中转模型）
         if (pathname === '/api/models/select' && req.method === 'POST') {
             const body = await readJsonBody(req);
+            const conversationId = body.conversationId && body.conversationId !== 'auto'
+                ? resolveConversationId(body.conversationId) : null;
             setSelectionState({ activeMode: body.mode, activeModelId: body.modelId,
-                chatRelayMode: body.chatRelayMode });
+                chatRelayMode: body.chatRelayMode, conversationId });
             sendJson(res, 200, {
                 ok: true,
-                state: getSanitizedState()
+                state: getSanitizedState(conversationId)
             });
             return true;
         }
@@ -365,9 +367,10 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 return true;
             }
 
+            const cid = resolveConversationId(body.conversationId || 'auto');
             const targetModel = body.modelId
                 ? getModelById(body.modelId)
-                : getActiveCustomModel();
+                : getActiveCustomModel(cid);
 
             if (!targetModel) {
                 sendJson(res, 404, {
@@ -377,7 +380,6 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 return true;
             }
 
-            const cid = resolveConversationId(body.conversationId || 'auto');
             lockConversation(cid);
             const includeHistory = body.includeHistory !== false;
 
@@ -614,9 +616,10 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 return true;
             }
 
+            const cid = resolveConversationId(body.conversationId || 'auto');
             const targetModel = body.modelId
                 ? getModelById(body.modelId)
-                : getActiveCustomModel();
+                : getActiveCustomModel(cid);
 
             if (!targetModel) {
                 sendSse('error', { ok: false, error: '未找到可用的自定义中转模型，请先添加并选择一个模型' });
@@ -624,7 +627,6 @@ export async function handleModelApiRequest(req, res, pathname, searchParams = n
                 return true;
             }
 
-            const cid = resolveConversationId(body.conversationId || 'auto');
             lockConversation(cid);
             const includeHistory = body.includeHistory !== false;
 

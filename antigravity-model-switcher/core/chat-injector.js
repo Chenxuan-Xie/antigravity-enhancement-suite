@@ -841,8 +841,11 @@
     async function selectModel(mode, modelId, effort) {
         const sequence = ++selectionSequence;
         selectionPending = true;
+        const conversationId = getActiveConversationId();
         const operation = selectionQueue.then(() => apiFetch(effort === undefined ? '/select' : '/reasoning', {
-            method: 'POST', body: effort === undefined ? { mode, modelId } : { modelId, effort, activate: true }
+            method: 'POST', body: effort === undefined
+                ? { mode, modelId, conversationId }
+                : { modelId, effort, activate: true, conversationId }
         }));
         selectionQueue = operation.catch(() => {});
         try {

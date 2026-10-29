@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="048a7ee02751b1acec4d8a21361dd62e94b1570496c8512c0da8530ef7d1659e"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="4a85902f1791e01d8c7232177d7368e056dbf05375535e753abbd7de3af0b365"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -5757,8 +5757,11 @@ window.__agySuiteModules.api=function(){
     async function selectModel(mode, modelId, effort) {
         const sequence = ++selectionSequence;
         selectionPending = true;
+        const conversationId = getActiveConversationId();
         const operation = selectionQueue.then(() => apiFetch(effort === undefined ? '/select' : '/reasoning', {
-            method: 'POST', body: effort === undefined ? { mode, modelId } : { modelId, effort, activate: true }
+            method: 'POST', body: effort === undefined
+                ? { mode, modelId, conversationId }
+                : { modelId, effort, activate: true, conversationId }
         }));
         selectionQueue = operation.catch(() => {});
         try {
@@ -9095,4 +9098,4 @@ window.__agySuiteModules.skin=function(){
   window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();document.querySelector('.agy-suite-greeting')?.remove();};
 })();
 
-window.__agyRendererBundleId="048a7ee02751b1acec4d8a21361dd62e94b1570496c8512c0da8530ef7d1659e";})();
+window.__agyRendererBundleId="4a85902f1791e01d8c7232177d7368e056dbf05375535e753abbd7de3af0b365";})();

@@ -24,6 +24,7 @@ const DEFAULT_STORE = {
   officialModelLabel: "",
   chatRelayMode: "direct", // "direct" (直连不耗官方额度+自动桥接) | "mcp" (Agent工具协同)
   models: [],
+  selectionByConversation: {},
 };
 
 export function loadModelStore() {
@@ -65,6 +66,17 @@ export function loadModelStore() {
       Object.assign(model,{baseUrl:provider.baseUrl,apiKey:provider.apiKey,protocol:provider.protocol});
     }
     store.version=2;
+    store.selectionByConversation = {};
+    const selections = parsed.selectionByConversation;
+    if (selections && typeof selections === 'object' && !Array.isArray(selections)) {
+      for (const [conversationId, selection] of Object.entries(selections)) {
+        if (!conversationId || !selection || typeof selection !== 'object') continue;
+        const mode = selection.mode === 'custom' ? 'custom' : 'official';
+        const modelId = typeof selection.modelId === 'string' ? selection.modelId : null;
+        if (mode === 'custom' && !store.models.some(model => model.id === modelId)) continue;
+        store.selectionByConversation[conversationId] = { mode, modelId };
+      }
+    }
     if(needsMigration){
       const backup=path.join(DATA_DIR,'models.before-providers.json');
       if(!fs.existsSync(backup))fs.copyFileSync(MODELS_FILE,backup);
@@ -116,12 +128,19 @@ export function sanitizeModelForView(model, includeFullKey = false) {
   };
 }
 
-export function getPublicStoreState(includeFullKey = false) {
+export function getPublicStoreState(includeFullKey = false, conversationId = null) {
   const store = loadModelStore();
-  const activeModel = store.models.find((m) => m.id === store.activeModelId) || store.models[0] || null;
+  const scoped = conversationId ? store.selectionByConversation?.[conversationId] : null;
+  let activeMode = scoped?.mode || store.activeMode;
+  let activeModelId = scoped?.modelId || store.activeModelId;
+  if (activeMode === "custom" && !store.models.some((m) => m.id === activeModelId)) {
+    activeModelId = store.models[0]?.id || null;
+    if (!activeModelId) activeMode = "official";
+  }
+  const activeModel = store.models.find((m) => m.id === activeModelId) || store.models[0] || null;
   return {
     version: store.version,
-    activeMode: store.activeMode,
+    activeMode,
     activeModelId: activeModel ? activeModel.id : null,
     activeModel: sanitizeModelForView(activeModel, includeFullKey),
     officialModelLabel: store.officialModelLabel || "",
@@ -132,8 +151,8 @@ export function getPublicStoreState(includeFullKey = false) {
   };
 }
 
-export function getSanitizedState() {
-  return getPublicStoreState(false);
+export function getSanitizedState(conversationId = null) {
+  return getPublicStoreState(false, conversationId);
 }
 
 export function getModelById(id) {
@@ -142,8 +161,13 @@ export function getModelById(id) {
   return store.models.find((m) => m.id === id) || null;
 }
 
-export function getActiveCustomModel() {
-  return resolveModelByIdOrName(null);
+export function getActiveCustomModel(conversationId = null) {
+  const store = loadModelStore();
+  const scoped = conversationId ? store.selectionByConversation?.[conversationId] : null;
+  const mode = scoped?.mode || store.activeMode;
+  const modelId = scoped?.modelId || store.activeModelId;
+  if (mode !== "custom" || !modelId) return null;
+  return store.models.find((m) => m.id === modelId) || null;
 }
 
 export function setActiveSelection(activeMode, activeModelId = undefined) {
@@ -341,12 +365,15 @@ export function deleteModel(id) {
   return true;
 }
 
-export function setSelectionState({ activeMode, activeModelId, officialModelLabel, chatRelayMode }) {
+export function setSelectionState({ activeMode, activeModelId, officialModelLabel, chatRelayMode, conversationId }) {
   const store = loadModelStore();
   if (activeMode !== undefined && !["official", "custom"].includes(activeMode)) throw new Error("无效的模型切换模式");
   if (chatRelayMode !== undefined && !["direct", "mcp"].includes(chatRelayMode)) throw new Error("无效的中转模式");
-  if (activeMode === "official" || activeMode === "custom") {
+  const scopedBefore = conversationId ? store.selectionByConversation?.[conversationId] : null;
+  if (activeMode !== undefined) {
     store.activeMode = activeMode;
+  } else if (scopedBefore?.mode) {
+    store.activeMode = scopedBefore.mode;
   }
   if (activeModelId !== undefined) {
     const target = store.models.find((m) => m.id === activeModelId || m.name === activeModelId || m.modelId === activeModelId);
@@ -357,6 +384,8 @@ export function setSelectionState({ activeMode, activeModelId, officialModelLabe
     } else if (activeModelId === null && activeMode !== "custom") {
       // keep existing activeModelId as default when switching back to custom later
     }
+  } else if (scopedBefore?.modelId) {
+    store.activeModelId = scopedBefore.modelId;
   }
   if (store.activeMode === "custom" && !store.models.some(m => m.id === store.activeModelId)) {
     throw new Error("请先添加并选择一个自定义模型");
@@ -366,6 +395,13 @@ export function setSelectionState({ activeMode, activeModelId, officialModelLabe
   }
   if (chatRelayMode === "direct" || chatRelayMode === "mcp") {
     store.chatRelayMode = chatRelayMode;
+  }
+  if (conversationId && (activeMode !== undefined || activeModelId !== undefined)) {
+    store.selectionByConversation ??= {};
+    store.selectionByConversation[conversationId] = {
+      mode: store.activeMode,
+      modelId: store.activeModelId || null,
+    };
   }
   saveModelStore(store);
   return store;
