@@ -1198,4 +1198,3 @@ export async function switchToAccount(emailOrId) {
     message: `正在无缝切换至 ${target.email}，窗口将在约 2 秒内自动刷新生效…`,
   };
 }
-
