@@ -52,15 +52,16 @@ import { createRequire } from "node:module";
 const requireCjs = createRequire(import.meta.url);
 
 // Dynamically resolve OAuth 2.0 Client Config from env or local Antigravity installation (zero hardcoded secrets in repo)
-let cachedOAuthClient = null;
-function getOfficialOAuthClient() {
-  if (cachedOAuthClient) return cachedOAuthClient;
+let cachedOAuthClients = null;
+
+function readOfficialOAuthClients() {
+  if (cachedOAuthClients) return cachedOAuthClients;
   if (process.env.AGY_OAUTH_CLIENT_ID && process.env.AGY_OAUTH_CLIENT_SECRET) {
-    cachedOAuthClient = {
+    cachedOAuthClients = [{
       clientId: process.env.AGY_OAUTH_CLIENT_ID,
       clientSecret: process.env.AGY_OAUTH_CLIENT_SECRET,
-    };
-    return cachedOAuthClient;
+    }];
+    return cachedOAuthClients;
   }
   try {
     const { resolveResourcesDir } = requireCjs("../../antigravity-claude-skin/tools/agy-paths.cjs");
@@ -68,15 +69,41 @@ function getOfficialOAuthClient() {
     const lsBin = path.join(resourcesDir, "bin", "language_server.exe");
     if (fs.existsSync(lsBin)) {
       const content = fs.readFileSync(lsBin, "latin1");
-      const clientId = content.match(/\d{12}-[a-z0-9]{32}\.apps\.googleusercontent\.com/)?.[0] || "";
-      const clientSecret = content.match(/GOCSPX-[A-Za-z0-9_-]{28}/)?.[0] || "";
-      if (clientId && clientSecret) {
-        cachedOAuthClient = { clientId, clientSecret };
-        return cachedOAuthClient;
+      // Antigravity 2.28 carries multiple OAuth clients (legacy and current);
+      // 13-digit project numbers must not be truncated to 12 digits.
+      const clientIds = [...new Set(content.match(/\d{12,16}-[a-z0-9]{32}\.apps\.googleusercontent\.com/g) || [])];
+      const clientSecrets = [...new Set(content.match(/GOCSPX-[A-Za-z0-9_-]{28}/g) || [])];
+      const clients = clientIds
+        .map((clientId, index) => ({ clientId, clientSecret: clientSecrets[index] || "" }))
+        .filter((client) => client.clientSecret);
+      if (clients.length > 0) {
+        cachedOAuthClients = clients;
+        return cachedOAuthClients;
       }
     }
   } catch {}
   throw new Error("未能从本机 Antigravity 安装目录读取 OAuth 客户端配置，请确认已安装 Antigravity 或设置环境变量 AGY_OAUTH_CLIENT_ID / AGY_OAUTH_CLIENT_SECRET");
+}
+
+export function getOfficialOAuthClient(clientIdHint = "") {
+  const clients = readOfficialOAuthClients();
+  const hint = String(clientIdHint || "").trim();
+  if (hint) {
+    const exact = clients.find((client) => client.clientId === hint);
+    if (exact) return exact;
+  }
+  // The current Antigravity client is used for fresh logins. Legacy accounts
+  // carry their own `aud` and are matched above.
+  return clients.find((client) => client.clientId.startsWith("1071006060591-")) || clients[0];
+}
+
+export function oauthAudienceForAccount(account = {}) {
+  try {
+    const claims = decodeJwtPayload(account.id_token);
+    return typeof claims?.aud === "string" ? claims.aud : "";
+  } catch {
+    return "";
+  }
 }
 const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const OAUTH_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
@@ -472,38 +499,56 @@ export function getAccountsWithActiveSync() {
 /**
  * Refresh OAuth 2.0 access_token using refresh_token
  */
-export async function refreshGoogleToken(refreshToken) {
-  const { clientId, clientSecret } = getOfficialOAuthClient();
-  const params = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
-    refresh_token: refreshToken,
-    grant_type: "refresh_token",
-  });
-
-  const res = await httpsRequestJson(OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  });
-
-  if (res.status !== 200 || !res.json || !res.json.access_token) {
-    throw new Error(
-      `Token 刷新失败 (HTTP ${res.status}): ${res.text.slice(0, 240)}`
-    );
-  }
-
-  const expiresIn = Number(res.json.expires_in || 3599);
-  const expiryIso = new Date(Date.now() + expiresIn * 1000).toISOString();
-
-  return {
-    access_token: res.json.access_token,
-    id_token: res.json.id_token || "",
-    expiry: expiryIso,
-    expires_in: expiresIn,
+export async function refreshGoogleToken(refreshToken, accountOrAudience = "") {
+  const hintedAudience = typeof accountOrAudience === "string"
+    ? accountOrAudience
+    : oauthAudienceForAccount(accountOrAudience);
+  const clients = readOfficialOAuthClients();
+  const ordered = [];
+  const seen = new Set();
+  const add = (client) => {
+    if (!client || seen.has(client.clientId)) return;
+    seen.add(client.clientId);
+    ordered.push(client);
   };
+  add(getOfficialOAuthClient(hintedAudience));
+  for (const client of clients) add(client);
+
+  let lastError = null;
+  for (const { clientId, clientSecret } of ordered) {
+    const params = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    });
+
+    const res = await httpsRequestJson(OAUTH_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    if (res.status === 200 && res.json && res.json.access_token) {
+      const expiresIn = Number(res.json.expires_in || 3599);
+      const expiryIso = new Date(Date.now() + expiresIn * 1000).toISOString();
+      return {
+        access_token: res.json.access_token,
+        id_token: res.json.id_token || "",
+        expiry: expiryIso,
+        expires_in: expiresIn,
+        client_id: clientId,
+      };
+    }
+
+    lastError = `Token 刷新失败 (HTTP ${res.status}): ${res.text.slice(0, 240)}`;
+    // A refresh token is bound to the OAuth client that issued it. If this
+    // client does not match, try the other Antigravity clients in the binary.
+    if (!/unauthorized_client/i.test(String(res.text || ""))) break;
+  }
+  throw new Error(lastError || "Token 刷新失败：没有可用的 OAuth 客户端");
 }
 
 /**
@@ -707,6 +752,36 @@ export function removeAccount(emailOrId) {
 }
 
 /**
+ * Check whether an account is licensed for Antigravity before switching.
+ * Only an explicit 403 license response blocks the switch; a network failure
+ * stays non-blocking so a temporary outage does not make accounts unusable.
+ */
+export async function checkAccountLicense(account) {
+  if (!account?.access_token) return { ok: true, unknown: true };
+  for (const endpoint of QUOTA_SUMMARY_ENDPOINTS) {
+    try {
+      const res = await httpsRequestJson(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${account.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+        timeoutMs: 8000,
+      });
+      if (res.status === 200) return { ok: true };
+      if (res.status === 403) {
+        const message = String(res.json?.error?.message || res.text || "").trim();
+        if (/valid license|license of this product|permission_denied|没有.*许可/i.test(message)) {
+          return { ok: false, status: 403, message: message || "该账号没有 Antigravity 使用许可" };
+        }
+      }
+    } catch {}
+  }
+  return { ok: true, unknown: true };
+}
+
+/**
  * Fetch quota summary for an account (non-blocking helper)
  */
 export async function refreshAccountQuota(emailOrId) {
@@ -724,7 +799,7 @@ export async function refreshAccountQuota(emailOrId) {
   } catch {}
 
   if (!target.access_token || expiryMs < Date.now() + 5 * 60_000) {
-    const refreshed = await refreshGoogleToken(target.refresh_token);
+    const refreshed = await refreshGoogleToken(target.refresh_token, target);
     target.access_token = refreshed.access_token;
     target.expiry = refreshed.expiry;
     if (refreshed.id_token) target.id_token = refreshed.id_token;
@@ -1040,12 +1115,17 @@ export async function switchToAccount(emailOrId) {
   } catch {}
 
   if (!target.access_token || expiryMs < Date.now() + 15 * 60_000) {
-    const refreshed = await refreshGoogleToken(target.refresh_token);
+    const refreshed = await refreshGoogleToken(target.refresh_token, target);
     target.access_token = refreshed.access_token;
     target.expiry = refreshed.expiry;
     if (refreshed.id_token) {
       target.id_token = refreshed.id_token;
     }
+  }
+
+  const license = await checkAccountLicense(target);
+  if (!license.ok) {
+    throw new Error(`账号 ${target.email} 没有 Antigravity 使用许可，已保持当前账号不变。${license.message ? `（${license.message}）` : ""}`);
   }
 
   target.lastActiveAt = new Date().toISOString();
@@ -1118,3 +1198,4 @@ export async function switchToAccount(emailOrId) {
     message: `正在无缝切换至 ${target.email}，窗口将在约 2 秒内自动刷新生效…`,
   };
 }
+

@@ -12,7 +12,9 @@
 2. **2 秒零登出无感热切换 (`core/hot-switch-worker.mjs`)**：
    - 自动将当前登录账号同步至本地账号库，绝不丢失已有登录态；
    - 切换目标账号时自动检查并刷新 OAuth `access_token`；
-   - 自动写入 Windows 凭据管理器 (`gemini:antigravity`) 与 `%APPDATA%\Antigravity\app_storage.json`；
+   - 根据账号 `id_token.aud` 自动匹配 Antigravity 新旧 OAuth 客户端，避免 `unauthorized_client` 刷新失败；
+   - 自动写入 Antigravity 2.28+ 的 `antigravity-<credential-user-scope>`、兼容旧版 `gemini:antigravity`，并更新 `%APPDATA%\Antigravity\app_storage.json`；
+   - 切换前校验目标账号是否有 Antigravity 使用许可；无许可账号会提示并保持当前账号，不会跳回登录页；
    - 通过独立进程仅重启后台 `language_server.exe`，Electron 主窗口与已打开代码工作区保持不变，2 秒内即可无缝切换至新账号。
 3. **三种账号添加方式**：
    - **浏览器 OAuth 授权**：启动本地临时回调服务并拉起浏览器登录新 Google 账号，无需退出当前账号；
