@@ -12,6 +12,8 @@ await new Promise(resolve=>api.listen(0,'127.0.0.1',resolve));const base='http:/
 const call=async(route,body,origin)=>{const res=await fetch(base+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(origin?{Origin:origin}:{})},body:body?JSON.stringify(body):undefined});return {status:res.status,data:await res.json().catch(()=>null)};};
 try{
   check((await call('/api/suite/settings')).data.settings.guardian===false,'update guardian is opt-in');
+  const themeCss=fs.readFileSync(path.join(root,'antigravity-claude-skin','src','claude-core.css'),'utf8');
+  check(/\.surface-composer\.rounded-2xl\.bg-card-border\s*\{[^}]*overflow:\s*visible/.test(themeCss),'composer allows native / and @ menus to overflow');
   await call('/api/suite/settings',{skin:false,i18n:true,accounts:false,api:false});
   check(settings.readSettings().i18n&&!settings.readSettings().skin,'Chinese-only settings persist independently');
   check((await call('/api/models')).status===403,'disabled API is rejected in standalone and sidecar routes');

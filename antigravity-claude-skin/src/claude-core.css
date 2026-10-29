@@ -576,6 +576,12 @@ body.theme-dark [data-testid="user-input-step"] .user-input-buttons-shadow {
   overflow: hidden !important;
 }
 
+/* 原生 / 命令与 @ 提及菜单是输入框上方的绝对定位子节点；
+   输入卡片的 overflow:hidden 会把整个菜单裁掉，必须让 composer 可见溢出。 */
+.surface-composer.rounded-2xl.bg-card-border {
+  overflow: visible !important;
+}
+
 .rounded-2xl.bg-card-border:focus-within {
   border-color: #D0A694 !important;
   box-shadow: 0 6px 24px -3px rgba(217, 119, 87, 0.11), 0 2px 6px rgba(20, 20, 19, 0.04) !important;
