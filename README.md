@@ -1,6 +1,10 @@
 # Antigravity Enhancement Suite (Antigravity 全能增强套件)
 
 <p align="center">
+  <a href="./README.en.md">English</a> &nbsp;|&nbsp; <b>简体中文</b>
+</p>
+
+<p align="center">
   <strong>Claude 书卷风换肤 · 简体中文汉化 · Google 多账号热切换 · 中转 API 同会话切换 · 按需独立启用</strong>
 </p>
 
