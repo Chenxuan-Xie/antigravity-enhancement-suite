@@ -14,9 +14,9 @@ try{
   check((await call('/api/suite/settings')).data.settings.guardian===false,'update guardian is opt-in');
   const themeCss=fs.readFileSync(path.join(root,'antigravity-claude-skin','src','claude-core.css'),'utf8');
   check(/\.surface-composer\.rounded-2xl\.bg-card-border\s*\{[^}]*overflow:\s*visible/.test(themeCss),'composer allows native / and @ menus to overflow');
-  const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
-  const readmeZh=fs.readFileSync(path.join(root,'docs','readme','README_zh.md'),'utf8');
-  check(/\[简体中文\]\(docs\/readme\/README_zh\.md\)/.test(readme)&&/\[English\]\(\.\.\/\.\.\/README\.md\)/.test(readmeZh),'README language bar links to translated page');
+  const readmeZh=fs.readFileSync(path.join(root,'README.md'),'utf8');
+  const readmeEn=fs.readFileSync(path.join(root,'docs','readme','README_en.md'),'utf8');
+  check(/\[English\]\(docs\/readme\/README_en\.md\)/.test(readmeZh)&&/\[简体中文\]\(\.\.\/\.\.\/README\.md\)/.test(readmeEn),'README language bar links to translated page');
   await call('/api/suite/settings',{skin:false,i18n:true,accounts:false,api:false});
   check(settings.readSettings().i18n&&!settings.readSettings().skin,'Chinese-only settings persist independently');
   check((await call('/api/models')).status===403,'disabled API is rejected in standalone and sidecar routes');
