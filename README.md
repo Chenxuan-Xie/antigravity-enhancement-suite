@@ -1,10 +1,11 @@
-<a id="zh-cn"></a>
-
-# Antigravity Enhancement Suite (Antigravity 全能增强套件)
+# Antigravity Enhancement Suite
 
 <p align="center">
-  <a href="#user-content-zh-cn"><b>简体中文</b></a> &nbsp;|&nbsp; <a href="#user-content-en">English</a>
+  <strong>选择语言 · Choose language</strong>
 </p>
+
+<details name="language" open>
+<summary><b>简体中文</b></summary>
 
 <p align="center">
   <strong>Claude 书卷风换肤 · 简体中文汉化 · Google 多账号热切换 · 中转 API 同会话切换 · 按需独立启用</strong>
@@ -353,15 +354,12 @@ antigravity-enhancement-suite/
 - 简体中文基础词库参考并融合了 [Silas-02/antigravity-desktop-cn](https://github.com/Silas-02/antigravity-desktop-cn) 项目的翻译贡献。
 - 本项目采用 [MIT License](./LICENSE) 开源协议，欢迎 Star、Fork 与提交 PR！
 
+</details>
+
 ---
 
-<a id="en"></a>
-
-# Antigravity Enhancement Suite
-
-<p align="center">
-  <a href="#user-content-zh-cn">简体中文</a> &nbsp;|&nbsp; <b>English</b>
-</p>
+<details name="language">
+<summary><b>English</b></summary>
 
 <p align="center">
   <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Seamless relay API switching · Independent modules</strong>
@@ -710,3 +708,5 @@ To maintain the screenshots, first run `node suite/tools/read-docs-templates.mjs
 
 - The Simplified Chinese base dictionary references and incorporates translations from [Silas-02/antigravity-desktop-cn](https://github.com/Silas-02/antigravity-desktop-cn).
 - This project is released under the [MIT License](./LICENSE). Stars, forks, and pull requests are welcome!
+
+</details>

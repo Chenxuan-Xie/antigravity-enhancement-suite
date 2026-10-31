@@ -15,7 +15,7 @@ try{
   const themeCss=fs.readFileSync(path.join(root,'antigravity-claude-skin','src','claude-core.css'),'utf8');
   check(/\.surface-composer\.rounded-2xl\.bg-card-border\s*\{[^}]*overflow:\s*visible/.test(themeCss),'composer allows native / and @ menus to overflow');
   const readme=fs.readFileSync(path.join(root,'README.md'),'utf8');
-  check(/id="zh-cn"/.test(readme)&&/href="#user-content-en"/.test(readme)&&/id="en"/.test(readme)&&/href="#user-content-zh-cn"/.test(readme),'README language switch stays on the same page');
+  check(/<details name="language" open>[\s\S]*<summary><b>简体中文<\/b>/.test(readme)&&/<details name="language">[\s\S]*<summary><b>English<\/b>/.test(readme),'README language switch shows one language on the same page');
   await call('/api/suite/settings',{skin:false,i18n:true,accounts:false,api:false});
   check(settings.readSettings().i18n&&!settings.readSettings().skin,'Chinese-only settings persist independently');
   check((await call('/api/models')).status===403,'disabled API is rejected in standalone and sidecar routes');
