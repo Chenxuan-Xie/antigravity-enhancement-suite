@@ -23,7 +23,7 @@ try{
   check((await call('/api/suite/settings',{i18n:false},'https://evil.example')).status===403,'unrelated websites cannot change module settings');
   check((await call('/api/suite/settings',{guardian:'false'})).status===400,'invalid toggle values do not overwrite preferences');
   check((await call('/api/suite/settings',{unknown:true})).status===400,'unknown settings are rejected');
-  await call('/api/suite/settings',{api:true,greetingName:'<test>',replyFont:'sans',replySize:'large'});
+  await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large'});
   check(settings.readSettings().replySize==='large','appearance settings persist');
   await call('/api/suite/settings',{showQuota:false});
   check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');

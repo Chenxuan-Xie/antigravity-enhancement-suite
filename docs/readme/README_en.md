@@ -56,15 +56,15 @@ The three animations are recorded at **20 fps**, with static duplicate frames me
 
 ### 1. Left control center: four independent module switches
 
-Click **Enhancement Suite Control Center** on the left to manage the skin, localization, multi-account, and API modules. The panel also provides theme selection, a custom welcome name, reply font and size, quota display, token usage, low-quota reminders, and an optional self-healing guardian. Settings are saved locally; Chinese-only localization can keep the official colors.
+Click **Enhancement Suite Control Center** on the left to manage the skin, localization, multi-account, and API modules. The panel also provides theme selection, reply font and size, quota display, token usage, low-quota reminders, and an optional self-healing guardian. Settings are saved locally; Chinese-only localization can keep the official colors.
 
 <p align="center">
-  <img src="../../assets/suite-control-center.png" width="100%" alt="Current Enhancement Suite Control Center: independent module switches, appearance and welcome name, display and background settings" />
+  <img src="../../assets/suite-control-center.png" width="100%" alt="Current Enhancement Suite Control Center: independent module switches, appearance, display and background settings" />
 </p>
 
-### 2. Warm white / warm charcoal themes and welcome message (animation)
+### 2. Warm white / warm charcoal themes (animation)
 
-Use the control center to choose Light, Dark, or Follow system. The welcome message uses the selected appearance typography, and the orange Antigravity mark floats gently. The saved skin switch and theme mode persist across restarts; turning the skin off keeps the official appearance.
+Use the control center to choose Light, Dark, or Follow system. The saved skin switch and theme mode persist across restarts; turning the skin off keeps the official appearance.
 
 <p align="center">
   <img src="../../assets/demo-skin-i18n.gif" width="100%" alt="Current UI at 20 fps: open the left control center and switch between dark and light themes" />
@@ -227,15 +227,12 @@ The Windows desktop entry reads the current system proxy each time it opens so t
 ### 1. Claude-inspired two-tone skin and Simplified Chinese localization (`antigravity-claude-skin`)
 
 1. **Switch skins in the control center (Light / Dark / Follow system)**:
-   - Open **Enhancement Suite Control Center → Appearance & Welcome** on the left and choose one of the three modes in the **Switch skin** dropdown. The **Claude skin** switch at the top controls whether the suite skin is used:
+   - Open **Enhancement Suite Control Center → Appearance** on the left and choose one of the three modes in the **Switch skin** dropdown. The **Claude skin** switch at the top controls whether the suite skin is used:
      - **☀️ Light (parchment `#FAF9F5`)**: Claude Desktop's signature warm parchment canvas with caramel-terracotta accents;
      - **🌙 Dark (warm charcoal `#1F1E1D`)**: Claude Desktop's classic warm-charcoal canvas (sidebar `#161514`, cards `#282725`, off-white text `#ECE9E2`), avoiding harsh pure black and glare;
      - **💻 Follow system**: listens to the Windows 10/11 light/dark setting and switches in real time, including the native window controls.
-2. **Set a custom home greeting name**:
-   - A new chat shows `Good morning`, `Good afternoon`, or `Good evening` based on the time.
-   - Enter a name under **Home greeting name** in the left control center; it saves instantly. Clearing it restores the default, and the Antigravity mark remains. When localization is off, the English greeting is used.
-3. **Customize fonts, sizes, or translation entries**:
-   - The control center offers **Follow theme / Book serif / Modern sans-serif** and **Small / Standard / Large** sizes without editing CSS. The greeting follows the same font, and the Antigravity mark stays orange and gently floating. Turning the skin off restores the official colors, fonts, and layout and hides the suite greeting; appearance settings are retained and restored when re-enabled.
+2. **Customize fonts, sizes, or translation entries**:
+   - The control center offers **Follow theme / Book serif / Modern sans-serif** and **Small / Standard / Large** sizes without editing CSS. Turning the skin off restores the official colors, fonts, and layout; appearance settings are retained and restored when re-enabled.
    - Skin and theme settings persist across restarts. The app keeps the native page-loading flow; once the page is ready, the control center reads local configuration without waiting for a backend switch. With the skin off, the official appearance remains and the control-center entry is still available.
    - Windows may retain Electron-injected styles from older versions. The current release disables the old preload skin injection in memory while keeping native interfaces and leaving the official ASAR untouched. After updating, fully quit and reopen the app once; subsequent skin toggles apply immediately.
    - The Windows background language service reads the enabled system proxy and preserves explicitly configured proxy environment variables; loopback traffic bypasses the proxy. If sign-in reports an `oauth2.googleapis.com/token` timeout, confirm the proxy can reach Google, then fully quit and reopen the app. The suite does not change system proxy or global environment variables.

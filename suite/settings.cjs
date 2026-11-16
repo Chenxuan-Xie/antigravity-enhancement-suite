@@ -3,7 +3,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const file = process.env.AGY_SUITE_SETTINGS_FILE || path.join(root, 'data', 'suite-settings.json');
 const defaults = { version: 1, skin: true, themeMode: 'light', i18n: true, accounts: true, api: true,
-  guardian: false, greetingName: '', replyFont: 'default', replySize: 'standard', showUsage: false, showQuota: true, quotaReminder: true };
+  guardian: false, replyFont: 'default', replySize: 'standard', showUsage: false, showQuota: true, quotaReminder: true };
 function readSettings() {
   if (!fs.existsSync(file)) return { ...defaults };
   const data = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
@@ -15,7 +15,6 @@ function validate(data) {
   }
   if (!['light','dark','system'].includes(data.themeMode)) throw Error('Invalid themeMode setting');
   if (!['default','serif','sans'].includes(data.replyFont) || !['small','standard','large'].includes(data.replySize)) throw Error('Invalid typography setting');
-  if (typeof data.greetingName !== 'string' || data.greetingName.length > 60) throw Error('称呼最多 60 个字符');
   return Object.fromEntries(Object.keys(defaults).map(key => [key, data[key]]));
 }
 function writeSettings(patch) {
