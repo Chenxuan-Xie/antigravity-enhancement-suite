@@ -346,7 +346,7 @@ electron.app.on("browser-window-created", (_event, win) => {
     if (process.platform === "win32" && typeof win.setTitleBarOverlay === "function") {
       const origSetOverlay = win.setTitleBarOverlay.bind(win);
       win.setTitleBarOverlay = function (options) {
-        if(!['#faf9f5','#1f1e1d','#161514'].includes(String(options?.color||'').toLowerCase()))win.__agyOriginalOverlay = options;
+        if(!['#faf9f5','#f0eee6','#1f1e1d','#161514'].includes(String(options?.color||'').toLowerCase()))win.__agyOriginalOverlay = options;
         if (!flags().skin) return origSetOverlay(options);
         const palette=startup.skinPalette(flags(),electron.nativeTheme?.shouldUseDarkColors);
         return origSetOverlay({

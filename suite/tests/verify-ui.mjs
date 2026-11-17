@@ -12,7 +12,8 @@ try{
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
   const providers=[{id:'fixture-provider',name:'Fixture',baseUrl:'https://fixture.test/v1',protocol:'openai',hasApiKey:true}];
-  d.body.innerHTML='<nav><a href="/" data-testid="new-conversation-button">New conversation</a><a href="/customizations">Customizations</a></nav><div data-testid="settings-content"><h1>Settings</h1></div><button id="translate-me">Settings</button><main><div data-testid="agent-input-box"><div data-lexical-editor="true" contenteditable="true"></div><button data-testid="model-selector-trigger">Gemini</button><button data-testid="send-button">Send</button></div></main><div data-testid="planner-response-text">A sample reply</div>';
+  d.documentElement.setAttribute('style','--shell:#FAFAFA;--sidebar:#FAFAFA;--glass:#FFFFFF;--onyx-selected:#FFFFFF;');
+  d.body.innerHTML='<div class="agy-inset-shell"><div class="contents" style="--color-sidebar: var(--shell-canvas); --sidebar: var(--shell-canvas);"><nav class="bg-sidebar"><a href="/" data-testid="new-conversation-button">New conversation</a><a href="/customizations">Customizations</a></nav></div></div><div data-testid="settings-content"><h1>Settings</h1></div><button id="translate-me">Settings</button><main><div data-testid="agent-input-box"><div data-lexical-editor="true" contenteditable="true"></div><button data-testid="model-selector-trigger">Gemini</button><button data-testid="send-button">Send</button></div></main><div data-testid="planner-response-text">A sample reply</div>';
   const nativeStyle=d.createElement('style');nativeStyle.textContent='body{background:#fafafa;color:#383a42;font-family:system-ui}';d.head.appendChild(nativeStyle);const nativeBackground=w.getComputedStyle(d.body).backgroundColor,nativeFont=w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily;
   w.requestAnimationFrame=fn=>w.setTimeout(fn,0);
   const editor=d.querySelector('[data-lexical-editor]'),root={getWritable:()=>({clear:()=>{editor.textContent='';}})};
@@ -51,11 +52,13 @@ try{
     assert(!d.querySelector('[data-setting=showUsage]').checked&&!d.querySelector('[data-setting=showUsage]').disabled&&d.querySelector('[role=status]').textContent.includes('Fixture save failure'),'failed save restores committed checkbox state and reports the error');
     await w.__agySuite.save({skin:true,replyFont:'sans',replySize:'large'});await pause(60);
     assert(d.querySelector('#agy-claude-skin')&&w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontSize==='18px','skin, font and font size update without page reload');
+    assert(w.getComputedStyle(d.querySelector('.bg-sidebar')).backgroundColor==='rgb(240, 238, 230)','light mode inset sidebar uses warm parchment beige instead of white');
     assert(!d.querySelector('.agy-suite-greeting')&&!d.querySelector('[data-setting="greetingName"]'),'redundant suite greeting and greeting name input are removed');
     assert(w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily.includes('system-ui'),'reply font follows the selected sans serif style');
     await w.__agySuite.save({replyFont:'default'});assert(w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily.includes('ClaudeSerif'),'default reply font follows the skin serif font');
     w.__AGY_THEME_SWITCHER.setMode('dark');await pause(60);
     assert(w.__agySuite.getSettings().themeMode==='dark'&&d.body.classList.contains('theme-dark'),'theme mode persists through the shared settings API');
+    assert(w.getComputedStyle(d.querySelector('.bg-sidebar')).backgroundColor==='rgb(22, 21, 20)'&&w.getComputedStyle(d.body).getPropertyValue('--glass').trim()==='#2B2A27','dark mode inset sidebar and glass surfaces use warm charcoal instead of white');
     await w.__agySuite.save({skin:false});await pause(40);
     assert(!w.__AGY_THEME_SWITCHER&&!d.body.classList.contains('theme-dark')&&!d.querySelector('#agy-settings-skin-switcher'),'disabling skin stops theme overrides and restores official theme classes');
     assert(!d.querySelector('#agy-claude-skin')&&w.__AGY_MODEL_SWITCHER,'disabling skin keeps the English API interface active');

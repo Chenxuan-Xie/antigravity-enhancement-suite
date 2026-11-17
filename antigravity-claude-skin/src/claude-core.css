@@ -39,9 +39,21 @@ body.theme-light,
   --sidebar: #F0EEE6 !important;
   --sidebar-muted: #E5E2D7 !important;
   --sidebar-secondary: #DCD8CC !important;
+  --shell: #F0EEE6 !important;
+  --shell-canvas: #F0EEE6 !important;
 
   --card: #FFFFFF !important;
   --card-border: #E2DFD5 !important;
+  --glass: #F2EFE7 !important;
+  --glass-border: rgba(20, 20, 19, 0.085) !important;
+  --glass-highlight: rgba(255, 255, 255, 0.85) !important;
+  --scrim: rgba(20, 20, 19, 0.28) !important;
+  --onyx-frame: #EFECE3 !important;
+  --onyx-well: rgba(20, 20, 19, 0.055) !important;
+  --onyx-raised: #FDFCF9 !important;
+  --onyx-selected: #FAF9F5 !important;
+  --onyx-key: #FFFFFF !important;
+  --home-glow: rgba(217, 119, 87, 0.08) !important;
 
   --muted: #EFECE3 !important;
   --muted-foreground: #706D64 !important;
@@ -66,6 +78,8 @@ body.theme-light,
   --color-sidebar: var(--sidebar) !important;
   --color-sidebar-muted: var(--sidebar-muted) !important;
   --color-sidebar-secondary: var(--sidebar-secondary) !important;
+  --color-shell: var(--shell) !important;
+  --color-shell-canvas: var(--shell-canvas) !important;
   --color-card: var(--card) !important;
   --color-card-border: var(--card-border) !important;
   --color-muted: var(--muted) !important;
@@ -140,9 +154,21 @@ body.dark-theme,
   --sidebar: #161514 !important;
   --sidebar-muted: #242320 !important;
   --sidebar-secondary: #2E2C29 !important;
+  --shell: #161514 !important;
+  --shell-canvas: #161514 !important;
 
   --card: #282725 !important;
   --card-border: #3B3935 !important;
+  --glass: #2B2A27 !important;
+  --glass-border: rgba(236, 233, 226, 0.11) !important;
+  --glass-highlight: rgba(255, 255, 255, 0.06) !important;
+  --scrim: rgba(0, 0, 0, 0.52) !important;
+  --onyx-frame: #252422 !important;
+  --onyx-well: rgba(236, 233, 226, 0.06) !important;
+  --onyx-raised: #2A2926 !important;
+  --onyx-selected: #282725 !important;
+  --onyx-key: #35332F !important;
+  --home-glow: rgba(217, 119, 87, 0.12) !important;
 
   --muted: #252422 !important;
   --muted-foreground: #9A968C !important;
@@ -167,6 +193,8 @@ body.dark-theme,
   --color-sidebar: var(--sidebar) !important;
   --color-sidebar-muted: var(--sidebar-muted) !important;
   --color-sidebar-secondary: var(--sidebar-secondary) !important;
+  --color-shell: var(--shell) !important;
+  --color-shell-canvas: var(--shell-canvas) !important;
   --color-card: var(--card) !important;
   --color-card-border: var(--card-border) !important;
   --color-muted: var(--muted) !important;
@@ -712,7 +740,20 @@ body.theme-dark button.rounded-full.bg-muted.border.border-border:hover {
   border-color: #D97757 !important;
 }
 
-/* Left Sidebar */
+/* Left Sidebar & Inset Shell Frame */
+body:not(.theme-dark):not(.dark) .agy-inset-shell,
+html:not(.dark):not(.theme-dark) .agy-inset-shell {
+  --shell-canvas: #F0EEE6 !important;
+  --card-edge: rgba(20, 20, 19, 0.09) !important;
+}
+
+body.theme-dark .agy-inset-shell,
+body.dark .agy-inset-shell,
+html.dark .agy-inset-shell {
+  --shell-canvas: #161514 !important;
+  --card-edge: rgba(236, 233, 226, 0.09) !important;
+}
+
 .bg-sidebar {
   background-color: var(--sidebar) !important;
 }

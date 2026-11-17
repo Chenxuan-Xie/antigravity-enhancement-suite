@@ -58,7 +58,7 @@
     try {
       if (window.electronNative && typeof window.electronNative.setTitleBarOverlay === "function") {
         window.electronNative.setTitleBarOverlay({
-          color: isDark ? "#1F1E1D" : "#FAF9F5",
+          color: isDark ? "#161514" : "#F0EEE6",
           symbolColor: isDark ? "#ECE9E2" : "#3D3A34",
           height: 30
         });

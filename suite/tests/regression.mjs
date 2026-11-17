@@ -14,6 +14,7 @@ try{
   check((await call('/api/suite/settings')).data.settings.guardian===false,'update guardian is opt-in');
   const themeCss=fs.readFileSync(path.join(root,'antigravity-claude-skin','src','claude-core.css'),'utf8');
   check(/\.surface-composer\.rounded-2xl\.bg-card-border\s*\{[^}]*overflow:\s*visible/.test(themeCss),'composer allows native / and @ menus to overflow');
+  check(/--shell-canvas:\s*#F0EEE6\s*!important/.test(themeCss)&&/--shell-canvas:\s*#161514\s*!important/.test(themeCss)&&/--glass:\s*#2B2A27\s*!important/.test(themeCss),'inset shell sidebar and glass surfaces define light parchment and dark charcoal tokens');
   const readmeZh=fs.readFileSync(path.join(root,'README.md'),'utf8');
   const readmeEn=fs.readFileSync(path.join(root,'docs','readme','README_en.md'),'utf8');
   check(/\[English\]\(docs\/readme\/README_en\.md\)/.test(readmeZh)&&/\[简体中文\]\(\.\.\/\.\.\/README\.md\)/.test(readmeEn),'README language bar links to translated page');
