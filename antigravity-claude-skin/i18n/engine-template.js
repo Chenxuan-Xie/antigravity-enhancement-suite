@@ -1672,6 +1672,47 @@ function buildRendererScript(dictJson, entriesJson) {
             if (actTrans) return "是否允许" + actTrans + "？";
         }
 
+        match = normalized.match(/^Welcome back(?:,\\s*(.+?))?[.,!]?\\s*Where should we pick up\\??$/i);
+        if (match) return match[1] ? ("欢迎回来，" + match[1].trim() + "。今天从哪里继续？") : "欢迎回来，今天从哪里继续？";
+
+        match = normalized.match(/^Welcome back,\\s*(.+?)[.!]*$/i);
+        if (match) return "欢迎回来，" + match[1].trim();
+
+        match = normalized.match(/^Turn\\s+(\\d+)\\s+of\\s+(\\d+)$/i);
+        if (match) return "第 " + match[1] + " / " + match[2] + " 轮";
+
+        match = normalized.match(/^Load older messages,\\s*showing\\s+(\\d+)\\s+of\\s+(\\d+)$/i);
+        if (match) return "加载更早消息（已显示 " + match[1] + " / " + match[2] + "）";
+
+        match = normalized.match(/^Showing\\s+(\\d+)\\s+of\\s+(\\d+)\\s+messages?$/i);
+        if (match) return "已显示 " + match[1] + " / " + match[2] + " 条消息";
+
+        match = normalized.match(/^Select model,\\s*current:\\s*(.+)$/i);
+        if (match) return "选择模型，当前：" + match[1].trim();
+
+        match = normalized.match(/^Agent permissions preset selector,\\s*current:\\s*(.+)$/i);
+        if (match) {
+            const rawPreset = match[1].trim();
+            const lowerPreset = rawPreset.toLowerCase();
+            const presetLabel = lowerPreset === 'turbo' ? '极速' : lowerPreset === 'auto' ? '自动' : lowerPreset === 'manual' ? '手动确认' : rawPreset;
+            return "智能体权限预设，当前：" + presetLabel;
+        }
+
+        match = normalized.match(/^Side question:\\s*(.+)$/i);
+        if (match) return "侧边提问：" + match[1].trim();
+
+        match = normalized.match(/^(?:Unknown:\\s*)?There was a network issue connecting to the server,\\s*please try again\\.?$/i);
+        if (match) return "连接服务器时出现网络问题，请重试";
+
+        match = normalized.match(/^Worked for\\s+(?:(\\d+)\\s*h(?:ours?)?\\s*)?(?:(\\d+)\\s*m(?:in(?:ute)?s?)?\\s*)?(?:(\\d+)\\s*s(?:ec(?:ond)?s?)?)?(?:\\s*([>›]))?$/i);
+        if (match && (match[1] || match[2] || match[3])) {
+            const parts = [];
+            if (match[1]) parts.push(match[1] + " 小时");
+            if (match[2]) parts.push(match[2] + " 分钟");
+            if (match[3]) parts.push(match[3] + " 秒");
+            return "工作了 " + parts.join(" ") + (match[4] ? " " + match[4] : "");
+        }
+
         return null;
     }
 
