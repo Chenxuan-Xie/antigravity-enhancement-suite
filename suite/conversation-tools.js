@@ -204,6 +204,20 @@
       border-radius: 12px;
       transition: outline-color 0.3s ease;
     }
+    .agy-code-fold-btn {
+      margin-left: auto; padding: 1px 7px; border-radius: 6px;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
+      background: transparent; color: inherit; cursor: pointer;
+      font: 500 11px/1.4 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      opacity: 0.78; transition: all 0.14s ease;
+    }
+    .agy-code-fold-btn:hover { opacity: 1; border-color: #D97757; color: #D97757; }
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
+      max-height: 156px !important;
+      overflow: hidden !important;
+      mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+    }
   `;
   document.head.appendChild(style);
 
@@ -325,7 +339,11 @@
     if (card) {
       const header = card.querySelector(':scope > .border-b');
       if (header) {
-        const token = (header.textContent || '').trim().split(/\s+/)[0] || '';
+        const headerText = [...header.childNodes]
+          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+          .map(n => n.textContent || '')
+          .join(' ');
+        const token = headerText.trim().split(/\s+/)[0] || '';
         if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
       }
     }
@@ -629,6 +647,21 @@
 
         const actions = document.createElement('div');
         actions.className = 'agy-od-item-actions';
+        const reuseBtn = document.createElement('button');
+        reuseBtn.type = 'button';
+        reuseBtn.className = 'agy-od-mini-btn';
+        reuseBtn.dataset.reuseTurn = String(turn.index);
+        reuseBtn.title = text('将本轮提问填入输入框复用', 'Reuse this prompt in composer');
+        reuseBtn.textContent = '↺';
+        reuseBtn.onclick = e => {
+          e.stopPropagation();
+          if (window.__agyPromptVault?.insertIntoComposer) {
+            window.__agyPromptVault.insertIntoComposer(turn.prompt, { append: false });
+          } else {
+            writeClipboard(turn.prompt);
+          }
+          flashStatus(text(`✓ 已将第 ${turn.index} 轮提问填入输入框`, `✓ Loaded Turn #${turn.index} prompt`));
+        };
         const copyOne = document.createElement('button');
         copyOne.type = 'button';
         copyOne.className = 'agy-od-mini-btn';
@@ -651,7 +684,7 @@
           e.stopPropagation();
           toggleStar(turn.id);
         };
-        actions.append(copyOne, starToggle);
+        actions.append(reuseBtn, copyOne, starToggle);
         top.append(idx, prompt, actions);
         card.appendChild(top);
 
@@ -729,9 +762,59 @@
     }
   }
 
+  function cleanupCodeFolds() {
+    document.querySelectorAll('.agy-code-fold-btn').forEach(el => el.remove());
+    document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
+  }
+
+  function enhanceLongCodeBlocks() {
+    const root = primaryRoot();
+    if (!root) return;
+    for (const card of root.querySelectorAll('[data-testid="planner-response-text"] .rounded-xl.bg-muted.border')) {
+      const header = card.querySelector(':scope > .border-b');
+      const pre = card.querySelector('pre');
+      if (!header || !pre) continue;
+      const lines = (pre.textContent || '').replace(/\n+$/, '').split('\n').length;
+      let btn = header.querySelector('.agy-code-fold-btn');
+      if (lines < 18) {
+        btn?.remove();
+        card.removeAttribute('data-agy-code-folded');
+        continue;
+      }
+      if (getComputedStyle(header).display !== 'flex') {
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+        header.style.gap = '8px';
+      }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'agy-code-fold-btn';
+        btn.setAttribute('data-ag-localization-skip', 'true');
+        btn.onclick = e => {
+          e.stopPropagation();
+          const next = card.getAttribute('data-agy-code-folded') !== 'true';
+          card.setAttribute('data-agy-code-folded', String(next));
+          updateLabel();
+        };
+        header.appendChild(btn);
+      }
+      const updateLabel = () => {
+        const folded = card.getAttribute('data-agy-code-folded') === 'true';
+        const label = folded
+          ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
+          : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
+        if (btn.textContent !== label) btn.textContent = label;
+      };
+      updateLabel();
+    }
+  }
+
   function render() {
     if (disposed) return;
     const enabled = window.__agySuiteSettings?.outline !== false;
+    if (!enabled) cleanupCodeFolds();
+    else enhanceLongCodeBlocks();
     const turns = enabled ? getTurns() : [];
     let pill = document.getElementById('agy-outline-pill');
 
@@ -815,7 +898,7 @@
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, .agy-code-fold-btn')) continue;
       scheduleRender();
       break;
     }
@@ -850,6 +933,7 @@
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();
     document.getElementById('agy-outline-drawer')?.remove();
+    cleanupCodeFolds();
     document.querySelectorAll('[data-agy-jump-highlight]').forEach(n => n.removeAttribute('data-agy-jump-highlight'));
     style.remove();
     delete window.__agyConvTools;

@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="c9aa0cbac0cec0f0927efd4007545b7a35a05b613f7c8d2fd98304c809f236ec"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="0862c66c9e0a8d62604c0d99f5b72ca285f2d7c2cbe5af320200dd1e8d1f45cd"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -4859,14 +4859,15 @@ window.__agySuiteModules.accounts=function(){
     #agy-account-capsule{display:flex;align-items:center;justify-content:flex-end;align-self:flex-end;flex:0 0 auto;margin:4px 12px 8px;max-width:100%}
     #agy-account-badge{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;width:auto!important;max-width:240px;border:1px solid var(--border,#8883);border-radius:999px;padding:5px 10px;margin:0;background:transparent;color:inherit;font:12px system-ui;cursor:pointer;transition:background .15s,border-color .15s}
     #agy-account-badge:hover,#agy-account-badge:focus-visible{background:#8882;border-color:#8885;outline:none}
-    #agy-account-badge .quota-dot{width:6px;height:6px;border-radius:50%;background:#5c8b67;flex-shrink:0}#agy-account-badge[data-low=true] .quota-dot{background:#c57d46}
+    #agy-account-badge .quota-dot{width:6px;height:6px;border-radius:50%;background:#5c8b67;flex-shrink:0}#agy-account-badge[data-warn=true] .quota-dot{background:#c68a35}#agy-account-badge[data-low=true] .quota-dot{background:#c9563c}
     #agy-account-badge .quota-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#agy-account-badge .quota-chevron{opacity:.55;font-size:11px}
-    #agy-account-menu{position:fixed;z-index:10000;width:300px;max-width:calc(100vw - 16px);max-height:min(360px,calc(100vh - 24px));overflow:auto;padding:8px;border-radius:12px;border:1px solid var(--border,#8883);background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));box-shadow:0 8px 32px #0002;font:13px system-ui;box-sizing:border-box}
-    #agy-account-menu .quota-menu-title{padding:4px 8px 8px;opacity:.6;font-size:11px}#agy-account-menu button{display:flex;align-items:center;gap:8px;text-align:left;width:100%;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer;transition:background .15s}
-    #agy-account-menu button:hover:not(:disabled),#agy-account-menu button:focus-visible{background:#8882;outline:none}#agy-account-menu button:disabled{cursor:default}#agy-account-menu button[data-current=true]{background:#8881}
-    #agy-account-menu .quota-account-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#agy-account-menu .quota-account-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}#agy-account-menu .quota-account-meta{font-size:11px;opacity:.6}
-    #agy-account-menu .quota-meter{height:3px;border-radius:3px;background:#8882;overflow:hidden}#agy-account-menu .quota-meter span{display:block;height:100%;background:#6a9374;border-radius:3px}#agy-account-menu .quota-meter[data-low=true] span{background:#c57d46}
-    #agy-account-menu .quota-percent{font-variant-numeric:tabular-nums;font-size:12px}#agy-account-menu [data-quota-refresh]{margin-top:6px;border-top:1px solid #8882;border-radius:0 0 8px 8px;color:inherit}#agy-account-menu [data-quota-refresh]:disabled{opacity:.55}
+    #agy-account-menu{position:fixed;z-index:10000;width:308px;max-width:calc(100vw - 16px);max-height:min(390px,calc(100vh - 24px));overflow:auto;padding:8px;border-radius:14px;border:1px solid var(--border,#8883);background:var(--agy-bg-primary,var(--background,#FAF9F5));color:var(--agy-text-primary,var(--foreground,#141413));box-shadow:0 14px 44px #0003;font:13px system-ui;box-sizing:border-box}
+    body.theme-dark #agy-account-menu,html.dark #agy-account-menu{background:#232220;border-color:rgba(236,233,226,.13);box-shadow:0 18px 52px rgba(0,0,0,.55)}
+    #agy-account-menu .quota-menu-title{padding:4px 8px 8px;opacity:.6;font-size:11px;font-weight:600;letter-spacing:.03em}#agy-account-menu button{display:flex;align-items:center;gap:8px;text-align:left;width:100%;padding:9px 10px;border:0;border-radius:9px;background:transparent;color:inherit;font:inherit;cursor:pointer;transition:background .15s}
+    #agy-account-menu button:hover:not(:disabled),#agy-account-menu button:focus-visible{background:#8882;outline:none}#agy-account-menu button:disabled{cursor:default}#agy-account-menu button[data-current=true]{background:rgba(217,119,87,.09)}
+    #agy-account-menu .quota-account-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#agy-account-menu .quota-account-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}#agy-account-menu .quota-account-meta{font-size:11px;opacity:.62;font-variant-numeric:tabular-nums}
+    #agy-account-menu .quota-meter{height:3px;border-radius:3px;background:#8882;overflow:hidden}#agy-account-menu .quota-meter span{display:block;height:100%;background:#5c8b67;border-radius:3px}#agy-account-menu .quota-meter[data-warn=true] span{background:#c68a35}#agy-account-menu .quota-meter[data-low=true] span{background:#c9563c}
+    #agy-account-menu .quota-percent{font-variant-numeric:tabular-nums;font-size:12px;font-weight:600}#agy-account-menu [data-smart-switch]{margin-top:6px;background:rgba(217,119,87,.12);color:#D97757;font-weight:600;font-size:12px;justify-content:center}#agy-account-menu [data-smart-switch]:hover:not(:disabled){background:rgba(217,119,87,.2)}#agy-account-menu [data-quota-refresh]{margin-top:5px;border-top:1px solid #8882;border-radius:0 0 8px 8px;color:inherit}#agy-account-menu [data-quota-refresh]:disabled{opacity:.55}
     #agy-account-toast{position:fixed;right:20px;bottom:24px;z-index:10001;padding:12px 14px;display:flex;align-items:center;gap:10px;background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));border:1px solid var(--border,#8883);border-radius:10px;max-width:min(360px,calc(100vw - 40px));box-shadow:0 4px 20px #0002;font:12px system-ui}#agy-account-toast button{background:transparent;color:inherit;border:0;padding:4px;border-radius:5px;cursor:pointer}#agy-account-toast button:hover{background:#8882}
   `;document.head.appendChild(style);
   const friendlyError=message=>/unauthorized|invalid_grant|invalid_client|HTTP 401/i.test(message)?text('账号授权已失效，请在「设置 → 账户」重新授权。','Account authorization expired. Reauthorize in Settings → Account.'):/timeout|timed out/i.test(message)?text('刷新超时，请稍后重试。','Refresh timed out. Try again shortly.'):text('操作失败，请稍后重试。','Operation failed. Please try again.');
@@ -4884,10 +4885,11 @@ window.__agySuiteModules.accounts=function(){
       const period=String(bucket.window||'').toLowerCase();
       const window=period==='5h'?'5h':/^(week|weekly)$/.test(period)?'weekly':null;
       const percent=Math.max(0,Math.min(100,bucket.remainingPercent));
-      if(!selected||percent<selected.percent||(percent===selected.percent&&window==='weekly'&&selected.window!=='weekly'))selected={percent,window};
+      if(!selected||percent<selected.percent||(percent===selected.percent&&window==='weekly'&&selected.window!=='weekly'))selected={percent,window,resetTime:bucket.resetTime||''};
     }
     return selected;
   }
+  const formatReset=iso=>{const ms=Date.parse(iso||'');if(!Number.isFinite(ms))return '';const diff=ms-Date.now();if(diff<=0)return '';if(diff<60000)return text('即将重置','resets <1m');if(diff<3600000)return Math.ceil(diff/60000)+text(' 分钟后重置','m reset');if(diff<86400000)return Math.floor(diff/3600000)+'h '+Math.floor((diff%3600000)/60000)+'m '+text('后重置','reset');return Math.floor(diff/86400000)+text('天 ','d ')+Math.floor((diff%86400000)/3600000)+'h '+text('后重置','reset');};
   const percentage=(account,label='')=>selection(account,label)?.percent??null;
   const periodLabel=quota=>quota?.window==='5h'?'5h':quota?.window==='weekly'?text('周','week'):'';
   const quotaLabel=quota=>quota?[periodLabel(quota),quota.percent+'%'].filter(Boolean).join(' '):'—';
@@ -4913,9 +4915,13 @@ window.__agySuiteModules.accounts=function(){
     const heading=document.createElement('div');heading.className='quota-menu-title';heading.textContent=text('账号与剩余额度','Accounts · remaining quota');popup.appendChild(heading);
     for(const account of accounts){const row=document.createElement('button');row.type='button';row.setAttribute('role','menuitem');row.dataset.current=String(!!account.isCurrent);
       const quota=selection(account,label()),percent=quota?.percent??null,info=document.createElement('span');info.className='quota-account-info';const name=document.createElement('span');name.className='quota-account-name';name.textContent=(account.isCurrent?'✓ ':'')+(account.label||account.email);info.appendChild(name);
-      const meta=document.createElement('span');meta.className='quota-account-meta';meta.textContent=authIssues.has(account.email)?text('需重新授权 · 显示缓存额度','Reauthorize · cached quota'):stale(account)?text('缓存额度','Cached quota'):text('最新额度','Latest quota');info.appendChild(meta);
-      if(percent!==null){const meter=document.createElement('span');meter.className='quota-meter';meter.dataset.low=String(percent<10);const fill=document.createElement('span');fill.style.width=percent+'%';meter.appendChild(fill);info.appendChild(meter);}
+      const resetHint=formatReset(quota?.resetTime);
+      const meta=document.createElement('span');meta.className='quota-account-meta';meta.textContent=(authIssues.has(account.email)?text('需重新授权 · 显示缓存额度','Reauthorize · cached quota'):stale(account)?text('缓存额度','Cached quota'):text('最新额度','Latest quota'))+(resetHint?' · ⏱ '+resetHint:'');info.appendChild(meta);
+      if(percent!==null){const meter=document.createElement('span');meter.className='quota-meter';meter.dataset.low=String(percent<10);meter.dataset.warn=String(percent>=10&&percent<40);const fill=document.createElement('span');fill.style.width=percent+'%';meter.appendChild(fill);info.appendChild(meter);}
       const value=document.createElement('span');value.className='quota-percent';value.textContent=quotaLabel(quota);row.append(info,value);row.disabled=account.isCurrent||busy||generating();row.onclick=()=>switchTo(account);popup.appendChild(row);}
+    const curAcc=accounts.find(a=>a.isCurrent),curPct=percentage(curAcc,label())??-1;
+    const bestAlt=accounts.filter(a=>!a.isCurrent&&!authIssues.has(a.email)&&(percentage(a,label())??-1)>curPct).sort((a,b)=>percentage(b,label())-percentage(a,label()))[0];
+    if(bestAlt){const smartBtn=document.createElement('button');smartBtn.type='button';smartBtn.setAttribute('role','menuitem');smartBtn.dataset.smartSwitch='true';smartBtn.disabled=busy||generating();smartBtn.textContent='⚡ '+text(`智能切至最优余量账号（${percentage(bestAlt,label())}%）`,`Switch to highest quota (${percentage(bestAlt,label())}%)`);smartBtn.onclick=()=>switchTo(bestAlt);popup.appendChild(smartBtn);}
     const refreshButton=document.createElement('button');refreshButton.type='button';refreshButton.setAttribute('role','menuitem');refreshButton.dataset.quotaRefresh='true';refreshButton.disabled=requesting;refreshButton.textContent='↻ '+text('刷新当前账号配额','Refresh current quota');refreshButton.onclick=async()=>{refreshButton.disabled=true;refreshButton.textContent=text('正在刷新…','Refreshing…');const menu=popup;lastQuotaFetch=0;await refresh({notify:true});if(!disposed&&popup===menu&&button.isConnected)openMenu(button);};popup.appendChild(refreshButton);
     popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){closeMenu();button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
@@ -4927,7 +4933,7 @@ window.__agySuiteModules.accounts=function(){
     if(button.parentElement!==host)host.appendChild(button);
     const current=accounts.find(a=>a.isCurrent),quota=selection(current,label()),percent=quota?.percent??null;
     const title=(current?.label||current?.email||text('账号','Account'))+' · '+(quota?quotaLabel(quota):text('配额未知','quota unknown'))+(current&&(stale(current)||authIssues.has(current.email))?text('（缓存）',' (cached)'):'');
-    const caption=button.querySelector('.quota-label');if(caption.textContent!==title)caption.textContent=title;button.dataset.low=String(percent!==null&&percent<10);button.disabled=busy;button.title=text('点击切换账号；显示当前模型周与 5h 额度中剩余更低的一项，相同时显示周额度；无法匹配模型时显示最低已知额度。','Switch accounts; shows the lower weekly or 5h quota for this model, weekly on ties. Unknown models use the lowest known quota.');
+    const caption=button.querySelector('.quota-label');if(caption.textContent!==title)caption.textContent=title;button.dataset.low=String(percent!==null&&percent<10);button.dataset.warn=String(percent!==null&&percent>=10&&percent<40);button.disabled=busy;button.title=text('点击切换账号；显示当前模型周与 5h 额度中剩余更低的一项，相同时显示周额度；无法匹配模型时显示最低已知额度。','Switch accounts; shows the lower weekly or 5h quota for this model, weekly on ties. Unknown models use the lowest known quota.');
   }
   async function refresh({notify=false}={}){if(disposed)return;if(requesting){refreshAgain=true;return;}requesting=true;try{
     let data=await request('/api/accounts');accounts=data.accounts||[];
@@ -9219,6 +9225,20 @@ window.__agySuiteModules.outline=function(){
       border-radius: 12px;
       transition: outline-color 0.3s ease;
     }
+    .agy-code-fold-btn {
+      margin-left: auto; padding: 1px 7px; border-radius: 6px;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
+      background: transparent; color: inherit; cursor: pointer;
+      font: 500 11px/1.4 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      opacity: 0.78; transition: all 0.14s ease;
+    }
+    .agy-code-fold-btn:hover { opacity: 1; border-color: #D97757; color: #D97757; }
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
+      max-height: 156px !important;
+      overflow: hidden !important;
+      mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+    }
   `;
   document.head.appendChild(style);
 
@@ -9340,7 +9360,11 @@ window.__agySuiteModules.outline=function(){
     if (card) {
       const header = card.querySelector(':scope > .border-b');
       if (header) {
-        const token = (header.textContent || '').trim().split(/\s+/)[0] || '';
+        const headerText = [...header.childNodes]
+          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+          .map(n => n.textContent || '')
+          .join(' ');
+        const token = headerText.trim().split(/\s+/)[0] || '';
         if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
       }
     }
@@ -9644,6 +9668,21 @@ window.__agySuiteModules.outline=function(){
 
         const actions = document.createElement('div');
         actions.className = 'agy-od-item-actions';
+        const reuseBtn = document.createElement('button');
+        reuseBtn.type = 'button';
+        reuseBtn.className = 'agy-od-mini-btn';
+        reuseBtn.dataset.reuseTurn = String(turn.index);
+        reuseBtn.title = text('将本轮提问填入输入框复用', 'Reuse this prompt in composer');
+        reuseBtn.textContent = '↺';
+        reuseBtn.onclick = e => {
+          e.stopPropagation();
+          if (window.__agyPromptVault?.insertIntoComposer) {
+            window.__agyPromptVault.insertIntoComposer(turn.prompt, { append: false });
+          } else {
+            writeClipboard(turn.prompt);
+          }
+          flashStatus(text(`✓ 已将第 ${turn.index} 轮提问填入输入框`, `✓ Loaded Turn #${turn.index} prompt`));
+        };
         const copyOne = document.createElement('button');
         copyOne.type = 'button';
         copyOne.className = 'agy-od-mini-btn';
@@ -9666,7 +9705,7 @@ window.__agySuiteModules.outline=function(){
           e.stopPropagation();
           toggleStar(turn.id);
         };
-        actions.append(copyOne, starToggle);
+        actions.append(reuseBtn, copyOne, starToggle);
         top.append(idx, prompt, actions);
         card.appendChild(top);
 
@@ -9744,9 +9783,59 @@ window.__agySuiteModules.outline=function(){
     }
   }
 
+  function cleanupCodeFolds() {
+    document.querySelectorAll('.agy-code-fold-btn').forEach(el => el.remove());
+    document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
+  }
+
+  function enhanceLongCodeBlocks() {
+    const root = primaryRoot();
+    if (!root) return;
+    for (const card of root.querySelectorAll('[data-testid="planner-response-text"] .rounded-xl.bg-muted.border')) {
+      const header = card.querySelector(':scope > .border-b');
+      const pre = card.querySelector('pre');
+      if (!header || !pre) continue;
+      const lines = (pre.textContent || '').replace(/\n+$/, '').split('\n').length;
+      let btn = header.querySelector('.agy-code-fold-btn');
+      if (lines < 18) {
+        btn?.remove();
+        card.removeAttribute('data-agy-code-folded');
+        continue;
+      }
+      if (getComputedStyle(header).display !== 'flex') {
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+        header.style.gap = '8px';
+      }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'agy-code-fold-btn';
+        btn.setAttribute('data-ag-localization-skip', 'true');
+        btn.onclick = e => {
+          e.stopPropagation();
+          const next = card.getAttribute('data-agy-code-folded') !== 'true';
+          card.setAttribute('data-agy-code-folded', String(next));
+          updateLabel();
+        };
+        header.appendChild(btn);
+      }
+      const updateLabel = () => {
+        const folded = card.getAttribute('data-agy-code-folded') === 'true';
+        const label = folded
+          ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
+          : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
+        if (btn.textContent !== label) btn.textContent = label;
+      };
+      updateLabel();
+    }
+  }
+
   function render() {
     if (disposed) return;
     const enabled = window.__agySuiteSettings?.outline !== false;
+    if (!enabled) cleanupCodeFolds();
+    else enhanceLongCodeBlocks();
     const turns = enabled ? getTurns() : [];
     let pill = document.getElementById('agy-outline-pill');
 
@@ -9830,7 +9919,7 @@ window.__agySuiteModules.outline=function(){
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, .agy-code-fold-btn')) continue;
       scheduleRender();
       break;
     }
@@ -9865,6 +9954,7 @@ window.__agySuiteModules.outline=function(){
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();
     document.getElementById('agy-outline-drawer')?.remove();
+    cleanupCodeFolds();
     document.querySelectorAll('[data-agy-jump-highlight]').forEach(n => n.removeAttribute('data-agy-jump-highlight'));
     style.remove();
     delete window.__agyConvTools;
@@ -10703,7 +10793,7 @@ window.__agySuiteModules.prompts=function(){
   style.textContent=`#agy-suite-center{border:1px solid var(--border,#8885);border-radius:12px;padding:18px;margin:16px 0;color:var(--foreground,inherit);background:var(--background,inherit);font:13px system-ui}#agy-suite-center h2{font-size:16px;margin:0 0 12px}#agy-suite-center .suite-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0}#agy-suite-center input[type=checkbox]{appearance:none;width:36px;height:20px;border-radius:12px;background:#8887;cursor:pointer;position:relative;flex-shrink:0}#agy-suite-center input[type=checkbox]:after{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%}#agy-suite-center input:checked{background:#bd684b}#agy-suite-center input:checked:after{left:19px}#agy-suite-center select,#agy-suite-center input[type=text]{border:1px solid var(--border,#8885);border-radius:6px;padding:5px;background:var(--background,inherit);color:inherit;max-width:210px}#agy-suite-center input:focus-visible,#agy-suite-center select:focus-visible{outline:2px solid #bd684b;outline-offset:2px}`;
   document.head.appendChild(style);
   style.textContent+=`#agy-suite-backdrop{position:fixed;inset:0;z-index:10000;background:#0005;display:flex;align-items:center;justify-content:center;padding:24px}#agy-suite-center{position:relative;width:min(580px,100%);max-height:calc(100vh - 48px);overflow:auto;margin:0;background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));box-sizing:border-box;box-shadow:0 16px 60px #0003}#agy-suite-close{position:absolute;right:12px;top:10px;border:0;background:transparent;color:inherit;border-radius:6px;padding:4px 8px;cursor:pointer}#agy-suite-close:hover,#agy-suite-close:focus-visible{background:#8882}#agy-suite-sidebar-button{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit}#agy-suite-sidebar-button:hover,#agy-suite-sidebar-button:focus-visible{background:var(--sidebar-muted,#8882);outline:none}#agy-suite-sidebar-button svg{flex-shrink:0}#agy-suite-sidebar-button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}`;
-  style.textContent+=`#agy-suite-center{width:min(660px,100%);padding:26px;border-radius:20px;font:13px/1.5 system-ui;box-shadow:0 24px 90px #0003}#agy-suite-center h2{font-size:20px;font-weight:600;margin:0;letter-spacing:-.02em}#agy-suite-center .suite-subtitle{margin:5px 0 22px;opacity:.55;font-size:12px}#agy-suite-center h3{font-size:11px;font-weight:600;letter-spacing:.08em;opacity:.55;margin:20px 0 10px}#agy-suite-center .suite-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}#agy-suite-center .suite-feature{padding:13px;border:1px solid #8882;border-radius:12px;background:#88805;align-items:center;gap:12px;cursor:pointer}#agy-suite-center .suite-feature:hover{background:#8881}#agy-suite-center .suite-description{display:block;margin-top:3px;font-size:11px;line-height:1.4;opacity:.55}#agy-suite-center .suite-form{padding:4px 14px;border:1px solid #8882;border-radius:12px}#agy-suite-center .suite-form .suite-row{padding:11px 0}#agy-suite-center .suite-form .suite-row+.suite-row{border-top:1px solid #8881}#agy-suite-center .suite-row{font-size:13px}#agy-suite-center input[type=checkbox]{height:22px;width:38px;transition:background .15s}#agy-suite-center input[type=checkbox]:after{width:16px;height:16px;transition:left .15s}#agy-suite-center input:checked:after{left:19px}#agy-suite-center input[data-pending=true]{opacity:.65;cursor:wait}#agy-suite-center input:disabled,#agy-suite-center select:disabled{opacity:.5;cursor:default}#agy-suite-center select,#agy-suite-center input[type=text]{font:12px system-ui;padding:7px 9px;max-width:230px;background:transparent;border-color:#8883}#agy-suite-center [role=status]{margin:18px 0 0;padding-top:13px;border-top:1px solid #8882;font-size:11px;opacity:.65;min-height:18px}#agy-suite-center [role=status][data-error=true]{color:#c55745;opacity:1}#agy-suite-close{right:20px;top:20px;font-size:20px;line-height:24px;width:32px;height:32px;padding:2px}@media(max-width:560px){#agy-suite-center{padding:20px}#agy-suite-center .suite-grid{grid-template-columns:1fr}#agy-suite-center select,#agy-suite-center input[type=text]{max-width:180px}}`;
+  style.textContent+=`#agy-suite-center{width:min(680px,100%);padding:26px;border-radius:20px;font:13px/1.5 system-ui;box-shadow:0 24px 90px #0003}#agy-suite-center h2{font-size:20px;font-weight:600;margin:0;letter-spacing:-.02em}#agy-suite-center .suite-subtitle{margin:5px 0 14px;opacity:.58;font-size:12px}#agy-suite-center .suite-quickbar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}#agy-suite-center .suite-quick-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid #8883;background:transparent;color:inherit;font:500 11.5px system-ui;cursor:pointer;transition:all .15s}#agy-suite-center .suite-quick-pill:hover,#agy-suite-center .suite-quick-pill:focus-visible{border-color:#D97757;color:#D97757;background:rgba(217,119,87,.07);outline:none}#agy-suite-center .suite-quick-kbd{font:500 10px monospace;opacity:.6;padding:1px 5px;border-radius:4px;background:#8882}#agy-suite-center h3{font-size:11px;font-weight:600;letter-spacing:.08em;opacity:.55;margin:20px 0 10px}#agy-suite-center .suite-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}#agy-suite-center .suite-feature{padding:13px 14px;border:1px solid #8882;border-radius:13px;background:#88805;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}#agy-suite-center .suite-feature:hover{background:#8881;border-color:#8884}#agy-suite-center .suite-feature:has(input:checked){border-color:rgba(217,119,87,.38);background:rgba(217,119,87,.045)}#agy-suite-center .suite-description{display:block;margin-top:3px;font-size:11px;line-height:1.4;opacity:.58}#agy-suite-center .suite-form{padding:4px 14px;border:1px solid #8882;border-radius:13px}#agy-suite-center .suite-form .suite-row{padding:11px 0}#agy-suite-center .suite-form .suite-row+.suite-row{border-top:1px solid #8881}#agy-suite-center .suite-row{font-size:13px}#agy-suite-center input[type=checkbox]{height:22px;width:38px;transition:background .15s}#agy-suite-center input[type=checkbox]:after{width:16px;height:16px;transition:left .15s}#agy-suite-center input:checked:after{left:19px}#agy-suite-center input[data-pending=true]{opacity:.65;cursor:wait}#agy-suite-center input:disabled,#agy-suite-center select:disabled{opacity:.5;cursor:default}#agy-suite-center select,#agy-suite-center input[type=text]{font:12px system-ui;padding:7px 9px;max-width:230px;background:var(--card,transparent);border-color:#8883;border-radius:8px}#agy-suite-center select option{background:var(--background,#FAF9F5);color:var(--foreground,#141413)}body.theme-dark #agy-suite-center select option,html.dark #agy-suite-center select option{background:#232220;color:#ECE9E2}#agy-suite-center [role=status]{margin:18px 0 0;padding-top:13px;border-top:1px solid #8882;font-size:11px;opacity:.65;min-height:18px}#agy-suite-center [role=status][data-error=true]{color:#c55745;opacity:1}#agy-suite-close{right:20px;top:20px;font-size:20px;line-height:24px;width:32px;height:32px;padding:2px}@media(max-width:560px){#agy-suite-center{padding:20px}#agy-suite-center .suite-grid{grid-template-columns:1fr}#agy-suite-center select,#agy-suite-center input[type=text]{max-width:180px}}`;
   async function request(patch){const res=await fetch(API+'/api/suite/settings',{method:patch?'POST':'GET',headers:{'Content-Type':'application/json'},body:patch?JSON.stringify(patch):undefined,signal:AbortSignal.timeout(25000)});const data=await res.json();if(!res.ok||!data.ok)throw Error(data.error||'Suite service unavailable');return data.settings;}
   function apply(next){
     if(settings&&JSON.stringify(settings)===JSON.stringify(next))return;
@@ -10782,6 +10872,13 @@ window.__agySuiteModules.prompts=function(){
     center.dataset.locale=String(settings.i18n);
     center.replaceChildren();const heading=document.createElement('h2');heading.id='agy-suite-heading';heading.textContent=text('增强套件控制中心','Enhancement Suite');center.appendChild(heading);
     const subtitle=document.createElement('p');subtitle.className='suite-subtitle';subtitle.textContent=text('按需启用，让工作空间更顺手','Make this workspace yours, one feature at a time');center.appendChild(subtitle);
+    const quickbar=document.createElement('div');quickbar.className='suite-quickbar';
+    for(const [id,zh,en,kbd,fn] of [['agy-suite-open-palette','⌘ 全能命令面板','⌘ Command Palette','Alt+K',()=>{closeCenter();window.__agyCommandPalette?.open();}],['agy-suite-open-prompts','✦ 提示词灵感库','✦ Prompt Vault','Alt+P',()=>{closeCenter();window.__agyPromptVault?.open();}],['agy-suite-open-outline','📑 对话目录与导出','📑 Conversation Outline','Alt+O',()=>{closeCenter();window.__agyConvTools?.open();}]] ){
+      const pill=document.createElement('button');pill.type='button';pill.id=id;pill.className='suite-quick-pill';pill.onclick=fn;
+      const lbl=document.createElement('span');lbl.textContent=text(zh,en);const keyEl=document.createElement('span');keyEl.className='suite-quick-kbd';keyEl.textContent=kbd;
+      pill.append(lbl,keyEl);quickbar.appendChild(pill);
+    }
+    center.appendChild(quickbar);
     const close=document.createElement('button');close.id='agy-suite-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭','Close'));close.onclick=closeCenter;center.appendChild(close);
     const section=(title,classes)=>{const h=document.createElement('h3');h.textContent=title;const content=document.createElement('div');content.className=classes;center.append(h,content);return content;};
     const modules=section(text('功能模块','FEATURES'),'suite-grid'),appearance=section(text('外观设置','APPEARANCE'),'suite-form'),options=section(text('显示与后台','DISPLAY & BACKGROUND'),'suite-form');
@@ -10807,7 +10904,465 @@ window.__agySuiteModules.prompts=function(){
   poll=setInterval(refresh,5000);refresh();
   document.addEventListener('keydown',onKey);
   window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter,isSaving:()=>saving};
-  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
+  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();window.__agyCommandPaletteCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
 })();
 
-window.__agyRendererBundleId="c9aa0cbac0cec0f0927efd4007545b7a35a05b613f7c8d2fd98304c809f236ec";})();
+(() => {
+  window.__agyCommandPaletteCleanup?.();
+  let disposed = false;
+  let query = '';
+  let activeIndex = 0;
+  let items = [];
+  let returnFocus = null;
+
+  const text = (cn, en) => window.__agySuiteSettings?.i18n === false ? en : cn;
+
+  const style = document.createElement('style');
+  style.id = 'agy-command-palette-style';
+  style.textContent = `
+    #agy-command-palette-backdrop {
+      position: fixed; inset: 0; z-index: 10040;
+      background: var(--scrim, rgba(15, 14, 13, 0.42));
+      backdrop-filter: blur(3px);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 12vh 16px 24px;
+    }
+    #agy-command-palette {
+      width: min(580px, 100%);
+      max-height: min(480px, 72vh);
+      display: flex; flex-direction: column;
+      border-radius: 18px;
+      border: 1px solid var(--border, rgba(20, 20, 19, 0.13));
+      background: var(--background, #FAF9F5);
+      color: var(--foreground, #141413);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.26);
+      font: 13px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      animation: agyCpDrop 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    body.theme-dark #agy-command-palette, html.dark #agy-command-palette {
+      background: #232220;
+      border-color: rgba(236, 233, 226, 0.13);
+      box-shadow: 0 32px 96px rgba(0, 0, 0, 0.65);
+    }
+    @keyframes agyCpDrop {
+      from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .agy-cp-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.16));
+    }
+    .agy-cp-icon { color: #D97757; flex-shrink: 0; display: flex; }
+    #agy-cp-input {
+      flex: 1; border: 0; background: transparent; color: inherit;
+      font: 14.5px/1.4 system-ui, sans-serif; outline: none; min-width: 0;
+    }
+    .agy-cp-kbd {
+      font: 500 10.5px/1.4 system-ui, monospace; padding: 2px 6px; border-radius: 5px;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.25)); opacity: 0.6;
+    }
+    .agy-cp-list {
+      flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px;
+    }
+    .agy-cp-group {
+      padding: 7px 10px 3px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+      opacity: 0.5; text-transform: uppercase;
+    }
+    .agy-cp-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      width: 100%; padding: 9px 11px; border: 0; border-radius: 10px;
+      background: transparent; color: inherit; text-align: left; cursor: pointer;
+      font: inherit; transition: background 0.1s;
+    }
+    .agy-cp-item[data-active="true"] {
+      background: rgba(217, 119, 87, 0.13);
+    }
+    body.theme-dark .agy-cp-item[data-active="true"], html.dark .agy-cp-item[data-active="true"] {
+      background: rgba(217, 119, 87, 0.2);
+    }
+    .agy-cp-item-main { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; }
+    .agy-cp-item-title { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .agy-cp-item-badge {
+      font-size: 11px; opacity: 0.62; white-space: nowrap; flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .agy-cp-empty { padding: 28px 14px; text-align: center; opacity: 0.55; font-size: 12.5px; }
+    .agy-cp-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; font-size: 11px; opacity: 0.55;
+      border-top: 1px solid var(--border, rgba(128, 128, 128, 0.13));
+    }
+  `;
+  document.head.appendChild(style);
+
+  function buildActions() {
+    const s = window.__agySuite?.getSettings?.() || window.__agySuiteSettings || {};
+    const list = [];
+
+    // 1. Theme & Reading
+    const appearanceGroup = text('外观与排版', 'APPEARANCE & READING');
+    list.push({
+      id: 'theme-light',
+      group: appearanceGroup,
+      title: text('☀️ 切换为白天模式（羊皮纸浅色）', '☀️ Switch to Light Theme (Warm Parchment)'),
+      badge: s.skin && s.themeMode === 'light' ? text('当前', 'Active') : '',
+      keywords: 'light theme warm parchment 白天 浅色 羊皮纸 皮肤',
+      run: () => window.__agySuite?.save({ skin: true, themeMode: 'light' })
+    });
+    list.push({
+      id: 'theme-dark',
+      group: appearanceGroup,
+      title: text('🌙 切换为黑夜模式（暖炭黑深色）', '🌙 Switch to Dark Theme (Warm Charcoal)'),
+      badge: s.skin && s.themeMode === 'dark' ? text('当前', 'Active') : '',
+      keywords: 'dark theme night charcoal 黑夜 深色 暗黑 炭黑 皮肤',
+      run: () => window.__agySuite?.save({ skin: true, themeMode: 'dark' })
+    });
+    list.push({
+      id: 'theme-system',
+      group: appearanceGroup,
+      title: text('💻 皮肤跟随系统深浅色', '💻 Follow System Appearance'),
+      badge: s.skin && s.themeMode === 'system' ? text('当前', 'Active') : '',
+      keywords: 'system auto theme 跟随系统 自动',
+      run: () => window.__agySuite?.save({ skin: true, themeMode: 'system' })
+    });
+    for (const [val, zh, en] of [
+      ['standard', '📖 阅读宽度：标准书卷 (51rem)', '📖 Reading Width: Standard (51rem)'],
+      ['wide', '🖥️ 阅读宽度：宽屏代码 (68rem)', '🖥️ Reading Width: Wide (68rem)'],
+      ['full', '↔️ 阅读宽度：全宽画布 (92%)', '↔️ Reading Width: Full (92%)']
+    ]) {
+      list.push({
+        id: 'width-' + val,
+        group: appearanceGroup,
+        title: text(zh, en),
+        badge: (s.readingWidth || 'standard') === val ? text('当前', 'Active') : '',
+        keywords: `width reading layout 宽度 宽屏 ${val}`,
+        run: () => window.__agySuite?.save({ skin: true, readingWidth: val })
+      });
+    }
+
+    // 2. Conversation Tools
+    const turns = window.__agyConvTools?.getTurns?.() || [];
+    if (turns.length > 0) {
+      const convGroup = text('当前对话增强', 'CONVERSATION');
+      list.push({
+        id: 'conv-outline',
+        group: convGroup,
+        title: text(`📑 打开对话目录与小标题导航（${turns.length} 轮）`, `📑 Open Conversation Outline (${turns.length} turns)`),
+        badge: 'Alt+O',
+        keywords: 'outline toc jump turns 目录 大纲 导航 跳转',
+        run: () => window.__agyConvTools?.open()
+      });
+      list.push({
+        id: 'conv-copy-md',
+        group: convGroup,
+        title: text('📋 复制当前对话全文为纯净 Markdown', '📋 Copy Full Conversation as Markdown'),
+        badge: `${turns.length} ${text('轮', 'turns')}`,
+        keywords: 'copy markdown export 复制 导出 对话 md',
+        run: () => window.__agyConvTools?.copyMarkdown({ onlyStarred: false })
+      });
+      list.push({
+        id: 'conv-copy-starred',
+        group: convGroup,
+        title: text('★ 仅复制星标重点轮次为 Markdown', '★ Copy Starred Turns as Markdown'),
+        badge: 'Markdown',
+        keywords: 'star bookmark copy markdown 星标 收藏 重点 导出',
+        run: () => window.__agyConvTools?.copyMarkdown({ onlyStarred: true })
+      });
+    }
+
+    // 3. Prompt Vault
+    if (window.__agyPromptVault) {
+      const pvGroup = text('提示词灵感库', 'PROMPT VAULT');
+      list.push({
+        id: 'pv-open',
+        group: pvGroup,
+        title: text('✦ 打开提示词灵感库与参数模板', '✦ Open Prompt Vault & Variable Templates'),
+        badge: 'Alt+P',
+        keywords: 'prompt template vault variable 提示词 模板 灵感库 参数',
+        run: () => window.__agyPromptVault.open()
+      });
+      for (const tpl of (window.__agyPromptVault.getPrompts?.() || []).filter(p => p.pinned).slice(0, 4)) {
+        list.push({
+          id: 'pv-tpl-' + tpl.id,
+          group: pvGroup,
+          title: `${tpl.title}`,
+          badge: tpl.category || '',
+          keywords: `prompt template 模板 ${tpl.title} ${tpl.category || ''}`,
+          run: () => {
+            const vars = window.__agyPromptVault.parseVariables(tpl.content);
+            if (!vars.length) window.__agyPromptVault.insertIntoComposer(tpl.content);
+            else window.__agyPromptVault.open();
+          }
+        });
+      }
+    }
+
+    // 4. Multi-Account Hot Switch
+    if (s.accounts && window.__agyQuotaBadge) {
+      const accGroup = text('Google 账号热切换', 'ACCOUNTS');
+      const accs = window.__agyQuotaBadge.getAccounts?.() || [];
+      for (const acc of accs) {
+        const pct = window.__agyQuotaBadge.percentage?.(acc, '') ?? null;
+        list.push({
+          id: 'acc-' + acc.email,
+          group: accGroup,
+          title: (acc.isCurrent ? '✓ ' : '⇄ ') + (acc.label || acc.email),
+          badge: pct !== null ? `${pct}%` : (acc.isCurrent ? text('当前', 'Current') : ''),
+          keywords: `account switch google 账号 切换 配额 ${acc.email} ${acc.label || ''}`,
+          run: async () => {
+            if (!acc.isCurrent) {
+              await fetch('http://127.0.0.1:19823/api/switch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: acc.email })
+              });
+              window.__agyQuotaBadge?.refresh?.({ notify: true });
+            }
+          }
+        });
+      }
+      list.push({
+        id: 'acc-refresh',
+        group: accGroup,
+        title: text('↻ 刷新当前账号模型配额', '↻ Refresh Current Account Quota'),
+        badge: '',
+        keywords: 'quota refresh 刷新 额度 配额',
+        run: () => window.__agyQuotaBadge?.refresh?.({ notify: true })
+      });
+    }
+
+    // 5. Relay API Models
+    if (s.api && window.__AGY_MODEL_SWITCHER) {
+      const apiGroup = text('模型与中转 API', 'MODELS & RELAY API');
+      const st = window.__AGY_MODEL_SWITCHER.getState?.() || {};
+      list.push({
+        id: 'mdl-official',
+        group: apiGroup,
+        title: text('🏛️ 使用 Google 官方原生模型', '🏛️ Use Official Native Model'),
+        badge: st.activeMode === 'official' ? text('当前', 'Active') : '',
+        keywords: 'official native model 官方 原生 模型',
+        run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('official')
+      });
+      for (const m of (st.models || []).filter(x => x.enabled !== false)) {
+        list.push({
+          id: 'mdl-' + m.id,
+          group: apiGroup,
+          title: `⚡ ${m.name || m.modelId}`,
+          badge: st.activeMode === 'custom' && st.activeModelId === m.id ? text('当前', 'Active') : (m.protocol || ''),
+          keywords: `relay api custom model 中转 模型 ${m.name || ''} ${m.modelId || ''}`,
+          run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('custom', m.id)
+        });
+      }
+      list.push({
+        id: 'mdl-manage',
+        group: apiGroup,
+        title: text('⚙️ 打开中转 API 服务商与模型管理', '⚙️ Open Relay API Model Manager'),
+        badge: '',
+        keywords: 'api provider key import 中转 服务商 密钥 批量导入',
+        run: () => window.__AGY_MODEL_SWITCHER.openModal?.()
+      });
+    }
+
+    // 6. Suite Control & Toggles
+    const suiteGroup = text('套件控制中心', 'SUITE CONTROLS');
+    list.push({
+      id: 'suite-center',
+      group: suiteGroup,
+      title: text('🎛️ 打开增强套件控制中心', '🎛️ Open Enhancement Suite Control Center'),
+      badge: '',
+      keywords: 'suite control center settings 控制中心 设置 开关',
+      run: () => window.__agySuite?.openCenter?.()
+    });
+    list.push({
+      id: 'toggle-i18n',
+      group: suiteGroup,
+      title: s.i18n ? text('🌐 切换为英文原版界面（关闭汉化）', '🌐 Switch to English UI') : text('🇨🇳 开启简体中文界面汉化', '🇨🇳 Enable Chinese Localization'),
+      badge: s.i18n ? 'ON' : 'OFF',
+      keywords: 'i18n chinese english language 汉化 中文 英文 语言',
+      run: () => window.__agySuite?.save({ i18n: !s.i18n })
+    });
+    list.push({
+      id: 'toggle-skin',
+      group: suiteGroup,
+      title: s.skin ? text('🎨 恢复官方默认配色（关闭 Claude 皮肤）', '🎨 Restore Official Appearance') : text('🎨 启用 Claude 羊皮纸书卷皮肤', '🎨 Enable Claude Skin'),
+      badge: s.skin ? 'ON' : 'OFF',
+      keywords: 'skin claude official appearance 皮肤 主题 官方配色',
+      run: () => window.__agySuite?.save({ skin: !s.skin })
+    });
+
+    return list;
+  }
+
+  function filterItems(all, q) {
+    const tokens = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return all;
+    return all.filter(item => {
+      const hay = `${item.title} ${item.group} ${item.keywords || ''} ${item.badge || ''}`.toLowerCase();
+      return tokens.every(tok => hay.includes(tok));
+    });
+  }
+
+  function close() {
+    document.getElementById('agy-command-palette-backdrop')?.remove();
+    returnFocus?.focus?.();
+    returnFocus = null;
+  }
+
+  function executeIndex(idx) {
+    const chosen = items[idx];
+    if (!chosen) return;
+    returnFocus = null;
+    document.getElementById('agy-command-palette-backdrop')?.remove();
+    chosen.run?.();
+  }
+
+  function renderListOnly() {
+    const listEl = document.querySelector('#agy-command-palette .agy-cp-list');
+    if (!listEl) return;
+    listEl.replaceChildren();
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'agy-cp-empty';
+      empty.textContent = text('未找到匹配的命令', 'No matching commands');
+      listEl.appendChild(empty);
+      return;
+    }
+    let lastGroup = '';
+    items.forEach((item, idx) => {
+      if (item.group !== lastGroup) {
+        lastGroup = item.group;
+        const g = document.createElement('div');
+        g.className = 'agy-cp-group';
+        g.textContent = item.group;
+        listEl.appendChild(g);
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'agy-cp-item';
+      btn.dataset.commandId = item.id;
+      btn.dataset.active = String(idx === activeIndex);
+      const main = document.createElement('span');
+      main.className = 'agy-cp-item-main';
+      const title = document.createElement('span');
+      title.className = 'agy-cp-item-title';
+      title.textContent = item.title;
+      main.appendChild(title);
+      btn.appendChild(main);
+      if (item.badge) {
+        const badge = document.createElement('span');
+        badge.className = 'agy-cp-item-badge';
+        badge.textContent = item.badge;
+        btn.appendChild(badge);
+      }
+      btn.onmouseenter = () => {
+        if (activeIndex === idx) return;
+        activeIndex = idx;
+        for (const [i, node] of [...listEl.querySelectorAll('.agy-cp-item')].entries()) {
+          node.dataset.active = String(i === activeIndex);
+        }
+      };
+      btn.onclick = () => executeIndex(idx);
+      listEl.appendChild(btn);
+    });
+    listEl.querySelector('.agy-cp-item[data-active="true"]')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function open() {
+    if (disposed) return;
+    if (document.getElementById('agy-command-palette-backdrop')) {
+      document.getElementById('agy-cp-input')?.focus();
+      return;
+    }
+    returnFocus = document.activeElement;
+    query = '';
+    activeIndex = 0;
+    const allActions = buildActions();
+    items = filterItems(allActions, '');
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'agy-command-palette-backdrop';
+    backdrop.setAttribute('data-ag-localization-skip', 'true');
+    backdrop.addEventListener('click', e => {
+      if (e.target === backdrop) close();
+    });
+
+    const dialog = document.createElement('section');
+    dialog.id = 'agy-command-palette';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', text('全能命令面板', 'Suite Command Palette'));
+
+    const head = document.createElement('div');
+    head.className = 'agy-cp-head';
+    head.innerHTML = '<span class="agy-cp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>';
+    const input = document.createElement('input');
+    input.id = 'agy-cp-input';
+    input.type = 'text';
+    input.placeholder = text('输入命令：切号、换肤、切换模型、导出 Markdown、调出提示词…', 'Type a command: switch theme, account, model, export Markdown…');
+    const esc = document.createElement('span');
+    esc.className = 'agy-cp-kbd';
+    esc.textContent = 'ESC';
+    head.append(input, esc);
+
+    const listEl = document.createElement('div');
+    listEl.className = 'agy-cp-list';
+
+    const foot = document.createElement('div');
+    foot.className = 'agy-cp-foot';
+    foot.innerHTML = `<span>${text('↑↓ 选择 · Enter 执行', '↑↓ Navigate · Enter Run')}</span><span>Alt+K</span>`;
+
+    dialog.append(head, listEl, foot);
+    backdrop.appendChild(dialog);
+    document.body.appendChild(backdrop);
+
+    input.oninput = () => {
+      query = input.value;
+      activeIndex = 0;
+      items = filterItems(allActions, query);
+      renderListOnly();
+    };
+    input.onkeydown = e => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length) activeIndex = (activeIndex + 1) % items.length;
+        renderListOnly();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length) activeIndex = (activeIndex - 1 + items.length) % items.length;
+        renderListOnly();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        executeIndex(activeIndex);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    };
+
+    renderListOnly();
+    input.focus();
+  }
+
+  function onGlobalKeyDown(e) {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (document.getElementById('agy-command-palette-backdrop')) close();
+      else open();
+    }
+  }
+
+  document.addEventListener('keydown', onGlobalKeyDown);
+
+  window.__agyCommandPalette = { open, close, isOpen: () => !!document.getElementById('agy-command-palette-backdrop') };
+  window.__agyCommandPaletteCleanup = () => {
+    disposed = true;
+    document.removeEventListener('keydown', onGlobalKeyDown);
+    document.getElementById('agy-command-palette-backdrop')?.remove();
+    style.remove();
+    delete window.__agyCommandPalette;
+  };
+})();
+
+window.__agyRendererBundleId="0862c66c9e0a8d62604c0d99f5b72ca285f2d7c2cbe5af320200dd1e8d1f45cd";})();

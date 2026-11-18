@@ -7,13 +7,13 @@
 # Antigravity Enhancement Suite
 
 <p align="center">
-  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Seamless relay API switching · Independent modules</strong>
+  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Relay API bridge · Conversation outline & Markdown export · Parameterized Prompt Vault · Command Palette</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Antigravity-v2.22%2B-D97757?style=flat-square" alt="Antigravity v2.22+" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=flat-square" alt="Windows 10/11" />
-  <img src="https://img.shields.io/badge/Translations-2%2C126%2B-2E7D47?style=flat-square" alt="2,126+ translations" />
+  <img src="https://img.shields.io/badge/Translations-2%2C147%2B-2E7D47?style=flat-square" alt="2,147+ translations" />
   <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
 </p>
 
@@ -37,14 +37,18 @@
 2. 🇨🇳 **Full Simplified Chinese localization (`antigravity-claude-skin/i18n`)**
    - Builds on [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) and adds the latest Antigravity v2.22.0+ strings (**2,126+ translation rules**).
    - Covers the **main UI, settings, top menus, context menus, and system tray menus**, while protecting code blocks, terminals, and user input from being translated.
-3. 👥 **Google multi-account hot switching and quota view (`antigravity-account-switcher`)**
+3. 👥 **Google multi-account hot switching and smart quota insights (`antigravity-account-switcher`)**
    - Adds visual account cards to the native **Settings → Account** page and the right sidebar panel.
-   - **Quick switching**: use the account capsule next to the composer to select a saved account or refresh model quotas; switching usually keeps the current window open, with timing depending on the background service and network.
+   - **Quick switching & reset countdowns**: the composer account capsule shows the limiting quota window, live countdown until reset (e.g., `⏱ 2h 15m reset`), and a one-click **⚡ Switch to highest quota** action.
    - **License preflight**: if the target account has no Antigravity license, the suite warns you and keeps the current account instead of dropping you back to onboarding.
 4. 🔌 **Seamless third-party API / relay model switching (`antigravity-model-switcher`)**
    - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and multi-select batch import after fetching a model list.
    - **Use it directly in the native composer**: pick a relay model from the composer's model menu; supported models expose a reasoning-effort submenu whose options depend on the protocol and model.
    - **Mix models in one conversation**: switch between official and relay models, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution. Actual behavior still depends on the provider's API capabilities, context window, and limits.
+5. 📑 **Exclusive Workflow Power Tools (Conversation Outline & Export · Parameterized Prompt Vault · Command Palette)**
+   - **Conversation Outline & Clean Export (`Alt+O`)**: a minimal floating turn pill on the right edge lets you jump to any turn or `H1–H3` sub-heading inside long AI answers, star (`★`) key milestone turns, and export full or starred turns as clean GitHub Flavored Markdown (preserving code language tags and tables).
+   - **Parameterized Prompt Vault (`Alt+P`)**: ships with curated engineering and research templates supporting `{{variable:default}}` placeholders, rendering interactive fill-in inputs with live preview and `Ctrl+Enter` insertion directly into the native Lexical composer.
+   - **Unified Command Palette (`Alt+K`)**: keyboard-first fuzzy search to switch themes, adjust reading width (`51rem` / `68rem` / `92%`), hot-switch accounts or relay models, export Markdown, and launch prompts.
 
 ---
 
@@ -231,8 +235,12 @@ The Windows desktop entry reads the current system proxy each time it opens so t
      - **☀️ Light (parchment `#FAF9F5`)**: Claude Desktop's signature warm parchment canvas with caramel-terracotta accents;
      - **🌙 Dark (warm charcoal `#1F1E1D`)**: Claude Desktop's classic warm-charcoal canvas (sidebar `#161514`, cards `#282725`, off-white text `#ECE9E2`), avoiding harsh pure black and glare;
      - **💻 Follow system**: listens to the Windows 10/11 light/dark setting and switches in real time, including the native window controls.
-2. **Customize fonts, sizes, or translation entries**:
-   - The control center offers **Follow theme / Book serif / Modern sans-serif** and **Small / Standard / Large** sizes without editing CSS. Turning the skin off restores the official colors, fonts, and layout; appearance settings are retained and restored when re-enabled.
+2. **Customize fonts, sizes, and reading width**:
+   - The control center offers **Follow theme / Book serif / Modern sans-serif**, **Small / Standard / Large** sizes, and **Standard (`51rem`) / Wide (`68rem`) / Full width (`92%`)** conversation reading modes without editing CSS. Turning the skin off restores the official colors, fonts, and layout; appearance settings are retained and restored when re-enabled.
+3. **Keyboard shortcuts (independently toggleable in the control center)**:
+   - `Alt+K`: open the **Unified Command Palette** (fuzzy-search themes, reading widths, accounts, relay models, Markdown export, and prompt templates);
+   - `Alt+P`: open the **Prompt Vault** (interactive `{{variable:default}}` fill-in forms with persistent local storage);
+   - `Alt+O`: toggle the **Conversation Outline & Export** drawer (jump to turns & AI sub-headings, filter `★` starred turns, copy or download `.md`).
    - Skin and theme settings persist across restarts. The app keeps the native page-loading flow; once the page is ready, the control center reads local configuration without waiting for a backend switch. With the skin off, the official appearance remains and the control-center entry is still available.
    - Windows may retain Electron-injected styles from older versions. The current release disables the old preload skin injection in memory while keeping native interfaces and leaving the official ASAR untouched. After updating, fully quit and reopen the app once; subsequent skin toggles apply immediately.
    - The Windows background language service reads the enabled system proxy and preserves explicitly configured proxy environment variables; loopback traffic bypasses the proxy. If sign-in reports an `oauth2.googleapis.com/token` timeout, confirm the proxy can reach Google, then fully quit and reopen the app. The suite does not change system proxy or global environment variables.
