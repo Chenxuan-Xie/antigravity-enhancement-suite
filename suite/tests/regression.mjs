@@ -24,8 +24,9 @@ try{
   check((await call('/api/suite/settings',{i18n:false},'https://evil.example')).status===403,'unrelated websites cannot change module settings');
   check((await call('/api/suite/settings',{guardian:'false'})).status===400,'invalid toggle values do not overwrite preferences');
   check((await call('/api/suite/settings',{unknown:true})).status===400,'unknown settings are rejected');
-  await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large'});
-  check(settings.readSettings().replySize==='large','appearance settings persist');
+  await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large',readingWidth:'wide',outline:false});
+  check(settings.readSettings().replySize==='large'&&settings.readSettings().readingWidth==='wide'&&settings.readSettings().outline===false,'appearance, reading width and outline settings persist');
+  check((await call('/api/suite/settings',{readingWidth:'invalid'})).status===400,'invalid reading width is rejected');
   await call('/api/suite/settings',{showQuota:false});
   check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');
   check((await call('/api/suite/settings',{showQuota:'false'})).status===400,'quota display requires a boolean value');
