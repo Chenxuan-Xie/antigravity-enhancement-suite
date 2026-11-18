@@ -161,6 +161,14 @@
         keywords: 'star bookmark copy markdown 星标 收藏 重点 导出',
         run: () => window.__agyConvTools?.copyMarkdown({ onlyStarred: true })
       });
+      list.push({
+        id: 'conv-export-html',
+        group: convGroup,
+        title: text('📄 导出当前对话为 Claude 书卷排版 HTML 离线报告', '📄 Export Conversation as Bookish HTML Report'),
+        badge: 'HTML',
+        keywords: 'html export report bookish archive 书卷 报告 网页 归档 导出',
+        run: () => window.__agyConvTools?.downloadBookishHtml({ onlyStarred: false })
+      });
     }
 
     // 3. Prompt Vault

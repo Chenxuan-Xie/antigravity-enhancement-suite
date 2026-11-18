@@ -64,6 +64,18 @@ try{
     const longPre=d.querySelector('[data-testid="planner-response-text"] pre code');longPre.textContent=Array.from({length:20},(_,i)=>'const line'+i+' = '+i+';').join('\\n');w.__agyConvTools.refresh();
     const foldBtn=d.querySelector('.agy-code-fold-btn');assert(foldBtn&&foldBtn.textContent.includes('20'),'long code blocks mount a non-destructive line-count fold button');
     foldBtn.click();assert(foldBtn.closest('.rounded-xl').getAttribute('data-agy-code-folded')==='true'&&w.__agyConvTools.exportMarkdown().includes('\\x60\\x60\\x60js\\nconst line0 = 0;'),'folding a long code block preserves full code and language tag on Markdown export');
+    longPre.textContent='const cap = 64; // <script>alert(1)</script>';w.__agyConvTools.refresh();
+    const bookishHtml=w.__agyConvTools.exportBookishHtml();
+    assert(bookishHtml.includes('id="theme-toggle"')&&bookishHtml.includes('href="#turn-1"')&&bookishHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;')&&!bookishHtml.includes('<script>alert(1)</script>'),'bookish HTML export builds a dual-theme TOC report and escapes script payloads safely');
+    const selRange=d.createRange();selRange.selectNodeContents(d.querySelector('[data-testid="planner-response-text"] p'));
+    const sel=w.getSelection();sel.removeAllRanges();sel.addRange(selRange);w.__agyConvTools.updateSelectionPill();
+    assert(d.querySelector('#agy-selection-pill [data-sel-action="quote"]'),'selecting AI response text mounts the floating quote/template pill');
+    d.querySelector('#agy-selection-pill [data-sel-action="quote"]').click();
+    assert(editor.textContent.includes('> A fast LRU cache.')&&!d.querySelector('#agy-selection-pill'),'quote action formats selected text as Markdown blockquote in composer');
+    editor.textContent='';
+    w.__agyPromptVault.openWithDraft({title:'LRU Snippet',content:'Verify {{cache}}'});
+    assert(d.querySelector('#agy-pv-edit-title')?.value==='LRU Snippet'&&d.querySelector('#agy-pv-edit-content')?.value==='Verify {{cache}}','saving selection to vault opens template editor pre-filled with snippet');
+    w.__agyPromptVault.close();
     longPre.textContent='const cap = 64;';w.__agyConvTools.refresh();
     w.__agyConvTools.close();
     await w.__agySuite.save({outline:false});await pause(40);

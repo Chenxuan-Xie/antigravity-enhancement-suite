@@ -45,10 +45,11 @@
    - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and multi-select batch import after fetching a model list.
    - **Use it directly in the native composer**: pick a relay model from the composer's model menu; supported models expose a reasoning-effort submenu whose options depend on the protocol and model.
    - **Mix models in one conversation**: switch between official and relay models, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution. Actual behavior still depends on the provider's API capabilities, context window, and limits.
-5. 📑 **Exclusive Workflow Power Tools (Conversation Outline & Export · Parameterized Prompt Vault · Command Palette)**
-   - **Conversation Outline & Clean Export (`Alt+O`)**: a minimal floating turn pill on the right edge lets you jump to any turn or `H1–H3` sub-heading inside long AI answers, star (`★`) key milestone turns, and export full or starred turns as clean GitHub Flavored Markdown (preserving code language tags and tables).
+5. 📑 **Exclusive Workflow Power Tools (Conversation Outline & Bookish HTML Export · Selection Quote Pill · Parameterized Prompt Vault · Command Palette)**
+   - **Conversation Outline, Long-Code Folding & Multi-Format Export (`Alt+O`)**: a minimal floating turn pill on the right edge lets you jump to any turn or `H1–H3` sub-heading inside long AI answers, reuse earlier prompts, star (`★`) key milestone turns, fold 18+ line code blocks non-destructively, and export full or starred turns as clean GitHub Flavored Markdown or a **self-contained, dual-theme Claude bookish HTML offline report with built-in TOC**.
+   - **Floating Selection Action Pill**: selecting text inside any message surfaces a lightweight **❝ Quote & Ask · ✦ Save Template · 📋 Copy** pill to quote passages directly into the composer or save them into your Prompt Vault.
    - **Parameterized Prompt Vault (`Alt+P`)**: ships with curated engineering and research templates supporting `{{variable:default}}` placeholders, rendering interactive fill-in inputs with live preview and `Ctrl+Enter` insertion directly into the native Lexical composer.
-   - **Unified Command Palette (`Alt+K`)**: keyboard-first fuzzy search to switch themes, adjust reading width (`51rem` / `68rem` / `92%`), hot-switch accounts or relay models, export Markdown, and launch prompts.
+   - **Unified Command Palette (`Alt+K`)**: keyboard-first fuzzy search to switch themes, adjust reading width (`51rem` / `68rem` / `92%`), hot-switch accounts or relay models, export Markdown / bookish HTML, and launch prompts.
 
 ---
 

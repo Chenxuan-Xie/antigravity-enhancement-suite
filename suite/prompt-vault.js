@@ -312,10 +312,18 @@
     returnFocus = null;
   }
 
-  async function open() {
+  async function open(draft = null) {
     if (disposed || window.__agySuiteSettings?.prompts === false) return;
     if (!prompts.length) prompts = loadCachedPrompts();
     if (!selectedId && prompts[0]) selectedId = prompts[0].id;
+    if (draft && typeof draft === 'object' && draft.content) {
+      editingItem = {
+        title: String(draft.title || '').trim().slice(0, 60),
+        category: String(draft.category || text('摘录', 'Saved')).trim(),
+        pinned: true,
+        content: String(draft.content || '').trim()
+      };
+    }
     if (!document.getElementById('agy-prompt-vault-backdrop')) {
       returnFocus = document.activeElement;
       const backdrop = document.createElement('div');
@@ -327,7 +335,8 @@
       document.body.appendChild(backdrop);
     }
     renderModal();
-    document.querySelector('#agy-prompt-vault .agy-pv-search')?.focus();
+    if (editingItem) document.getElementById('agy-pv-edit-title')?.focus();
+    else document.querySelector('#agy-prompt-vault .agy-pv-search')?.focus();
     refresh();
   }
 
@@ -795,6 +804,7 @@
 
   window.__agyPromptVault = {
     open,
+    openWithDraft: draft => open(draft),
     close,
     refresh,
     getPrompts: () => prompts.length ? prompts : loadCachedPrompts(),
