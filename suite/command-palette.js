@@ -244,12 +244,24 @@
         keywords: 'official native model 官方 原生 模型',
         run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('official')
       });
-      for (const m of (st.models || []).filter(x => x.enabled !== false)) {
+      const enabledModels = (st.models || []).filter(x => x.enabled !== false);
+      if (enabledModels.length > 0) {
+        list.push({
+          id: 'mdl-race-fastest',
+          group: apiGroup,
+          title: text('🏁 并发测速全部中转模型并优选最快节点', '🏁 Benchmark All Relay Models & Pick Fastest'),
+          badge: `${enabledModels.length} ${text('个节点', 'nodes')}`,
+          keywords: 'benchmark latency race fastest speed 并发 测速 赛马 最快 延迟 节点',
+          run: () => window.__AGY_MODEL_SWITCHER.benchmarkModels?.({ autoSelectFastest: true })
+        });
+      }
+      for (const m of enabledModels) {
+        const latencyHint = m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs) ? `${m.lastTestLatencyMs}ms` : (m.protocol || '');
         list.push({
           id: 'mdl-' + m.id,
           group: apiGroup,
           title: `⚡ ${m.name || m.modelId}`,
-          badge: st.activeMode === 'custom' && st.activeModelId === m.id ? text('当前', 'Active') : (m.protocol || ''),
+          badge: st.activeMode === 'custom' && st.activeModelId === m.id ? text('当前', 'Active') : latencyHint,
           keywords: `relay api custom model 中转 模型 ${m.name || ''} ${m.modelId || ''}`,
           run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('custom', m.id)
         });

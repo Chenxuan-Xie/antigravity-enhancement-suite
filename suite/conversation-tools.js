@@ -204,14 +204,90 @@
       border-radius: 12px;
       transition: outline-color 0.3s ease;
     }
-    .agy-code-fold-btn {
-      margin-left: auto; padding: 1px 7px; border-radius: 6px;
+    .agy-code-header-actions {
+      margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .agy-code-fold-btn, .agy-code-preview-btn {
+      padding: 1px 8px; border-radius: 6px;
       border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
       background: transparent; color: inherit; cursor: pointer;
       font: 500 11px/1.4 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      opacity: 0.82; transition: all 0.14s ease; white-space: nowrap;
+    }
+    .agy-code-preview-btn {
+      border-color: rgba(217, 119, 87, 0.42);
+      color: #D97757;
+      background: rgba(217, 119, 87, 0.08);
+      font-weight: 600;
+    }
+    body.theme-dark .agy-code-preview-btn, html.dark .agy-code-preview-btn { color: #E58B6D; }
+    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover {
+      opacity: 1; border-color: #D97757; color: #D97757;
+    }
+    .agy-code-preview-btn[data-open="true"] {
+      background: #D97757; border-color: #D97757; color: #FFFFFF; opacity: 1;
+    }
+    .agy-live-preview-panel {
+      border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      background: var(--background, #FAF9F5);
+      display: flex; flex-direction: column;
+    }
+    body.theme-dark .agy-live-preview-panel, html.dark .agy-live-preview-panel {
+      background: #1B1A18;
+    }
+    .agy-live-preview-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 12px; font: 500 11px/1.3 system-ui, sans-serif;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.14));
+      background: rgba(217, 119, 87, 0.06);
+      flex-wrap: wrap;
+    }
+    .agy-live-preview-badge {
+      display: inline-flex; align-items: center; gap: 5px; color: #D97757; font-weight: 600;
+    }
+    .agy-live-preview-btns { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .agy-live-preview-btns button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.24));
+      background: var(--card, rgba(255, 255, 255, 0.6)); color: inherit;
+      border-radius: 6px; padding: 2px 8px; font: inherit; cursor: pointer;
+      transition: all 0.13s ease;
+    }
+    body.theme-dark .agy-live-preview-btns button, html.dark .agy-live-preview-btns button {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .agy-live-preview-btns button:hover, .agy-live-preview-btns button[data-active="true"] {
+      border-color: #D97757; color: #D97757;
+    }
+    .agy-live-preview-stage {
+      padding: 12px; display: flex; justify-content: center; background: rgba(128, 128, 128, 0.04);
+    }
+    .agy-live-preview-frame {
+      width: 100%; height: 300px; border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      border-radius: 8px; background: #FFFFFF; transition: width 0.2s ease;
+    }
+    .agy-live-preview-frame[data-viewport="mobile"] {
+      width: 390px; max-width: 100%;
+    }
+    caption.agy-table-tools {
+      caption-side: bottom; text-align: right; padding: 6px 2px 2px;
+      font: 500 11px/1.3 system-ui, sans-serif;
+    }
+    .agy-table-tools-bar {
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .agy-table-tools-bar button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
+      background: var(--card, rgba(250, 249, 245, 0.78));
+      color: var(--foreground, #141413);
+      border-radius: 6px; padding: 2px 8px; font: inherit; cursor: pointer;
       opacity: 0.78; transition: all 0.14s ease;
     }
-    .agy-code-fold-btn:hover { opacity: 1; border-color: #D97757; color: #D97757; }
+    body.theme-dark .agy-table-tools-bar button, html.dark .agy-table-tools-bar button {
+      background: rgba(40, 39, 37, 0.85); color: #ECE9E2;
+    }
+    .agy-table-tools-bar button:hover {
+      opacity: 1; border-color: #D97757; color: #D97757;
+    }
     .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
       max-height: 156px !important;
       overflow: hidden !important;
@@ -365,14 +441,14 @@
       const header = card.querySelector(':scope > .border-b');
       if (header) {
         const headerText = [...header.childNodes]
-          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
           .map(n => n.textContent || '')
           .join(' ');
         const token = headerText.trim().split(/\s+/)[0] || '';
         if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
       }
     }
-    const codeEl = preOrCard.querySelector?.('code, .code-block') || preOrCard;
+    const codeEl = preOrCard.querySelector?.('pre code, pre, .code-block') || preOrCard;
     if (!lang) {
       const cls = codeEl.className || '';
       const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
@@ -396,12 +472,37 @@
     return `\n| ${head.join(' | ')} |\n| ${sep.join(' | ')} |\n${body.join('\n')}\n\n`;
   }
 
-  function blockMarkdown(node, listDepth = 0) {
+  function tablePlainCell(node) {
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
     const tag = node.tagName.toUpperCase();
-    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG') return '';
+    if (tag === 'BUTTON' || tag === 'STYLE' || tag === 'SCRIPT' || tag === 'SVG' || tag === 'CAPTION') return '';
+    if (tag === 'BR') return ' ';
+    return [...node.childNodes].map(tablePlainCell).join('');
+  }
+
+  function tableToDelimited(table, sep = '\t') {
+    if (!table) return '';
+    const rows = [...table.querySelectorAll('tr')].map(tr =>
+      [...tr.querySelectorAll('th, td')].map(cell => tablePlainCell(cell).replace(/\s+/g, ' ').trim())
+    ).filter(r => r.length > 0);
+    if (!rows.length) return '';
+    return rows.map(row => row.map(val => {
+      if (sep === ',') {
+        return /[",\r\n]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val;
+      }
+      return val.replace(/[\t\r\n]+/g, ' ');
+    }).join(sep)).join('\n');
+  }
+
+  function blockMarkdown(node, listDepth = 0) {
+    if (!node) return '';
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'CAPTION') return '';
     if (node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) {
       return extractCodeBlock(node);
     }
@@ -531,8 +632,9 @@
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue || '');
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
-    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT') return '';
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'CAPTION') return '';
     if (tag === 'BR') return '<br>';
     if (tag === 'HR') return '<hr>';
     if ((node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) || tag === 'PRE') {
@@ -542,13 +644,13 @@
         const header = card.querySelector(':scope > .border-b');
         if (header) {
           const headerText = [...header.childNodes]
-            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
             .map(n => n.textContent || '').join(' ');
           const token = headerText.trim().split(/\s+/)[0] || '';
           if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token)) lang = token.toLowerCase();
         }
       }
-      const codeEl = node.querySelector?.('code, .code-block') || node;
+      const codeEl = node.querySelector?.('pre code, pre, .code-block') || node;
       const raw = (codeEl.textContent || '').replace(/\n+$/, '');
       return `<div class="code-card"><div class="code-head"><span>${escapeHtml(lang)}</span><button type="button" class="copy-code">Copy</button></div><pre><code>${escapeHtml(raw)}</code></pre></div>`;
     }
@@ -936,9 +1038,146 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
   }
 
+  function detectPreviewableCode(lang, rawCode) {
+    const clean = String(rawCode || '').trim();
+    if (!clean) return { previewable: false, kind: '' };
+    const l = String(lang || '').toLowerCase();
+    if (l === 'svg' || /^(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(clean)) {
+      return { previewable: true, kind: 'svg' };
+    }
+    if (l === 'html' || l === 'htm' || /^(?:<!doctype\s+html|<html[\s>])/i.test(clean)) {
+      return { previewable: true, kind: 'html' };
+    }
+    return { previewable: false, kind: '' };
+  }
+
+  function buildPreviewSrcdoc(rawCode, kind, darkCanvas = false) {
+    const clean = String(rawCode || '').trim();
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'unsafe-inline' 'unsafe-eval' data: blob: https:; connect-src 'none';">`;
+    const bg = darkCanvas ? '#1A1918' : '#FAF9F5';
+    const fg = darkCanvas ? '#ECE9E2' : '#141413';
+    if (kind === 'svg') {
+      return `<!doctype html><html><head><meta charset="utf-8">${csp}<style>html,body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:${bg};color:${fg};padding:16px;box-sizing:border-box}svg{max-width:100%;max-height:calc(100vh - 32px);height:auto}</style></head><body>${clean}</body></html>`;
+    }
+    if (/<head[\s>]/i.test(clean)) {
+      return clean.replace(/<head([^>]*)>/i, `<head$1>${csp}`);
+    }
+    if (/^(?:<!doctype\s+html|<html[\s>])/i.test(clean)) {
+      return csp + clean;
+    }
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${csp}<style>body{margin:16px;background:${bg};color:${fg};font-family:system-ui,-apple-system,sans-serif}</style></head><body>${clean}</body></html>`;
+  }
+
+  function downloadBlobText(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadTableCsv(table, idx = 1) {
+    const csv = tableToDelimited(table, ',');
+    if (!csv) return '';
+    const date = new Date().toISOString().slice(0, 10);
+    downloadBlobText('\uFEFF' + csv, `table-${idx}-${date}.csv`, 'text/csv;charset=utf-8');
+    return csv;
+  }
+
   function cleanupCodeFolds() {
-    document.querySelectorAll('.agy-code-fold-btn').forEach(el => el.remove());
+    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, caption.agy-table-tools').forEach(el => el.remove());
     document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
+  }
+
+  function extractHeaderLang(header, pre) {
+    const headerText = [...header.childNodes]
+      .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
+      .map(n => n.textContent || '')
+      .join(' ');
+    const token = headerText.trim().split(/\s+/)[0] || '';
+    if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) return token.toLowerCase();
+    const codeEl = pre.querySelector('code') || pre;
+    const cls = codeEl.className || '';
+    const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  function mountLivePreviewPanel(card, pre, kind) {
+    let panel = card.querySelector(':scope > .agy-live-preview-panel');
+    if (panel) return panel;
+    let darkCanvas = document.body.classList.contains('theme-dark') || document.documentElement.classList.contains('dark');
+    let viewport = 'desktop';
+
+    panel = document.createElement('div');
+    panel.className = 'agy-live-preview-panel';
+    panel.setAttribute('data-ag-localization-skip', 'true');
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'agy-live-preview-toolbar';
+    const badge = document.createElement('span');
+    badge.className = 'agy-live-preview-badge';
+    badge.textContent = kind === 'svg'
+      ? text('🎨 SVG 隔离沙盒实时预览', '🎨 Sandboxed SVG Preview')
+      : text('🌐 HTML 隔离沙盒实时预览', '🌐 Sandboxed HTML Preview');
+
+    const btns = document.createElement('div');
+    btns.className = 'agy-live-preview-btns';
+
+    const vpBtn = document.createElement('button');
+    vpBtn.type = 'button';
+    vpBtn.dataset.previewAct = 'viewport';
+    const bgBtn = document.createElement('button');
+    bgBtn.type = 'button';
+    bgBtn.dataset.previewAct = 'canvas';
+    const reloadBtn = document.createElement('button');
+    reloadBtn.type = 'button';
+    reloadBtn.dataset.previewAct = 'reload';
+    reloadBtn.textContent = text('↻ 刷新', '↻ Reload');
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button';
+    dlBtn.dataset.previewAct = 'download';
+    dlBtn.textContent = kind === 'svg' ? '💾 .svg' : '💾 .html';
+
+    const stage = document.createElement('div');
+    stage.className = 'agy-live-preview-stage';
+    const frame = document.createElement('iframe');
+    frame.className = 'agy-live-preview-frame';
+    frame.setAttribute('sandbox', 'allow-scripts');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.title = kind === 'svg' ? 'SVG Live Preview' : 'HTML Live Preview';
+
+    const syncFrame = () => {
+      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      frame.dataset.viewport = viewport;
+      frame.style.background = darkCanvas ? '#1A1918' : '#FAF9F5';
+      frame.srcdoc = buildPreviewSrcdoc(raw, kind, darkCanvas);
+      vpBtn.textContent = viewport === 'desktop' ? text('🖥️ 100%', '🖥️ 100%') : text('📱 390px', '📱 390px');
+      vpBtn.dataset.active = String(viewport === 'mobile');
+      bgBtn.textContent = darkCanvas ? text('🌙 深底', '🌙 Dark') : text('☀️ 浅底', '☀️ Light');
+    };
+
+    vpBtn.onclick = e => { e.stopPropagation(); viewport = viewport === 'desktop' ? 'mobile' : 'desktop'; syncFrame(); };
+    bgBtn.onclick = e => { e.stopPropagation(); darkCanvas = !darkCanvas; syncFrame(); };
+    reloadBtn.onclick = e => { e.stopPropagation(); syncFrame(); };
+    dlBtn.onclick = e => {
+      e.stopPropagation();
+      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const ext = kind === 'svg' ? 'svg' : 'html';
+      const mime = kind === 'svg' ? 'image/svg+xml;charset=utf-8' : 'text/html;charset=utf-8';
+      downloadBlobText(raw, `snippet-${Date.now().toString(36)}.${ext}`, mime);
+    };
+
+    btns.append(vpBtn, bgBtn, reloadBtn, dlBtn);
+    toolbar.append(badge, btns);
+    stage.appendChild(frame);
+    panel.append(toolbar, stage);
+    card.appendChild(panel);
+    syncFrame();
+    return panel;
   }
 
   function enhanceLongCodeBlocks() {
@@ -948,39 +1187,141 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       const header = card.querySelector(':scope > .border-b');
       const pre = card.querySelector('pre');
       if (!header || !pre) continue;
-      const lines = (pre.textContent || '').replace(/\n+$/, '').split('\n').length;
-      let btn = header.querySelector('.agy-code-fold-btn');
-      if (lines < 18) {
-        btn?.remove();
+      const rawCode = (pre.textContent || '').replace(/\n+$/, '');
+      const lines = rawCode.split('\n').length;
+      const lang = extractHeaderLang(header, pre);
+      const previewMeta = detectPreviewableCode(lang, rawCode);
+
+      let actionsWrap = header.querySelector(':scope > .agy-code-header-actions');
+      if (!previewMeta.previewable && lines < 18) {
+        actionsWrap?.remove();
+        card.querySelector(':scope > .agy-live-preview-panel')?.remove();
         card.removeAttribute('data-agy-code-folded');
         continue;
       }
+
       if (getComputedStyle(header).display !== 'flex') {
         header.style.display = 'flex';
         header.style.alignItems = 'center';
         header.style.gap = '8px';
       }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'agy-code-fold-btn';
-        btn.setAttribute('data-ag-localization-skip', 'true');
-        btn.onclick = e => {
+      if (!actionsWrap) {
+        actionsWrap = document.createElement('span');
+        actionsWrap.className = 'agy-code-header-actions';
+        actionsWrap.setAttribute('data-ag-localization-skip', 'true');
+        header.appendChild(actionsWrap);
+      }
+
+      // 1) Inline Sandboxed HTML/SVG Live Preview button
+      let previewBtn = actionsWrap.querySelector('.agy-code-preview-btn');
+      if (!previewMeta.previewable) {
+        previewBtn?.remove();
+        card.querySelector(':scope > .agy-live-preview-panel')?.remove();
+      } else {
+        if (!previewBtn) {
+          previewBtn = document.createElement('button');
+          previewBtn.type = 'button';
+          previewBtn.className = 'agy-code-preview-btn';
+          previewBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.insertBefore(previewBtn, actionsWrap.firstChild);
+        }
+        const updatePreviewBtn = () => {
+          const isOpen = Boolean(card.querySelector(':scope > .agy-live-preview-panel'));
+          previewBtn.dataset.open = String(isOpen);
+          const lbl = isOpen
+            ? text('✕ 收起预览', '✕ Close Preview')
+            : text(`▶ 预览 ${previewMeta.kind.toUpperCase()}`, `▶ Preview ${previewMeta.kind.toUpperCase()}`);
+          if (previewBtn.textContent !== lbl) previewBtn.textContent = lbl;
+        };
+        previewBtn.onclick = e => {
+          e.stopPropagation();
+          const existing = card.querySelector(':scope > .agy-live-preview-panel');
+          if (existing) existing.remove();
+          else mountLivePreviewPanel(card, pre, previewMeta.kind);
+          updatePreviewBtn();
+        };
+        updatePreviewBtn();
+      }
+
+      // 2) Long Code Block Fold button (18+ lines)
+      let foldBtn = actionsWrap.querySelector('.agy-code-fold-btn');
+      if (lines < 18) {
+        foldBtn?.remove();
+        card.removeAttribute('data-agy-code-folded');
+      } else {
+        if (!foldBtn) {
+          foldBtn = document.createElement('button');
+          foldBtn.type = 'button';
+          foldBtn.className = 'agy-code-fold-btn';
+          foldBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.appendChild(foldBtn);
+        }
+        const updateFoldLabel = () => {
+          const folded = card.getAttribute('data-agy-code-folded') === 'true';
+          const label = folded
+            ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
+            : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
+          if (foldBtn.textContent !== label) foldBtn.textContent = label;
+        };
+        foldBtn.onclick = e => {
           e.stopPropagation();
           const next = card.getAttribute('data-agy-code-folded') !== 'true';
           card.setAttribute('data-agy-code-folded', String(next));
-          updateLabel();
+          updateFoldLabel();
         };
-        header.appendChild(btn);
+        updateFoldLabel();
       }
-      const updateLabel = () => {
-        const folded = card.getAttribute('data-agy-code-folded') === 'true';
-        const label = folded
-          ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
-          : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
-        if (btn.textContent !== label) btn.textContent = label;
-      };
-      updateLabel();
+    }
+
+    // 3) Excel-ready Markdown Table TSV Copy & UTF-8 BOM CSV Export
+    let tableIndex = 0;
+    for (const table of root.querySelectorAll('[data-testid="planner-response-text"] table')) {
+      if (isExcluded(table)) continue;
+      const rows = table.querySelectorAll('tr');
+      let cap = table.querySelector(':scope > caption.agy-table-tools');
+      if (!rows.length) {
+        cap?.remove();
+        continue;
+      }
+      tableIndex++;
+      const currentIndex = tableIndex;
+      if (!cap) {
+        cap = document.createElement('caption');
+        cap.className = 'agy-table-tools';
+        cap.setAttribute('data-ag-localization-skip', 'true');
+        table.insertBefore(cap, table.firstChild);
+      }
+      let bar = cap.querySelector('.agy-table-tools-bar');
+      if (!bar) {
+        bar = document.createElement('span');
+        bar.className = 'agy-table-tools-bar';
+        const tsvBtn = document.createElement('button');
+        tsvBtn.type = 'button';
+        tsvBtn.dataset.tableAct = 'tsv';
+        const csvBtn = document.createElement('button');
+        csvBtn.type = 'button';
+        csvBtn.dataset.tableAct = 'csv';
+        tsvBtn.onclick = async e => {
+          e.stopPropagation();
+          const tsv = tableToDelimited(table, '\t');
+          await writeClipboard(tsv);
+          tsvBtn.textContent = text('✓ 已复制 TSV', '✓ Copied TSV');
+          setTimeout(() => { tsvBtn.textContent = text('📊 复制表格 (Excel)', '📊 Copy TSV'); }, 1400);
+        };
+        csvBtn.onclick = e => {
+          e.stopPropagation();
+          downloadTableCsv(table, currentIndex);
+          csvBtn.textContent = text('✓ 已导出 .csv', '✓ Saved .csv');
+          setTimeout(() => { csvBtn.textContent = text('💾 导出 .csv', '💾 .csv'); }, 1400);
+        };
+        bar.append(tsvBtn, csvBtn);
+        cap.appendChild(bar);
+      }
+      const [tsvBtn, csvBtn] = bar.querySelectorAll('button');
+      const wantTsv = text('📊 复制表格 (Excel)', '📊 Copy TSV');
+      const wantCsv = text('💾 导出 .csv', '💾 .csv');
+      if (tsvBtn && !tsvBtn.textContent.startsWith('✓') && tsvBtn.textContent !== wantTsv) tsvBtn.textContent = wantTsv;
+      if (csvBtn && !csvBtn.textContent.startsWith('✓') && csvBtn.textContent !== wantCsv) csvBtn.textContent = wantCsv;
     }
   }
 
@@ -1072,7 +1413,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, .agy-code-fold-btn')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-table-tools')) continue;
       scheduleRender();
       break;
     }
@@ -1205,6 +1546,8 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     exportMarkdown,
     exportBookishHtml,
     downloadBookishHtml,
+    tableToDelimited,
+    buildPreviewSrcdoc,
     copyMarkdown,
     quoteSelectionIntoComposer,
     updateSelectionPill,

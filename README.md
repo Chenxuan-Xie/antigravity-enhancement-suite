@@ -14,11 +14,11 @@
   <img src="https://img.shields.io/badge/%E9%80%82%E7%94%A8%E7%89%88%E6%9C%AC-Antigravity%20v2.22%2B-D97757?style=flat-square" alt="适用版本 Antigravity v2.22+" />
   <img src="https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-Windows%2010%2F11-0078D6?style=flat-square" alt="平台 Windows 10/11" />
   <img src="https://img.shields.io/badge/%E6%B1%89%E5%8C%96%E8%AF%8D%E6%9D%A1-2147%2B-2E7D47?style=flat-square" alt="汉化词条 2147+" />
-  <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
 </p>
 
 <p align="center">
-  <img src="../../assets/hero-banner.png" width="100%" alt="当前版本首页：左侧增强套件控制中心、中转 API 与 Token 统计，橙色 Antigravity 欢迎图标" />
+  <img src="./assets/hero-banner.png" width="100%" alt="当前版本首页：左侧增强套件控制中心、中转 API 与 Token 统计，橙色 Antigravity 欢迎图标" />
   <br />
   <sub>▲ 当前版本浅色首页；控制中心位于左侧「接入中转 API」上方。</sub>
 </p>
@@ -27,29 +27,31 @@
 
 ## 📖 项目简介
 
-**Antigravity Enhancement Suite** 是专为 **Google Antigravity 2.0 桌面端 (Windows)** 打造的一站式开源增强工具包。它在**不修改、不破坏官方 `app.asar` 核心文件**的前提下，通过外置无损引导与本地后台服务，为 Antigravity 提供四大实用功能：
+**Antigravity Enhancement Suite** 是专为 **Google Antigravity 2.0 桌面端 (Windows)** 打造的一站式开源增强工具包。它在**不修改、不破坏官方 `app.asar` 核心文件**的前提下，通过外置无损引导与本地后台服务，为 Antigravity 提供全方位增强能力：
 
-**四项功能现在可独立启用。** 安装时勾选需要的模块；安装后点击左侧「增强套件控制中心」（位于「接入中转 API」上方），在独立面板中分别开关 Claude 皮肤、中文汉化、多账号切换和 API 中转。可以只汉化并保留官方配色，也可以保持英文界面只用账号或 API 功能。更新自愈计划任务为独立可选项，默认不启用。
+**核心模块均可独立启用。** 安装时勾选需要的模块；安装后点击左侧「增强套件控制中心」（位于「接入中转 API」上方），在独立面板中分别开关 Claude 皮肤、中文汉化、多账号切换、API 中转、对话大纲与提示词库。可以只汉化并保留官方配色，也可以保持英文界面只用账号或 API 功能。更新自愈计划任务为独立可选项，默认不启用。
 
 1. 🎨 **Claude 书卷风主题皮肤 (`antigravity-claude-skin`)**
-   - 复刻 Claude 标志性的 **羊皮纸暖白 (`#FAF9F5`)** 与 **深色暖炭黑 (`#1F1E1D`)** 双模式配色，告别刺眼冷白光。
-   - **离线人文衬线排版**：内置离线 `Source Serif 4` 衬线字体与中文思源宋体混排，呈现 **“提问现代干练、AI 回答温润如书”** 的阅读体验。
-2. 🇨🇳 **简体中文全量汉化 (`antigravity-claude-skin/i18n`)**
-   - 融合 [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) 并补齐 Antigravity v2.22.0+ 最新词库（共 **2,126+ 条** 翻译规则）。
-   - 完整覆盖 **主界面、设置页、顶栏菜单、右键菜单与系统托盘菜单**，同时严格保护代码块、终端与用户输入内容不被误翻。
+   - 复刻 Claude 标志性的 **羊皮纸暖白 (`#FAF9F5` / 侧栏 `#F0EEE6`)** 与 **深色暖炭黑 (`#1F1E1D` / 侧栏 `#161514`)** 双模式配色，完整适配新版内嵌壳层（Inset Shell）与毛玻璃气泡，告别刺眼冷白光。
+   - **离线人文衬线排版与三档阅读宽度**：内置离线 `Source Serif 4` 衬线字体与中文思源宋体混排，支持标准书卷 (`51rem`)、宽屏代码 (`68rem`) 与全宽画布 (`92%`) 实时切换。
+2. 🇨🇳 **简体中文全量汉化 2.0 (`antigravity-claude-skin/i18n`)**
+   - 融合 [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) 并补齐 Antigravity v2.22.0+ 最新词库（共 **2,147+ 条** 静态词条 + 动态参数化句式引擎）。
+   - 完整覆盖 **主界面、动态欢迎语、轮次无障碍提示、设置页、顶栏菜单、右键菜单与系统托盘菜单**，关闭汉化可无损还原英文原文，同时严格保护代码块、终端与用户输入内容不被误翻。
 3. 👥 **Google 多账号热切换与智能配额洞察 (`antigravity-account-switcher`)**
    - 在原生 **「设置 -> 账号」** 页面与右侧边栏面板内嵌可视化多账号管理卡片。
-   - **快捷切换与重置倒计时**：输入框旁的账号胶囊展示当前模型剩余更低的周期额度，菜单内实时计算配额重置倒计时（如 `⏱ 2h 15m 后重置`）并提供 **「⚡ 智能切至最优余量账号」** 一键动作。
+   - **快捷切换与重置倒计时**：输入框旁的账号胶囊展示当前模型剩余更低的周期额度（三色健康度指示），菜单内实时计算配额重置倒计时（如 `⏱ 2h 15m 后重置`）并提供 **「⚡ 智能切至最优余量账号」** 一键动作。
    - **切换前许可校验**：目标账号没有 Antigravity 使用许可时会提示并保持当前账号，不会跳回登录页。
-4. 🔌 **第三方 API / 中转站模型无缝切换 (`antigravity-model-switcher`)**
-   - 支持 **OpenAI 兼容接口** 与 **Anthropic Messages 接口**，提供服务商预设、共享地址与密钥，以及拉取模型后的多选批量导入。
-   - **原生聊天框直接使用**：在输入框模型菜单中选择中转模型；支持的模型可展开思考强度子菜单，选项随协议和模型变化。
-   - **同一对话混用**：支持官方与中转模型切换、本地历史与上下文桥接，以及文件读写、代码搜索和命令执行等 Agent 工具。接口能力、上下文长度和服务商限制仍影响实际体验。
-5. 📑 **独创工作流生产力套件（对话目录与书卷 HTML 导出 · 划词引用胶囊 · 参数化提示词库 · 全能命令面板）**
-   - **对话目录大纲、长代码折叠与多格式导出 (`Alt+O`)**：右侧悬浮轮次胶囊，展开即可按提问或 AI 回复内的 `H1~H3` 章节标题一键定位、复用历史提问、标记 `★` 重点星标；18 行以上长代码块自动提供无损折叠角标；支持一键导出为纯净 GitHub Flavored Markdown 或 **自带目录与深浅色切换的离线 Claude 书卷排版单文件 HTML 报告**。
+4. 🔌 **第三方 API / 中转站无缝桥接与并发测速赛马 (`antigravity-model-switcher`)**
+   - 支持 **OpenAI 兼容接口** 与 **Anthropic Messages 接口**，提供主流服务商预设、共享地址与密钥，拉取 `/v1/models` 列表后支持**关键词实时过滤与一键全选批量导入**。
+   - **🏁 全模型并发测速赛马**：模型管理面板与 `Alt+K` 命令面板内置并发握手测速，可视化展示各节点响应耗时条与 `🏆 最快` 标记，支持 **「⚡ 选用最快」** 一键切至当前延迟最低的可用节点。
+   - **同一对话混用**：在原生输入框菜单直接选择中转模型与思考强度，支持官方与中转模型同会话无损衔接，以及文件读写、代码搜索和命令执行等 Agent 工具。
+5. 📑 **独创工作流生产力套件（对话目录与书卷 HTML 导出 · 沙盒实时预览 · 表格导出 · 划词胶囊 · 参数化提示词库 · 命令面板）**
+   - **对话目录大纲、长代码折叠与多格式归档 (`Alt+O`)**：右侧悬浮轮次胶囊，展开即可按提问或 AI 回复内的 `H1~H3` 章节标题一键定位、复用历史提问 (`↺`)、标记 `★` 重点星标；18 行以上长代码块自动提供无损折叠角标；支持一键导出为纯净 GitHub Flavored Markdown 或 **自带目录与深浅色切换的离线 Claude 书卷排版单文件 HTML 报告**。
+   - **🎨 对话内嵌 HTML / SVG 零信任沙盒实时预览**：AI 回复中的 `html` / `svg` 代码块自动挂载 **「▶ 预览 HTML / SVG」** 按钮，在不开放同源权限与外联请求（`sandbox="allow-scripts"` + CSP `connect-src 'none'`）的严格隔离沙盒内直接渲染交互界面与矢量图形，支持桌面 `100%` / 手机 `390px` 视口切换、深浅画布底色切换及单文件下载。
+   - **📊 AI 表格一键 Excel 复制与 CSV 导出**：AI 回复中的所有 Markdown 表格自动挂载轻量化操作栏，支持一键复制为 **Excel / 飞书 / Notion 直粘格式 (`TSV`)**，或导出带 UTF-8 BOM 头的标准 `.csv` 文件（Windows Excel 直接双击打开中文零乱码）。
    - **划词悬浮灵动胶囊**：在对话中选中任意段落，自动浮现 **「❝ 引用追问 · ✦ 存为模板 · 📋 复制」** 快捷胶囊，一键将选中文本转为 `>` 引用块填入输入框继续追问，或直接存入提示词库。
-   - **参数化提示词灵感库 (`Alt+P`)**：内置工程调试、架构评审、科研创新点提炼等精选模板，支持自定义 `{{变量名:默认值}}` 动态占位符，选中后自动生成可视化填空表单并实时预览合成文本，`Ctrl+Enter` 一键注入原生 Lexical 输入框。
-   - **全能快捷命令面板 (`Alt+K`)**：键盘模糊检索一键完成换肤、调节阅读宽度（标准 `51rem` / 宽屏 `68rem` / 全宽 `92%`）、切号、切换官方/中转模型、导出 Markdown / 书卷 HTML 与调出提示词。
+   - **参数化提示词灵感库 (`Alt+P`)**：内置工程调试、架构评审、科研创新点提炼等精选模板，支持自定义 `{{变量名:默认值}}` 动态占位符与 JSON 模板包一键导入/导出，选中后自动生成可视化填空表单并实时预览合成文本，`Ctrl+Enter` 一键注入原生 Lexical 输入框。
+   - **全能快捷命令面板 (`Alt+K`)**：键盘模糊检索一键完成换肤、调节阅读宽度、切号、并发测速优选最快中转模型、导出 Markdown / 书卷 HTML 与调出提示词。
 
 ---
 
@@ -64,7 +66,7 @@
 点击左侧「增强套件控制中心」即可管理皮肤、汉化、多账号与 API。面板还提供主题、回复字体和字号，以及额度显示、Token 统计、低配额提醒和可选自愈守护。设置自动保存到本机；只开启汉化也可保留官方配色。
 
 <p align="center">
-  <img src="../../assets/suite-control-center.png" width="100%" alt="当前增强套件控制中心：独立模块开关、外观设置、显示与后台设置" />
+  <img src="./assets/suite-control-center.png" width="100%" alt="当前增强套件控制中心：独立模块开关、外观设置、显示与后台设置" />
 </p>
 
 ### 2. 暖白 / 暖炭黑主题与实时切换（动态图）
@@ -72,13 +74,13 @@
 控制中心可选择白天、黑夜或跟随系统；退出重进沿用保存的皮肤开关和主题模式，关闭皮肤保持官方外观。
 
 <p align="center">
-  <img src="../../assets/demo-skin-i18n.gif" width="100%" alt="当前界面 20 帧每秒动态演示：打开左侧控制中心，切换黑夜与白天主题" />
+  <img src="./assets/demo-skin-i18n.gif" width="100%" alt="当前界面 20 帧每秒动态演示：打开左侧控制中心，切换黑夜与白天主题" />
 </p>
 
 <details>
 <summary>查看深色主题高清截图</summary>
 <p align="center">
-  <img src="../../assets/theme-dark.png" width="100%" alt="当前暖炭黑首页，橙色 Antigravity 欢迎标识和左侧中转 Token 统计" />
+  <img src="./assets/theme-dark.png" width="100%" alt="当前暖炭黑首页，橙色 Antigravity 欢迎标识和左侧中转 Token 统计" />
 </p>
 </details>
 
@@ -87,13 +89,13 @@
 左侧「接入中转 API」打开模型管理。选择服务商预设、填写地址与 Key 后，可保存站点配置供多个模型复用；更换站点 Key 无需逐个修改模型。
 
 <p align="center">
-  <img src="../../assets/api-model-manager.png" width="100%" alt="当前 API 模型管理：服务商预设、已保存服务商与模型列表，全部为虚构示例" />
+  <img src="./assets/api-model-manager.png" width="100%" alt="当前 API 模型管理：服务商预设、已保存服务商与模型列表，全部为虚构示例" />
 </p>
 
 拉取站点模型后，勾选多个模型一次导入；不提供模型列表的接口仍可手动添加。
 
 <p align="center">
-  <img src="../../assets/provider-batch-import.png" width="100%" alt="当前模型多选导入界面：三个虚构模型已勾选，共享示例服务商配置" />
+  <img src="./assets/provider-batch-import.png" width="100%" alt="当前模型多选导入界面：三个虚构模型已勾选，共享示例服务商配置" />
 </p>
 
 ### 4. 输入框模型切换与思考强度（动态图）
@@ -101,13 +103,13 @@
 官方与已添加的中转模型出现在同一个模型菜单中。悬停支持思考强度的中转模型可展开子菜单；移到其他模型时对应子菜单关闭。各模型保存自己的强度设置，接口是否接受该参数取决于服务商。
 
 <p align="center">
-  <img src="../../assets/demo-model-switcher.gif" width="100%" alt="当前界面 20 帧每秒动态演示：中转模型思考强度选择，以及切回官方模型" />
+  <img src="./assets/demo-model-switcher.gif" width="100%" alt="当前界面 20 帧每秒动态演示：中转模型思考强度选择，以及切回官方模型" />
 </p>
 
 <details>
 <summary>查看模型菜单高清截图</summary>
 <p align="center">
-  <img src="../../assets/model-reasoning-menu.png" width="100%" alt="当前模型菜单：官方与中转模型，以及中转 Claude 的思考强度子菜单" />
+  <img src="./assets/model-reasoning-menu.png" width="100%" alt="当前模型菜单：官方与中转模型，以及中转 Claude 的思考强度子菜单" />
 </p>
 </details>
 
@@ -116,19 +118,19 @@
 输入区右下方显示紧凑的当前账号胶囊，比较当前模型的周额度和 5h 额度，优先显示剩余更低的一项，并标明「周」或「5h」；相同时显示周额度。点击展开账号、配额进度条与刷新按钮。显示额度和低配额提醒可分别关闭；低于 10% 时提供切换建议，由用户决定是否切号。
 
 <p align="center">
-  <img src="../../assets/account-quota-menu.png" width="100%" alt="当前账号额度菜单：虚构主账号与备用账号、配额进度条和刷新入口" />
+  <img src="./assets/account-quota-menu.png" width="100%" alt="当前账号额度菜单：虚构主账号与备用账号、配额进度条和刷新入口" />
 </p>
 
 完整账号设置页仍保留账号列表、分模型配额、添加账号和切换入口。下面演示使用两个虚构账号，不会登录或切换真实账号；演示速度不代表真实切换耗时。
 
 <p align="center">
-  <img src="../../assets/demo-account-switcher.gif" width="100%" alt="当前原生账号设置页 20 帧每秒动态演示：虚构账号切换、当前状态变化与配额刷新" />
+  <img src="./assets/demo-account-switcher.gif" width="100%" alt="当前原生账号设置页 20 帧每秒动态演示：虚构账号切换、当前状态变化与配额刷新" />
 </p>
 
 <details>
 <summary>查看原生账号设置高清截图</summary>
 <p align="center">
-  <img src="../../assets/account-settings.png" width="100%" alt="当前原生账号设置页：虚构邮箱和头像、账号切换卡片与分模型配额" />
+  <img src="./assets/account-settings.png" width="100%" alt="当前原生账号设置页：虚构邮箱和头像、账号切换卡片与分模型配额" />
 </p>
 </details>
 
@@ -137,7 +139,7 @@
 中转回复展示接口返回的思考内容与工具执行状态。开启「中转 API Token 消耗」后，左侧「接入中转 API」下方展示本轮及会话累计的输入、输出和合计。**只记录中转 API，官方模型不计入**；接口未返回统计时显示「—」和原因，部分缺失会标注。
 
 <p align="center">
-  <img src="../../assets/relay-chat-and-usage.png" width="100%" alt="当前中转会话：原生对话布局、虚构示例回复、底部输入框和左侧 Token 表格" />
+  <img src="./assets/relay-chat-and-usage.png" width="100%" alt="当前中转会话：原生对话布局、虚构示例回复、底部输入框和左侧 Token 表格" />
 </p>
 
 ---
@@ -170,7 +172,7 @@ flowchart TD
 
 - **账号与密钥保存在本机**：默认安装到 `~/.gemini/antigravity-suite/`，账号与模型数据位于对应模块的 `data/` 中。模型按服务商共享 API Key，界面列表只显示掩码。配置 JSON 本身未加密，应按凭据文件保护；请求模型或登录时会按功能向您选择的 API 服务商或 Google 发送所需数据。
 - **零外部数据收集**：本开源项目不包含任何统计或遥测代码。
-- **仓库防呆保护**：`.gitignore` 已默认排除所有个人配置文件（`data/*.json`）、聊天桥接缓存与备份目录；仓库中仅提供空白的脱敏模板 [`accounts.example.json`](../../antigravity-account-switcher/data/accounts.example.json) 与 [`models.example.json`](../../antigravity-model-switcher/data/models.example.json)。
+- **仓库防呆保护**：`.gitignore` 已默认排除所有个人配置文件（`data/*.json`）、聊天桥接缓存与备份目录；仓库中仅提供空白的脱敏模板 [`accounts.example.json`](./antigravity-account-switcher/data/accounts.example.json) 与 [`models.example.json`](./antigravity-model-switcher/data/models.example.json)。
 
 ---
 
@@ -357,9 +359,4 @@ antigravity-enhancement-suite/
 ## 🙏 致谢与开源协议
 
 - 简体中文基础词库参考并融合了 [Silas-02/antigravity-desktop-cn](https://github.com/Silas-02/antigravity-desktop-cn) 项目的翻译贡献。
-- 本项目采用 [MIT License](../../LICENSE) 开源协议，欢迎 Star、Fork 与提交 PR！
-
-  .replace(/../../assets//g, './assets/')
-  .replace(/../../LICENSE/g, './LICENSE')
-  .replace(/../../antigravity-account-switcher/g, './antigravity-account-switcher')
-  .replace(/../../antigravity-model-switcher/g, './antigravity-model-switcher')}
+- 本项目采用 [MIT License](./LICENSE) 开源协议，欢迎 Star、Fork 与提交 PR！

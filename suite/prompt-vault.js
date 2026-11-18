@@ -455,6 +455,31 @@
       renderModal();
       document.getElementById('agy-pv-edit-title')?.focus();
     };
+    const importFileInput = document.createElement('input');
+    importFileInput.type = 'file';
+    importFileInput.accept = '.json,application/json';
+    importFileInput.style.display = 'none';
+    importFileInput.onchange = async () => {
+      const f = importFileInput.files?.[0];
+      if (!f) return;
+      try {
+        const count = await importPromptsJson(await f.text());
+        setStatus(text(`✓ 成功导入 ${count} 个模板`, `✓ Imported ${count} templates`));
+        renderModal();
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      } finally {
+        importFileInput.value = '';
+      }
+    };
+    const importBtn = document.createElement('button');
+    importBtn.type = 'button';
+    importBtn.id = 'agy-pv-import-btn';
+    importBtn.className = 'agy-pv-btn';
+    importBtn.title = text('从 JSON 文件导入提示词模板包', 'Import templates from JSON file');
+    importBtn.textContent = text('导入', 'Import');
+    importBtn.onclick = () => importFileInput.click();
+
     const exportBtn = document.createElement('button');
     exportBtn.type = 'button';
     exportBtn.className = 'agy-pv-btn';
@@ -466,7 +491,7 @@
         setStatus(text('✓ 已复制模板库 JSON 到剪贴板', '✓ Copied templates JSON to clipboard'));
       } catch {}
     };
-    leftFoot.append(addBtn, exportBtn);
+    leftFoot.append(addBtn, importBtn, exportBtn, importFileInput);
     left.append(leftHead, list, leftFoot);
 
     // Right column
@@ -802,11 +827,41 @@
   document.addEventListener('keydown', onKeyDown);
   scheduleRender();
 
+  async function importPromptsJson(rawJson) {
+    let parsed;
+    try {
+      parsed = typeof rawJson === 'string' ? JSON.parse(rawJson) : rawJson;
+    } catch {
+      throw new Error(text('JSON 格式无效', 'Invalid JSON format'));
+    }
+    const items = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.prompts) ? parsed.prompts : []);
+    const valid = items.filter(it => it && typeof it.title === 'string' && it.title.trim() && typeof it.content === 'string' && it.content.trim());
+    if (!valid.length) throw new Error(text('未找到有效的模板条目', 'No valid templates found'));
+    let latest = prompts;
+    for (const it of valid.slice(0, 50)) {
+      latest = await apiCall({
+        action: 'upsert',
+        prompt: {
+          id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
+          title: it.title.trim().slice(0, 80),
+          category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
+          pinned: Boolean(it.pinned),
+          content: it.content.trim()
+        }
+      });
+    }
+    prompts = latest;
+    saveCachedPrompts(prompts);
+    if (!selectedId && prompts[0]) selectedId = prompts[0].id;
+    return Math.min(valid.length, 50);
+  }
+
   window.__agyPromptVault = {
     open,
     openWithDraft: draft => open(draft),
     close,
     refresh,
+    importPromptsJson,
     getPrompts: () => prompts.length ? prompts : loadCachedPrompts(),
     parseVariables,
     composePrompt,

@@ -1155,6 +1155,57 @@
                 border-color: rgba(16, 185, 129, 0.55);
                 background: rgba(16, 185, 129, 0.06);
             }
+            body.theme-dark .agy-ms-test-banner.ok, html.dark .agy-ms-test-banner.ok { color: #34d399; }
+            body.theme-dark .agy-ms-test-banner.err, html.dark .agy-ms-test-banner.err { color: #f87171; }
+            body.theme-dark .agy-ms-test-banner.loading, html.dark .agy-ms-test-banner.loading { color: #60a5fa; }
+            .agy-ms-tag.champion {
+                background: rgba(217, 119, 87, 0.16);
+                color: #c96442;
+                font-weight: 600;
+            }
+            body.theme-dark .agy-ms-tag.champion, html.dark .agy-ms-tag.champion {
+                color: #e58b6d;
+            }
+            .agy-ms-discover-toolbar {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                width: 100%;
+                padding-bottom: 4px;
+                margin-bottom: 2px;
+                border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.16));
+                flex-wrap: wrap;
+            }
+            .agy-ms-mini-link {
+                border: 1px solid var(--border, rgba(128, 128, 128, 0.24));
+                background: transparent;
+                color: inherit;
+                border-radius: 5px;
+                padding: 2px 7px;
+                font-size: 11px;
+                cursor: pointer;
+                opacity: 0.82;
+                transition: all 0.14s;
+            }
+            .agy-ms-mini-link:hover {
+                opacity: 1;
+                border-color: #c96442;
+                color: #c96442;
+            }
+            .agy-ms-latency-track {
+                width: 68px;
+                height: 4px;
+                border-radius: 999px;
+                background: rgba(128, 128, 128, 0.16);
+                overflow: hidden;
+                display: inline-flex;
+                vertical-align: middle;
+            }
+            .agy-ms-latency-fill {
+                height: 100%;
+                border-radius: 999px;
+                transition: width 0.25s ease;
+            }
             /* 聊天流中的无缝中转模型消息气泡 */
             .agy-ms-chat-turn {
                 display: flex;
@@ -1847,7 +1898,7 @@
                         </div>
                     </div>
 
-                    <div id="agy-ms-discovered-chips" style="display:none;flex-wrap:wrap;gap:5px;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.04);max-height:96px;overflow-y:auto;"></div>
+                    <div id="agy-ms-discovered-chips" style="display:none;flex-wrap:wrap;gap:5px;padding:7px 9px;border-radius:7px;background:rgba(128,128,128,0.06);max-height:184px;overflow-y:auto;"></div>
                     <button type="button" class="agy-ms-btn" id="agy-ms-import-btn" style="display:none;">批量导入勾选模型</button>
                     <div id="agy-ms-test-result-banner" class="agy-ms-test-banner"></div>
 
@@ -1862,11 +1913,15 @@
                     </div>
                 </div>
 
-                <!-- 已添加模型列表（支持选用、测试连接、编辑、删除） -->
+                <!-- 已添加模型列表（支持并发测速赛马、一键优选最低延迟节点、测试、编辑、删除） -->
                 <div>
-                    <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-                        <span>📋 已添加的模型 (${state.models.length})</span>
-                        <span style="font-size:11.5px;opacity:0.75;">添加后会自动显示在聊天框的模型选择列表中</span>
+                    <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <span id="agy-ms-saved-heading">📋 已添加的模型 (${state.models.length})</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <button type="button" class="agy-ms-btn" id="agy-ms-benchmark-all-btn" style="padding:4px 10px;font-size:11.5px;display:none;">🏁 并发测速</button>
+                            <button type="button" class="agy-ms-btn success" id="agy-ms-pick-fastest-btn" style="padding:4px 10px;font-size:11.5px;display:none;"></button>
+                            <span style="font-size:11.5px;opacity:0.72;">添加后自动出现在聊天模型列表</span>
+                        </div>
                     </div>
                     <div class="agy-ms-model-list" id="agy-ms-saved-list"></div>
                 </div>
@@ -1960,7 +2015,7 @@
             };
         }
 
-        // 从中转站 /v1/models 拉取可用模型列表
+        // 从中转站 /v1/models 拉取可用模型列表（支持关键词实时过滤与全选当前筛选结果）
         discoverBtn.addEventListener('click', async () => {
             const draft = readFormDraft();
             if (!draft.baseUrl || (!draft.apiKey && !draft.id && !draft.providerId)) {
@@ -1977,16 +2032,83 @@
                 if (res && res.ok && Array.isArray(res.models) && res.models.length > 0) {
                     datalistEl.innerHTML = res.models.map(id => `<option value="${escapeHtml(id)}"></option>`).join('');
                     discoveredChipsEl.style.display = 'flex';
-                    discoverySignature=JSON.stringify([draft.providerId,draft.baseUrl,draft.apiKey,draft.protocol]);selectedModels.clear();importBtn.style.display='inline-block';
-                    discoveredChipsEl.innerHTML = `<span style="font-size:11px;opacity:0.75;width:100%;">发现 ${res.models.length} 个模型，勾选后批量导入：</span>`;
+                    discoverySignature = JSON.stringify([draft.providerId, draft.baseUrl, draft.apiKey, draft.protocol]);
+                    selectedModels.clear();
+                    importBtn.style.display = 'inline-block';
+                    discoveredChipsEl.replaceChildren();
+
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'agy-ms-discover-toolbar';
+                    const filterInput = document.createElement('input');
+                    filterInput.type = 'search';
+                    filterInput.id = 'agy-ms-discovered-filter';
+                    filterInput.className = 'agy-ms-input';
+                    filterInput.style.cssText = 'flex:1;min-width:140px;padding:4px 8px;font-size:11.5px;';
+                    filterInput.placeholder = '筛选模型 ID（如 claude / deepseek / qwen）…';
+                    const countSpan = document.createElement('span');
+                    countSpan.id = 'agy-ms-discover-count';
+                    countSpan.style.cssText = 'font-size:11px;opacity:0.78;white-space:nowrap;';
+                    const selVisBtn = document.createElement('button');
+                    selVisBtn.type = 'button';
+                    selVisBtn.id = 'agy-ms-discover-select-visible';
+                    selVisBtn.className = 'agy-ms-mini-link';
+                    selVisBtn.textContent = '全选当前';
+                    const clearVisBtn = document.createElement('button');
+                    clearVisBtn.type = 'button';
+                    clearVisBtn.id = 'agy-ms-discover-clear';
+                    clearVisBtn.className = 'agy-ms-mini-link';
+                    clearVisBtn.textContent = '清空';
+                    toolbar.append(filterInput, countSpan, selVisBtn, clearVisBtn);
+                    discoveredChipsEl.appendChild(toolbar);
+
+                    const chipRecords = [];
+                    const updateDiscoverStats = () => {
+                        const visibleCount = chipRecords.filter(r => r.chip.style.display !== 'none').length;
+                        countSpan.textContent = `显示 ${visibleCount}/${res.models.length} · 已勾选 ${selectedModels.size}`;
+                        importBtn.textContent = selectedModels.size > 0
+                            ? `批量导入勾选模型 (${selectedModels.size})`
+                            : '批量导入勾选模型';
+                    };
+
                     res.models.forEach((mId) => {
                         const chip = document.createElement('label');
                         chip.className = 'agy-ms-preset-chip';
-                        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=mId;
-                        checkbox.addEventListener('change',()=>{if(checkbox.checked)selectedModels.add(mId);else selectedModels.delete(mId);});
-                        chip.append(checkbox,document.createTextNode(mId));
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = mId;
+                        checkbox.addEventListener('change', () => {
+                            if (checkbox.checked) selectedModels.add(mId);
+                            else selectedModels.delete(mId);
+                            updateDiscoverStats();
+                        });
+                        chip.append(checkbox, document.createTextNode(mId));
                         discoveredChipsEl.appendChild(chip);
+                        chipRecords.push({ mId, lower: String(mId).toLowerCase(), chip, checkbox });
                     });
+
+                    filterInput.addEventListener('input', () => {
+                        const q = filterInput.value.trim().toLowerCase();
+                        for (const rec of chipRecords) {
+                            rec.chip.style.display = (!q || rec.lower.includes(q)) ? '' : 'none';
+                        }
+                        updateDiscoverStats();
+                    });
+                    selVisBtn.addEventListener('click', () => {
+                        for (const rec of chipRecords) {
+                            if (rec.chip.style.display !== 'none') {
+                                rec.checkbox.checked = true;
+                                selectedModels.add(rec.mId);
+                            }
+                        }
+                        updateDiscoverStats();
+                    });
+                    clearVisBtn.addEventListener('click', () => {
+                        for (const rec of chipRecords) rec.checkbox.checked = false;
+                        selectedModels.clear();
+                        updateDiscoverStats();
+                    });
+                    updateDiscoverStats();
+
                     bannerEl.className = 'agy-ms-test-banner ok';
                     bannerEl.textContent = `✅ 已成功从 ${res.endpointUrl} 获取到 ${res.models.length} 个模型！`;
                 } else {
@@ -2086,13 +2208,102 @@
             }
         });
 
+        const benchAllBtn = modal.querySelector('#agy-ms-benchmark-all-btn');
+        if (benchAllBtn) {
+            benchAllBtn.addEventListener('click', async () => {
+                if (!state.models.length) return;
+                benchAllBtn.disabled = true;
+                benchAllBtn.textContent = '⏳ 并发测速中...';
+                bannerEl.className = 'agy-ms-test-banner loading';
+                bannerEl.textContent = `🏁 正在并发测速全部 ${state.models.length} 个中转模型节点...`;
+                try {
+                    const summary = await benchmarkAllModels({ autoSelectFastest: false });
+                    if (summary.fastest) {
+                        bannerEl.className = 'agy-ms-test-banner ok';
+                        bannerEl.innerHTML = `🏁 <b>并发测速完成</b>：<b>${summary.healthyCount}/${summary.testedCount}</b> 个模型连通 · 🏆 最快节点 <b>${escapeHtml(summary.fastest.name)}</b> (<b>${summary.fastest.lastTestLatencyMs} ms</b>)`;
+                    } else {
+                        bannerEl.className = 'agy-ms-test-banner err';
+                        bannerEl.textContent = `❌ 测速完成：全部 ${summary.testedCount} 个模型均未连通，请检查中转站密钥或网络状态。`;
+                    }
+                    renderSavedModelsList(modal);
+                } finally {
+                    benchAllBtn.disabled = false;
+                    benchAllBtn.textContent = '🏁 并发测速';
+                }
+            });
+        }
+
+        const pickFastestBtn = modal.querySelector('#agy-ms-pick-fastest-btn');
+        if (pickFastestBtn) {
+            pickFastestBtn.addEventListener('click', async () => {
+                const fastest = getFastestHealthyModel();
+                if (!fastest) return;
+                await selectModel('custom', fastest.id);
+                renderSavedModelsList(modal);
+                bannerEl.className = 'agy-ms-test-banner ok';
+                bannerEl.innerHTML = `⚡ 已切换至最低延迟模型 <b>${escapeHtml(fastest.name)}</b> (<b>${fastest.lastTestLatencyMs} ms</b>)`;
+            });
+        }
+
         renderSavedModelsList(modal);
+    }
+
+    function getFastestHealthyModel() {
+        const healthy = (state.models || []).filter(m => m.enabled !== false && m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs));
+        if (!healthy.length) return null;
+        return healthy.slice().sort((a, b) => a.lastTestLatencyMs - b.lastTestLatencyMs)[0] || null;
+    }
+
+    async function benchmarkAllModels({ autoSelectFastest = false } = {}) {
+        const targets = (state.models || []).filter(m => m.enabled !== false);
+        if (!targets.length) return { testedCount: 0, healthyCount: 0, fastest: null };
+        let cursor = 0;
+        let okCount = 0;
+        const workerCount = Math.min(4, targets.length);
+        await Promise.all(Array.from({ length: workerCount }, async () => {
+            while (cursor < targets.length) {
+                const target = targets[cursor++];
+                try {
+                    const res = await apiFetch('/test', { method: 'POST', body: { id: target.id } });
+                    if (res?.ok && res?.result?.ok) okCount++;
+                } catch {}
+            }
+        }));
+        await refreshState();
+        const fastest = getFastestHealthyModel();
+        if (autoSelectFastest && fastest) {
+            await selectModel('custom', fastest.id);
+        }
+        const openModal = document.querySelector('#agy-model-manager-backdrop .agy-ms-modal');
+        if (openModal) renderSavedModelsList(openModal);
+        return { testedCount: targets.length, healthyCount: okCount, fastest };
     }
 
     function renderSavedModelsList(modal) {
         const listEl = modal.querySelector('#agy-ms-saved-list');
         if (!listEl) return;
         listEl.innerHTML = '';
+
+        const headingEl = modal.querySelector('#agy-ms-saved-heading');
+        if (headingEl) headingEl.textContent = `📋 已添加的模型 (${state.models.length})`;
+
+        const benchBtn = modal.querySelector('#agy-ms-benchmark-all-btn');
+        if (benchBtn) benchBtn.style.display = state.models.length > 0 ? 'inline-flex' : 'none';
+
+        const fastest = getFastestHealthyModel();
+        const healthyCount = state.models.filter(m => m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs)).length;
+        const fastestBtn = modal.querySelector('#agy-ms-pick-fastest-btn');
+        if (fastestBtn) {
+            if (fastest) {
+                fastestBtn.style.display = 'inline-flex';
+                const isFastestActive = state.activeMode === 'custom' && state.activeModelId === fastest.id;
+                fastestBtn.textContent = isFastestActive
+                    ? `🏆 已选最快 (${fastest.name} · ${fastest.lastTestLatencyMs}ms)`
+                    : `⚡ 选用最快 (${fastest.name} · ${fastest.lastTestLatencyMs}ms)`;
+            } else {
+                fastestBtn.style.display = 'none';
+            }
+        }
 
         if (state.models.length === 0) {
             listEl.innerHTML = `<div style="padding:14px;text-align:center;opacity:0.65;font-size:12.5px;border:1px dashed var(--border, rgba(0,0,0,0.18));border-radius:8px;">暂未添加任何中转模型。在上方填写模型信息并添加后，模型会自动出现在聊天的模型选择列表中。</div>`;
@@ -2104,8 +2315,16 @@
             const card = document.createElement('div');
             card.className = `agy-ms-model-card${isCurrent ? ' active' : ''}`;
 
+            const hasLatency = m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs);
+            const ms = hasLatency ? m.lastTestLatencyMs : 0;
+            const barColor = ms < 600 ? '#10b981' : (ms <= 1600 ? '#d97706' : '#ea580c');
+            const barWidth = hasLatency ? Math.max(14, Math.min(100, Math.round(100 - Math.min(ms, 2600) / 30))) : 0;
+            const isChampion = hasLatency && healthyCount >= 2 && fastest?.id === m.id;
+
             const statusBadge = m.lastTestOk === true
-                ? `<span class="agy-ms-tag ok">✅ 连通 (${m.lastTestLatencyMs}ms)</span>`
+                ? `<span class="agy-ms-tag ok">✅ 连通 (${m.lastTestLatencyMs}ms)</span>` +
+                  (hasLatency ? `<span class="agy-ms-latency-track" title="响应耗时 ${ms}ms"><span class="agy-ms-latency-fill" style="width:${barWidth}%;background:${barColor};"></span></span>` : '') +
+                  (isChampion ? `<span class="agy-ms-tag champion">🏆 最快</span>` : '')
                 : (m.lastTestOk === false
                     ? `<span class="agy-ms-tag" style="color:#dc2626;" title="${escapeHtml(m.lastTestError)}">❌ 异常</span>`
                     : `<span class="agy-ms-tag">未测试</span>`);
@@ -3670,6 +3889,8 @@
         acceptNativePage,
         nativeLayout,
         ensureNativeConversation,
+        benchmarkModels: benchmarkAllModels,
+        getFastestHealthyModel,
         stopGeneration: () => activeChatController?.abort(new Error('已停止生成')),
         getState: () => state
     };

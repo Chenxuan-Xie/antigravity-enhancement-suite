@@ -9,7 +9,7 @@ try{
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
   let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,prompts:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
   let vaultPrompts=[{id:'tpl-1',title:'Audit Module',category:'Engineering',pinned:true,content:'Audit {{module}} with constraint {{limit:zero-regression}}.'}];
-  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[];
+  let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[],savedModels=[],activeMode='official',activeModelId=null;
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
   const providers=[{id:'fixture-provider',name:'Fixture',baseUrl:'https://fixture.test/v1',protocol:'openai',hasApiKey:true}];
@@ -24,8 +24,10 @@ try{
     if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}else if(holdInitial)await new Promise(resolve=>{releaseInitial=resolve;});payload.settings=settings;}
     else if(value.includes('/api/suite/prompts')){if(options.method==='POST'){if(body.action==='upsert'){const item={id:body.prompt.id||'tpl-new',...body.prompt};vaultPrompts=[item,...vaultPrompts.filter(p=>p.id!==item.id)];}else if(body.action==='delete')vaultPrompts=vaultPrompts.filter(p=>p.id!==body.id);}payload.prompts=vaultPrompts;}
     else if(value.includes('/api/models/discover')){discoverCalls++;payload.models=['model-a','model-b','model-c'];payload.endpointUrl='https://fixture.test/v1/models';}
-    else if(value.includes('/api/models/import')){imported=body;payload.state={models:[],activeMode:'official',providers};}
-    else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:new URL(value).searchParams.get('conversationId')||'auto',exchanges:usageExchanges,officialTurnCount:0,customExchangeCount:usageExchanges.length}};
+    else if(value.includes('/api/models/import')){imported=body;savedModels=(body.modelIds||[]).map((id,idx)=>({id:'mdl-'+idx,name:idx===0?'Slow Node':'Fast Node',modelId:id,protocol:'openai',baseUrl:'https://fixture.test/v1',apiKeyMasked:'sk-***',lastTestOk:null,lastTestLatencyMs:null}));payload.models=savedModels;payload.state={models:savedModels,activeMode,activeModelId,providers};}
+    else if(value.includes('/api/models/test')){const m=savedModels.find(x=>x.id===body.id);const ms=m?.modelId==='model-c'?125:680;if(m){m.lastTestOk=true;m.lastTestLatencyMs=ms;}payload.result={ok:true,latencyMs:ms,resolvedProtocol:'openai',endpointUrl:'https://fixture.test/v1/chat/completions',replyPreview:'OK'};}
+    else if(value.includes('/api/models/select')){activeMode=body.mode||'official';activeModelId=body.modelId||null;payload.state={models:savedModels,activeMode,activeModelId,providers};}
+    else if(value.includes('/api/models'))payload={ok:true,models:savedModels,providers,activeMode,activeModelId,bridge:{conversationId:new URL(value).searchParams.get('conversationId')||'auto',exchanges:usageExchanges,officialTurnCount:0,customExchangeCount:usageExchanges.length}};
     else if(value.endsWith('/api/switch')){switches++;accounts=accounts.map(a=>({...a,isCurrent:a.email===body.email}));payload.accounts=accounts;}
     else if(value.includes('/api/accounts')){if(value.includes('/quota')){quotaCalls++;if(quotaFailure)return new w.Response(JSON.stringify({ok:false,error:'Token refresh failed HTTP 401: unauthorized_client'}),{status:401,headers:{'Content-Type':'application/json'}});}payload.accounts=accounts;}
     return new w.Response(JSON.stringify(payload),{headers:{'Content-Type':'application/json'}});
@@ -76,7 +78,18 @@ try{
     w.__agyPromptVault.openWithDraft({title:'LRU Snippet',content:'Verify {{cache}}'});
     assert(d.querySelector('#agy-pv-edit-title')?.value==='LRU Snippet'&&d.querySelector('#agy-pv-edit-content')?.value==='Verify {{cache}}','saving selection to vault opens template editor pre-filled with snippet');
     w.__agyPromptVault.close();
-    longPre.textContent='const cap = 64;';w.__agyConvTools.refresh();
+    const codeCard=d.querySelector('[data-testid="planner-response-text"] .rounded-xl'),codeHeader=codeCard.querySelector(':scope > .border-b');
+    codeHeader.firstChild.nodeValue='svg';longPre.textContent='<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg>';w.__agyConvTools.refresh();
+    const previewBtn=codeCard.querySelector('.agy-code-preview-btn');assert(previewBtn&&previewBtn.textContent.includes('SVG'),'SVG/HTML code cards mount an inline live preview trigger');
+    previewBtn.click();const previewFrame=codeCard.querySelector('iframe.agy-live-preview-frame');
+    assert(previewFrame&&previewFrame.getAttribute('sandbox')==='allow-scripts'&&!previewFrame.getAttribute('sandbox').includes('allow-same-origin')&&previewFrame.srcdoc.includes("connect-src 'none'"),'live preview renders inside an opaque sandboxed iframe without allow-same-origin or network exfiltration');
+    codeCard.querySelector('[data-preview-act="viewport"]').click();assert(previewFrame.dataset.viewport==='mobile','live preview supports desktop and mobile viewport switching');
+    assert(w.__agyConvTools.exportMarkdown().includes('\\x60\\x60\\x60svg\\n<svg viewBox="0 0 20 20">')&&!w.__agyConvTools.exportMarkdown().includes('Preview SVG'),'open live preview panel does not pollute Markdown export');
+    previewBtn.click();codeHeader.firstChild.nodeValue='js';longPre.textContent='const cap = 64;';w.__agyConvTools.refresh();
+    const fixtureTable=d.querySelector('[data-testid="planner-response-text"] table');
+    assert(fixtureTable.querySelector('caption.agy-table-tools [data-table-act="tsv"]')&&w.__agyConvTools.tableToDelimited(fixtureTable,'\\t')==='Metric\\tOps\\nHit\\t1.2M','AI Markdown tables mount Excel TSV/CSV export tools and serialize exact rows');
+    const csvProbe=d.createElement('table');csvProbe.innerHTML='<tr><td>A,B</td><td>Say "Hi"</td></tr>';
+    assert(w.__agyConvTools.tableToDelimited(csvProbe,',')==='"A,B","Say ""Hi"""','table CSV serializer applies RFC 4180 quote and comma escaping');
     w.__agyConvTools.close();
     await w.__agySuite.save({outline:false});await pause(40);
     assert(!d.querySelector('#agy-outline-pill')&&!d.querySelector('#agy-outline-drawer')&&!w.__agyConvTools,'disabling outline immediately removes floating pill and drawer');
@@ -90,6 +103,8 @@ try{
     d.querySelector('#agy-pv-insert').click();
     assert(!d.querySelector('#agy-prompt-vault-backdrop')&&editor.textContent==='Audit auth-router with constraint zero-regression.','inserting a composed prompt fills the Lexical composer and closes the modal');
     editor.textContent='';
+    const importedCount=await w.__agyPromptVault.importPromptsJson(JSON.stringify([{id:'tpl-team',title:'Team Spec',category:'Team',pinned:true,content:'Deliver {{milestone}}'}]));
+    assert(importedCount===1&&w.__agyPromptVault.getPrompts().some(p=>p.id==='tpl-team'),'prompt vault imports JSON template packs cleanly');
     await w.__agySuite.save({prompts:false});await pause(40);
     assert(!d.querySelector('#agy-prompt-vault-trigger')&&!w.__agyPromptVault,'disabling prompt vault removes its composer trigger immediately');
     await w.__agySuite.save({prompts:true});await pause(40);
@@ -125,9 +140,18 @@ try{
     const provider=d.querySelector('#agy-ms-provider');provider.value='fixture-provider';provider.dispatchEvent(new w.Event('change'));
     d.querySelector('#agy-ms-discover-btn').click();await pause(40);
     const checks=d.querySelectorAll('#agy-ms-discovered-chips input[type=checkbox]');assert(checks.length===3&&discoverCalls===1,'saved provider discovers models without asking for the key again');
+    const discFilter=d.querySelector('#agy-ms-discovered-filter');discFilter.value='model-b';discFilter.dispatchEvent(new w.Event('input'));
+    assert([...d.querySelectorAll('#agy-ms-discovered-chips .agy-ms-preset-chip')].filter(el=>el.style.display!=='none').length===1,'discovery filter narrows visible model chips in real time');
+    d.querySelector('#agy-ms-discover-select-visible').click();assert(checks[1].checked&&!checks[0].checked,'select-visible checks only filtered models');
+    d.querySelector('#agy-ms-discover-clear').click();discFilter.value='';discFilter.dispatchEvent(new w.Event('input'));
     for(const input of [checks[0],checks[2]]){input.checked=true;input.dispatchEvent(new w.Event('change'));}
     d.querySelector('#agy-ms-import-btn').click();await pause(70);
     assert(imported.providerId==='fixture-provider'&&imported.modelIds.join(',')==='model-a,model-c'&&!imported.apiKey,'native bulk import submits only selected models using the shared provider');
+    d.querySelector('#agy-ms-benchmark-all-btn').click();await pause(80);
+    assert(d.querySelector('.agy-ms-tag.champion')&&d.querySelector('#agy-ms-pick-fastest-btn')?.textContent.includes('125ms'),'parallel relay benchmark measures all nodes and highlights the lowest-latency champion');
+    d.querySelector('#agy-ms-pick-fastest-btn').click();await pause(60);
+    assert(api.getState().activeMode==='custom'&&api.getState().activeModelId==='mdl-1','one-click fastest picker activates the lowest-latency healthy relay model');
+    await api.selectModel('official');savedModels=[];await api.refreshState();
     d.querySelector('#agy-model-manager-backdrop')?.remove();
     await w.__agySuite.save({accounts:true});await pause(120);
     assert(d.querySelector('#agy-account-badge')?.textContent.includes('8%')&&quotaCalls===1,'account capsule shows matching quota and refreshes current account data');

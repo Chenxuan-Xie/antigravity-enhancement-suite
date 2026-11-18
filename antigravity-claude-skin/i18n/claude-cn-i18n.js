@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="c08b749a0921dbb00177c7283de87ecb43a006cea649b884126539790c6d91e2"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="33d1bf268ecb677c27d65ad34991ddbf3f3c721e7351a7e78bc61e6b9062aea4"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -6118,6 +6118,57 @@ window.__agySuiteModules.api=function(){
                 border-color: rgba(16, 185, 129, 0.55);
                 background: rgba(16, 185, 129, 0.06);
             }
+            body.theme-dark .agy-ms-test-banner.ok, html.dark .agy-ms-test-banner.ok { color: #34d399; }
+            body.theme-dark .agy-ms-test-banner.err, html.dark .agy-ms-test-banner.err { color: #f87171; }
+            body.theme-dark .agy-ms-test-banner.loading, html.dark .agy-ms-test-banner.loading { color: #60a5fa; }
+            .agy-ms-tag.champion {
+                background: rgba(217, 119, 87, 0.16);
+                color: #c96442;
+                font-weight: 600;
+            }
+            body.theme-dark .agy-ms-tag.champion, html.dark .agy-ms-tag.champion {
+                color: #e58b6d;
+            }
+            .agy-ms-discover-toolbar {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                width: 100%;
+                padding-bottom: 4px;
+                margin-bottom: 2px;
+                border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.16));
+                flex-wrap: wrap;
+            }
+            .agy-ms-mini-link {
+                border: 1px solid var(--border, rgba(128, 128, 128, 0.24));
+                background: transparent;
+                color: inherit;
+                border-radius: 5px;
+                padding: 2px 7px;
+                font-size: 11px;
+                cursor: pointer;
+                opacity: 0.82;
+                transition: all 0.14s;
+            }
+            .agy-ms-mini-link:hover {
+                opacity: 1;
+                border-color: #c96442;
+                color: #c96442;
+            }
+            .agy-ms-latency-track {
+                width: 68px;
+                height: 4px;
+                border-radius: 999px;
+                background: rgba(128, 128, 128, 0.16);
+                overflow: hidden;
+                display: inline-flex;
+                vertical-align: middle;
+            }
+            .agy-ms-latency-fill {
+                height: 100%;
+                border-radius: 999px;
+                transition: width 0.25s ease;
+            }
             /* 聊天流中的无缝中转模型消息气泡 */
             .agy-ms-chat-turn {
                 display: flex;
@@ -6810,7 +6861,7 @@ window.__agySuiteModules.api=function(){
                         </div>
                     </div>
 
-                    <div id="agy-ms-discovered-chips" style="display:none;flex-wrap:wrap;gap:5px;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.04);max-height:96px;overflow-y:auto;"></div>
+                    <div id="agy-ms-discovered-chips" style="display:none;flex-wrap:wrap;gap:5px;padding:7px 9px;border-radius:7px;background:rgba(128,128,128,0.06);max-height:184px;overflow-y:auto;"></div>
                     <button type="button" class="agy-ms-btn" id="agy-ms-import-btn" style="display:none;">批量导入勾选模型</button>
                     <div id="agy-ms-test-result-banner" class="agy-ms-test-banner"></div>
 
@@ -6825,11 +6876,15 @@ window.__agySuiteModules.api=function(){
                     </div>
                 </div>
 
-                <!-- 已添加模型列表（支持选用、测试连接、编辑、删除） -->
+                <!-- 已添加模型列表（支持并发测速赛马、一键优选最低延迟节点、测试、编辑、删除） -->
                 <div>
-                    <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-                        <span>📋 已添加的模型 (${state.models.length})</span>
-                        <span style="font-size:11.5px;opacity:0.75;">添加后会自动显示在聊天框的模型选择列表中</span>
+                    <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <span id="agy-ms-saved-heading">📋 已添加的模型 (${state.models.length})</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <button type="button" class="agy-ms-btn" id="agy-ms-benchmark-all-btn" style="padding:4px 10px;font-size:11.5px;display:none;">🏁 并发测速</button>
+                            <button type="button" class="agy-ms-btn success" id="agy-ms-pick-fastest-btn" style="padding:4px 10px;font-size:11.5px;display:none;"></button>
+                            <span style="font-size:11.5px;opacity:0.72;">添加后自动出现在聊天模型列表</span>
+                        </div>
                     </div>
                     <div class="agy-ms-model-list" id="agy-ms-saved-list"></div>
                 </div>
@@ -6923,7 +6978,7 @@ window.__agySuiteModules.api=function(){
             };
         }
 
-        // 从中转站 /v1/models 拉取可用模型列表
+        // 从中转站 /v1/models 拉取可用模型列表（支持关键词实时过滤与全选当前筛选结果）
         discoverBtn.addEventListener('click', async () => {
             const draft = readFormDraft();
             if (!draft.baseUrl || (!draft.apiKey && !draft.id && !draft.providerId)) {
@@ -6940,16 +6995,83 @@ window.__agySuiteModules.api=function(){
                 if (res && res.ok && Array.isArray(res.models) && res.models.length > 0) {
                     datalistEl.innerHTML = res.models.map(id => `<option value="${escapeHtml(id)}"></option>`).join('');
                     discoveredChipsEl.style.display = 'flex';
-                    discoverySignature=JSON.stringify([draft.providerId,draft.baseUrl,draft.apiKey,draft.protocol]);selectedModels.clear();importBtn.style.display='inline-block';
-                    discoveredChipsEl.innerHTML = `<span style="font-size:11px;opacity:0.75;width:100%;">发现 ${res.models.length} 个模型，勾选后批量导入：</span>`;
+                    discoverySignature = JSON.stringify([draft.providerId, draft.baseUrl, draft.apiKey, draft.protocol]);
+                    selectedModels.clear();
+                    importBtn.style.display = 'inline-block';
+                    discoveredChipsEl.replaceChildren();
+
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'agy-ms-discover-toolbar';
+                    const filterInput = document.createElement('input');
+                    filterInput.type = 'search';
+                    filterInput.id = 'agy-ms-discovered-filter';
+                    filterInput.className = 'agy-ms-input';
+                    filterInput.style.cssText = 'flex:1;min-width:140px;padding:4px 8px;font-size:11.5px;';
+                    filterInput.placeholder = '筛选模型 ID（如 claude / deepseek / qwen）…';
+                    const countSpan = document.createElement('span');
+                    countSpan.id = 'agy-ms-discover-count';
+                    countSpan.style.cssText = 'font-size:11px;opacity:0.78;white-space:nowrap;';
+                    const selVisBtn = document.createElement('button');
+                    selVisBtn.type = 'button';
+                    selVisBtn.id = 'agy-ms-discover-select-visible';
+                    selVisBtn.className = 'agy-ms-mini-link';
+                    selVisBtn.textContent = '全选当前';
+                    const clearVisBtn = document.createElement('button');
+                    clearVisBtn.type = 'button';
+                    clearVisBtn.id = 'agy-ms-discover-clear';
+                    clearVisBtn.className = 'agy-ms-mini-link';
+                    clearVisBtn.textContent = '清空';
+                    toolbar.append(filterInput, countSpan, selVisBtn, clearVisBtn);
+                    discoveredChipsEl.appendChild(toolbar);
+
+                    const chipRecords = [];
+                    const updateDiscoverStats = () => {
+                        const visibleCount = chipRecords.filter(r => r.chip.style.display !== 'none').length;
+                        countSpan.textContent = `显示 ${visibleCount}/${res.models.length} · 已勾选 ${selectedModels.size}`;
+                        importBtn.textContent = selectedModels.size > 0
+                            ? `批量导入勾选模型 (${selectedModels.size})`
+                            : '批量导入勾选模型';
+                    };
+
                     res.models.forEach((mId) => {
                         const chip = document.createElement('label');
                         chip.className = 'agy-ms-preset-chip';
-                        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=mId;
-                        checkbox.addEventListener('change',()=>{if(checkbox.checked)selectedModels.add(mId);else selectedModels.delete(mId);});
-                        chip.append(checkbox,document.createTextNode(mId));
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = mId;
+                        checkbox.addEventListener('change', () => {
+                            if (checkbox.checked) selectedModels.add(mId);
+                            else selectedModels.delete(mId);
+                            updateDiscoverStats();
+                        });
+                        chip.append(checkbox, document.createTextNode(mId));
                         discoveredChipsEl.appendChild(chip);
+                        chipRecords.push({ mId, lower: String(mId).toLowerCase(), chip, checkbox });
                     });
+
+                    filterInput.addEventListener('input', () => {
+                        const q = filterInput.value.trim().toLowerCase();
+                        for (const rec of chipRecords) {
+                            rec.chip.style.display = (!q || rec.lower.includes(q)) ? '' : 'none';
+                        }
+                        updateDiscoverStats();
+                    });
+                    selVisBtn.addEventListener('click', () => {
+                        for (const rec of chipRecords) {
+                            if (rec.chip.style.display !== 'none') {
+                                rec.checkbox.checked = true;
+                                selectedModels.add(rec.mId);
+                            }
+                        }
+                        updateDiscoverStats();
+                    });
+                    clearVisBtn.addEventListener('click', () => {
+                        for (const rec of chipRecords) rec.checkbox.checked = false;
+                        selectedModels.clear();
+                        updateDiscoverStats();
+                    });
+                    updateDiscoverStats();
+
                     bannerEl.className = 'agy-ms-test-banner ok';
                     bannerEl.textContent = `✅ 已成功从 ${res.endpointUrl} 获取到 ${res.models.length} 个模型！`;
                 } else {
@@ -7049,13 +7171,102 @@ window.__agySuiteModules.api=function(){
             }
         });
 
+        const benchAllBtn = modal.querySelector('#agy-ms-benchmark-all-btn');
+        if (benchAllBtn) {
+            benchAllBtn.addEventListener('click', async () => {
+                if (!state.models.length) return;
+                benchAllBtn.disabled = true;
+                benchAllBtn.textContent = '⏳ 并发测速中...';
+                bannerEl.className = 'agy-ms-test-banner loading';
+                bannerEl.textContent = `🏁 正在并发测速全部 ${state.models.length} 个中转模型节点...`;
+                try {
+                    const summary = await benchmarkAllModels({ autoSelectFastest: false });
+                    if (summary.fastest) {
+                        bannerEl.className = 'agy-ms-test-banner ok';
+                        bannerEl.innerHTML = `🏁 <b>并发测速完成</b>：<b>${summary.healthyCount}/${summary.testedCount}</b> 个模型连通 · 🏆 最快节点 <b>${escapeHtml(summary.fastest.name)}</b> (<b>${summary.fastest.lastTestLatencyMs} ms</b>)`;
+                    } else {
+                        bannerEl.className = 'agy-ms-test-banner err';
+                        bannerEl.textContent = `❌ 测速完成：全部 ${summary.testedCount} 个模型均未连通，请检查中转站密钥或网络状态。`;
+                    }
+                    renderSavedModelsList(modal);
+                } finally {
+                    benchAllBtn.disabled = false;
+                    benchAllBtn.textContent = '🏁 并发测速';
+                }
+            });
+        }
+
+        const pickFastestBtn = modal.querySelector('#agy-ms-pick-fastest-btn');
+        if (pickFastestBtn) {
+            pickFastestBtn.addEventListener('click', async () => {
+                const fastest = getFastestHealthyModel();
+                if (!fastest) return;
+                await selectModel('custom', fastest.id);
+                renderSavedModelsList(modal);
+                bannerEl.className = 'agy-ms-test-banner ok';
+                bannerEl.innerHTML = `⚡ 已切换至最低延迟模型 <b>${escapeHtml(fastest.name)}</b> (<b>${fastest.lastTestLatencyMs} ms</b>)`;
+            });
+        }
+
         renderSavedModelsList(modal);
+    }
+
+    function getFastestHealthyModel() {
+        const healthy = (state.models || []).filter(m => m.enabled !== false && m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs));
+        if (!healthy.length) return null;
+        return healthy.slice().sort((a, b) => a.lastTestLatencyMs - b.lastTestLatencyMs)[0] || null;
+    }
+
+    async function benchmarkAllModels({ autoSelectFastest = false } = {}) {
+        const targets = (state.models || []).filter(m => m.enabled !== false);
+        if (!targets.length) return { testedCount: 0, healthyCount: 0, fastest: null };
+        let cursor = 0;
+        let okCount = 0;
+        const workerCount = Math.min(4, targets.length);
+        await Promise.all(Array.from({ length: workerCount }, async () => {
+            while (cursor < targets.length) {
+                const target = targets[cursor++];
+                try {
+                    const res = await apiFetch('/test', { method: 'POST', body: { id: target.id } });
+                    if (res?.ok && res?.result?.ok) okCount++;
+                } catch {}
+            }
+        }));
+        await refreshState();
+        const fastest = getFastestHealthyModel();
+        if (autoSelectFastest && fastest) {
+            await selectModel('custom', fastest.id);
+        }
+        const openModal = document.querySelector('#agy-model-manager-backdrop .agy-ms-modal');
+        if (openModal) renderSavedModelsList(openModal);
+        return { testedCount: targets.length, healthyCount: okCount, fastest };
     }
 
     function renderSavedModelsList(modal) {
         const listEl = modal.querySelector('#agy-ms-saved-list');
         if (!listEl) return;
         listEl.innerHTML = '';
+
+        const headingEl = modal.querySelector('#agy-ms-saved-heading');
+        if (headingEl) headingEl.textContent = `📋 已添加的模型 (${state.models.length})`;
+
+        const benchBtn = modal.querySelector('#agy-ms-benchmark-all-btn');
+        if (benchBtn) benchBtn.style.display = state.models.length > 0 ? 'inline-flex' : 'none';
+
+        const fastest = getFastestHealthyModel();
+        const healthyCount = state.models.filter(m => m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs)).length;
+        const fastestBtn = modal.querySelector('#agy-ms-pick-fastest-btn');
+        if (fastestBtn) {
+            if (fastest) {
+                fastestBtn.style.display = 'inline-flex';
+                const isFastestActive = state.activeMode === 'custom' && state.activeModelId === fastest.id;
+                fastestBtn.textContent = isFastestActive
+                    ? `🏆 已选最快 (${fastest.name} · ${fastest.lastTestLatencyMs}ms)`
+                    : `⚡ 选用最快 (${fastest.name} · ${fastest.lastTestLatencyMs}ms)`;
+            } else {
+                fastestBtn.style.display = 'none';
+            }
+        }
 
         if (state.models.length === 0) {
             listEl.innerHTML = `<div style="padding:14px;text-align:center;opacity:0.65;font-size:12.5px;border:1px dashed var(--border, rgba(0,0,0,0.18));border-radius:8px;">暂未添加任何中转模型。在上方填写模型信息并添加后，模型会自动出现在聊天的模型选择列表中。</div>`;
@@ -7067,8 +7278,16 @@ window.__agySuiteModules.api=function(){
             const card = document.createElement('div');
             card.className = `agy-ms-model-card${isCurrent ? ' active' : ''}`;
 
+            const hasLatency = m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs);
+            const ms = hasLatency ? m.lastTestLatencyMs : 0;
+            const barColor = ms < 600 ? '#10b981' : (ms <= 1600 ? '#d97706' : '#ea580c');
+            const barWidth = hasLatency ? Math.max(14, Math.min(100, Math.round(100 - Math.min(ms, 2600) / 30))) : 0;
+            const isChampion = hasLatency && healthyCount >= 2 && fastest?.id === m.id;
+
             const statusBadge = m.lastTestOk === true
-                ? `<span class="agy-ms-tag ok">✅ 连通 (${m.lastTestLatencyMs}ms)</span>`
+                ? `<span class="agy-ms-tag ok">✅ 连通 (${m.lastTestLatencyMs}ms)</span>` +
+                  (hasLatency ? `<span class="agy-ms-latency-track" title="响应耗时 ${ms}ms"><span class="agy-ms-latency-fill" style="width:${barWidth}%;background:${barColor};"></span></span>` : '') +
+                  (isChampion ? `<span class="agy-ms-tag champion">🏆 最快</span>` : '')
                 : (m.lastTestOk === false
                     ? `<span class="agy-ms-tag" style="color:#dc2626;" title="${escapeHtml(m.lastTestError)}">❌ 异常</span>`
                     : `<span class="agy-ms-tag">未测试</span>`);
@@ -8633,6 +8852,8 @@ window.__agySuiteModules.api=function(){
         acceptNativePage,
         nativeLayout,
         ensureNativeConversation,
+        benchmarkModels: benchmarkAllModels,
+        getFastestHealthyModel,
         stopGeneration: () => activeChatController?.abort(new Error('已停止生成')),
         getState: () => state
     };
@@ -9225,14 +9446,90 @@ window.__agySuiteModules.outline=function(){
       border-radius: 12px;
       transition: outline-color 0.3s ease;
     }
-    .agy-code-fold-btn {
-      margin-left: auto; padding: 1px 7px; border-radius: 6px;
+    .agy-code-header-actions {
+      margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .agy-code-fold-btn, .agy-code-preview-btn {
+      padding: 1px 8px; border-radius: 6px;
       border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
       background: transparent; color: inherit; cursor: pointer;
       font: 500 11px/1.4 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+      opacity: 0.82; transition: all 0.14s ease; white-space: nowrap;
+    }
+    .agy-code-preview-btn {
+      border-color: rgba(217, 119, 87, 0.42);
+      color: #D97757;
+      background: rgba(217, 119, 87, 0.08);
+      font-weight: 600;
+    }
+    body.theme-dark .agy-code-preview-btn, html.dark .agy-code-preview-btn { color: #E58B6D; }
+    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover {
+      opacity: 1; border-color: #D97757; color: #D97757;
+    }
+    .agy-code-preview-btn[data-open="true"] {
+      background: #D97757; border-color: #D97757; color: #FFFFFF; opacity: 1;
+    }
+    .agy-live-preview-panel {
+      border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      background: var(--background, #FAF9F5);
+      display: flex; flex-direction: column;
+    }
+    body.theme-dark .agy-live-preview-panel, html.dark .agy-live-preview-panel {
+      background: #1B1A18;
+    }
+    .agy-live-preview-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 12px; font: 500 11px/1.3 system-ui, sans-serif;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.14));
+      background: rgba(217, 119, 87, 0.06);
+      flex-wrap: wrap;
+    }
+    .agy-live-preview-badge {
+      display: inline-flex; align-items: center; gap: 5px; color: #D97757; font-weight: 600;
+    }
+    .agy-live-preview-btns { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .agy-live-preview-btns button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.24));
+      background: var(--card, rgba(255, 255, 255, 0.6)); color: inherit;
+      border-radius: 6px; padding: 2px 8px; font: inherit; cursor: pointer;
+      transition: all 0.13s ease;
+    }
+    body.theme-dark .agy-live-preview-btns button, html.dark .agy-live-preview-btns button {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .agy-live-preview-btns button:hover, .agy-live-preview-btns button[data-active="true"] {
+      border-color: #D97757; color: #D97757;
+    }
+    .agy-live-preview-stage {
+      padding: 12px; display: flex; justify-content: center; background: rgba(128, 128, 128, 0.04);
+    }
+    .agy-live-preview-frame {
+      width: 100%; height: 300px; border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      border-radius: 8px; background: #FFFFFF; transition: width 0.2s ease;
+    }
+    .agy-live-preview-frame[data-viewport="mobile"] {
+      width: 390px; max-width: 100%;
+    }
+    caption.agy-table-tools {
+      caption-side: bottom; text-align: right; padding: 6px 2px 2px;
+      font: 500 11px/1.3 system-ui, sans-serif;
+    }
+    .agy-table-tools-bar {
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .agy-table-tools-bar button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
+      background: var(--card, rgba(250, 249, 245, 0.78));
+      color: var(--foreground, #141413);
+      border-radius: 6px; padding: 2px 8px; font: inherit; cursor: pointer;
       opacity: 0.78; transition: all 0.14s ease;
     }
-    .agy-code-fold-btn:hover { opacity: 1; border-color: #D97757; color: #D97757; }
+    body.theme-dark .agy-table-tools-bar button, html.dark .agy-table-tools-bar button {
+      background: rgba(40, 39, 37, 0.85); color: #ECE9E2;
+    }
+    .agy-table-tools-bar button:hover {
+      opacity: 1; border-color: #D97757; color: #D97757;
+    }
     .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
       max-height: 156px !important;
       overflow: hidden !important;
@@ -9386,14 +9683,14 @@ window.__agySuiteModules.outline=function(){
       const header = card.querySelector(':scope > .border-b');
       if (header) {
         const headerText = [...header.childNodes]
-          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
           .map(n => n.textContent || '')
           .join(' ');
         const token = headerText.trim().split(/\s+/)[0] || '';
         if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
       }
     }
-    const codeEl = preOrCard.querySelector?.('code, .code-block') || preOrCard;
+    const codeEl = preOrCard.querySelector?.('pre code, pre, .code-block') || preOrCard;
     if (!lang) {
       const cls = codeEl.className || '';
       const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
@@ -9417,12 +9714,37 @@ window.__agySuiteModules.outline=function(){
     return `\n| ${head.join(' | ')} |\n| ${sep.join(' | ')} |\n${body.join('\n')}\n\n`;
   }
 
-  function blockMarkdown(node, listDepth = 0) {
+  function tablePlainCell(node) {
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
     const tag = node.tagName.toUpperCase();
-    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG') return '';
+    if (tag === 'BUTTON' || tag === 'STYLE' || tag === 'SCRIPT' || tag === 'SVG' || tag === 'CAPTION') return '';
+    if (tag === 'BR') return ' ';
+    return [...node.childNodes].map(tablePlainCell).join('');
+  }
+
+  function tableToDelimited(table, sep = '\t') {
+    if (!table) return '';
+    const rows = [...table.querySelectorAll('tr')].map(tr =>
+      [...tr.querySelectorAll('th, td')].map(cell => tablePlainCell(cell).replace(/\s+/g, ' ').trim())
+    ).filter(r => r.length > 0);
+    if (!rows.length) return '';
+    return rows.map(row => row.map(val => {
+      if (sep === ',') {
+        return /[",\r\n]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val;
+      }
+      return val.replace(/[\t\r\n]+/g, ' ');
+    }).join(sep)).join('\n');
+  }
+
+  function blockMarkdown(node, listDepth = 0) {
+    if (!node) return '';
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'CAPTION') return '';
     if (node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) {
       return extractCodeBlock(node);
     }
@@ -9552,8 +9874,9 @@ window.__agySuiteModules.outline=function(){
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue || '');
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
-    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT') return '';
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'CAPTION') return '';
     if (tag === 'BR') return '<br>';
     if (tag === 'HR') return '<hr>';
     if ((node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) || tag === 'PRE') {
@@ -9563,13 +9886,13 @@ window.__agySuiteModules.outline=function(){
         const header = card.querySelector(':scope > .border-b');
         if (header) {
           const headerText = [...header.childNodes]
-            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn')))
+            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
             .map(n => n.textContent || '').join(' ');
           const token = headerText.trim().split(/\s+/)[0] || '';
           if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token)) lang = token.toLowerCase();
         }
       }
-      const codeEl = node.querySelector?.('code, .code-block') || node;
+      const codeEl = node.querySelector?.('pre code, pre, .code-block') || node;
       const raw = (codeEl.textContent || '').replace(/\n+$/, '');
       return `<div class="code-card"><div class="code-head"><span>${escapeHtml(lang)}</span><button type="button" class="copy-code">Copy</button></div><pre><code>${escapeHtml(raw)}</code></pre></div>`;
     }
@@ -9957,9 +10280,146 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
   }
 
+  function detectPreviewableCode(lang, rawCode) {
+    const clean = String(rawCode || '').trim();
+    if (!clean) return { previewable: false, kind: '' };
+    const l = String(lang || '').toLowerCase();
+    if (l === 'svg' || /^(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(clean)) {
+      return { previewable: true, kind: 'svg' };
+    }
+    if (l === 'html' || l === 'htm' || /^(?:<!doctype\s+html|<html[\s>])/i.test(clean)) {
+      return { previewable: true, kind: 'html' };
+    }
+    return { previewable: false, kind: '' };
+  }
+
+  function buildPreviewSrcdoc(rawCode, kind, darkCanvas = false) {
+    const clean = String(rawCode || '').trim();
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'unsafe-inline' 'unsafe-eval' data: blob: https:; connect-src 'none';">`;
+    const bg = darkCanvas ? '#1A1918' : '#FAF9F5';
+    const fg = darkCanvas ? '#ECE9E2' : '#141413';
+    if (kind === 'svg') {
+      return `<!doctype html><html><head><meta charset="utf-8">${csp}<style>html,body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:${bg};color:${fg};padding:16px;box-sizing:border-box}svg{max-width:100%;max-height:calc(100vh - 32px);height:auto}</style></head><body>${clean}</body></html>`;
+    }
+    if (/<head[\s>]/i.test(clean)) {
+      return clean.replace(/<head([^>]*)>/i, `<head$1>${csp}`);
+    }
+    if (/^(?:<!doctype\s+html|<html[\s>])/i.test(clean)) {
+      return csp + clean;
+    }
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${csp}<style>body{margin:16px;background:${bg};color:${fg};font-family:system-ui,-apple-system,sans-serif}</style></head><body>${clean}</body></html>`;
+  }
+
+  function downloadBlobText(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadTableCsv(table, idx = 1) {
+    const csv = tableToDelimited(table, ',');
+    if (!csv) return '';
+    const date = new Date().toISOString().slice(0, 10);
+    downloadBlobText('\uFEFF' + csv, `table-${idx}-${date}.csv`, 'text/csv;charset=utf-8');
+    return csv;
+  }
+
   function cleanupCodeFolds() {
-    document.querySelectorAll('.agy-code-fold-btn').forEach(el => el.remove());
+    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, caption.agy-table-tools').forEach(el => el.remove());
     document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
+  }
+
+  function extractHeaderLang(header, pre) {
+    const headerText = [...header.childNodes]
+      .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
+      .map(n => n.textContent || '')
+      .join(' ');
+    const token = headerText.trim().split(/\s+/)[0] || '';
+    if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) return token.toLowerCase();
+    const codeEl = pre.querySelector('code') || pre;
+    const cls = codeEl.className || '';
+    const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  function mountLivePreviewPanel(card, pre, kind) {
+    let panel = card.querySelector(':scope > .agy-live-preview-panel');
+    if (panel) return panel;
+    let darkCanvas = document.body.classList.contains('theme-dark') || document.documentElement.classList.contains('dark');
+    let viewport = 'desktop';
+
+    panel = document.createElement('div');
+    panel.className = 'agy-live-preview-panel';
+    panel.setAttribute('data-ag-localization-skip', 'true');
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'agy-live-preview-toolbar';
+    const badge = document.createElement('span');
+    badge.className = 'agy-live-preview-badge';
+    badge.textContent = kind === 'svg'
+      ? text('🎨 SVG 隔离沙盒实时预览', '🎨 Sandboxed SVG Preview')
+      : text('🌐 HTML 隔离沙盒实时预览', '🌐 Sandboxed HTML Preview');
+
+    const btns = document.createElement('div');
+    btns.className = 'agy-live-preview-btns';
+
+    const vpBtn = document.createElement('button');
+    vpBtn.type = 'button';
+    vpBtn.dataset.previewAct = 'viewport';
+    const bgBtn = document.createElement('button');
+    bgBtn.type = 'button';
+    bgBtn.dataset.previewAct = 'canvas';
+    const reloadBtn = document.createElement('button');
+    reloadBtn.type = 'button';
+    reloadBtn.dataset.previewAct = 'reload';
+    reloadBtn.textContent = text('↻ 刷新', '↻ Reload');
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button';
+    dlBtn.dataset.previewAct = 'download';
+    dlBtn.textContent = kind === 'svg' ? '💾 .svg' : '💾 .html';
+
+    const stage = document.createElement('div');
+    stage.className = 'agy-live-preview-stage';
+    const frame = document.createElement('iframe');
+    frame.className = 'agy-live-preview-frame';
+    frame.setAttribute('sandbox', 'allow-scripts');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.title = kind === 'svg' ? 'SVG Live Preview' : 'HTML Live Preview';
+
+    const syncFrame = () => {
+      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      frame.dataset.viewport = viewport;
+      frame.style.background = darkCanvas ? '#1A1918' : '#FAF9F5';
+      frame.srcdoc = buildPreviewSrcdoc(raw, kind, darkCanvas);
+      vpBtn.textContent = viewport === 'desktop' ? text('🖥️ 100%', '🖥️ 100%') : text('📱 390px', '📱 390px');
+      vpBtn.dataset.active = String(viewport === 'mobile');
+      bgBtn.textContent = darkCanvas ? text('🌙 深底', '🌙 Dark') : text('☀️ 浅底', '☀️ Light');
+    };
+
+    vpBtn.onclick = e => { e.stopPropagation(); viewport = viewport === 'desktop' ? 'mobile' : 'desktop'; syncFrame(); };
+    bgBtn.onclick = e => { e.stopPropagation(); darkCanvas = !darkCanvas; syncFrame(); };
+    reloadBtn.onclick = e => { e.stopPropagation(); syncFrame(); };
+    dlBtn.onclick = e => {
+      e.stopPropagation();
+      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const ext = kind === 'svg' ? 'svg' : 'html';
+      const mime = kind === 'svg' ? 'image/svg+xml;charset=utf-8' : 'text/html;charset=utf-8';
+      downloadBlobText(raw, `snippet-${Date.now().toString(36)}.${ext}`, mime);
+    };
+
+    btns.append(vpBtn, bgBtn, reloadBtn, dlBtn);
+    toolbar.append(badge, btns);
+    stage.appendChild(frame);
+    panel.append(toolbar, stage);
+    card.appendChild(panel);
+    syncFrame();
+    return panel;
   }
 
   function enhanceLongCodeBlocks() {
@@ -9969,39 +10429,141 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       const header = card.querySelector(':scope > .border-b');
       const pre = card.querySelector('pre');
       if (!header || !pre) continue;
-      const lines = (pre.textContent || '').replace(/\n+$/, '').split('\n').length;
-      let btn = header.querySelector('.agy-code-fold-btn');
-      if (lines < 18) {
-        btn?.remove();
+      const rawCode = (pre.textContent || '').replace(/\n+$/, '');
+      const lines = rawCode.split('\n').length;
+      const lang = extractHeaderLang(header, pre);
+      const previewMeta = detectPreviewableCode(lang, rawCode);
+
+      let actionsWrap = header.querySelector(':scope > .agy-code-header-actions');
+      if (!previewMeta.previewable && lines < 18) {
+        actionsWrap?.remove();
+        card.querySelector(':scope > .agy-live-preview-panel')?.remove();
         card.removeAttribute('data-agy-code-folded');
         continue;
       }
+
       if (getComputedStyle(header).display !== 'flex') {
         header.style.display = 'flex';
         header.style.alignItems = 'center';
         header.style.gap = '8px';
       }
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'agy-code-fold-btn';
-        btn.setAttribute('data-ag-localization-skip', 'true');
-        btn.onclick = e => {
+      if (!actionsWrap) {
+        actionsWrap = document.createElement('span');
+        actionsWrap.className = 'agy-code-header-actions';
+        actionsWrap.setAttribute('data-ag-localization-skip', 'true');
+        header.appendChild(actionsWrap);
+      }
+
+      // 1) Inline Sandboxed HTML/SVG Live Preview button
+      let previewBtn = actionsWrap.querySelector('.agy-code-preview-btn');
+      if (!previewMeta.previewable) {
+        previewBtn?.remove();
+        card.querySelector(':scope > .agy-live-preview-panel')?.remove();
+      } else {
+        if (!previewBtn) {
+          previewBtn = document.createElement('button');
+          previewBtn.type = 'button';
+          previewBtn.className = 'agy-code-preview-btn';
+          previewBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.insertBefore(previewBtn, actionsWrap.firstChild);
+        }
+        const updatePreviewBtn = () => {
+          const isOpen = Boolean(card.querySelector(':scope > .agy-live-preview-panel'));
+          previewBtn.dataset.open = String(isOpen);
+          const lbl = isOpen
+            ? text('✕ 收起预览', '✕ Close Preview')
+            : text(`▶ 预览 ${previewMeta.kind.toUpperCase()}`, `▶ Preview ${previewMeta.kind.toUpperCase()}`);
+          if (previewBtn.textContent !== lbl) previewBtn.textContent = lbl;
+        };
+        previewBtn.onclick = e => {
+          e.stopPropagation();
+          const existing = card.querySelector(':scope > .agy-live-preview-panel');
+          if (existing) existing.remove();
+          else mountLivePreviewPanel(card, pre, previewMeta.kind);
+          updatePreviewBtn();
+        };
+        updatePreviewBtn();
+      }
+
+      // 2) Long Code Block Fold button (18+ lines)
+      let foldBtn = actionsWrap.querySelector('.agy-code-fold-btn');
+      if (lines < 18) {
+        foldBtn?.remove();
+        card.removeAttribute('data-agy-code-folded');
+      } else {
+        if (!foldBtn) {
+          foldBtn = document.createElement('button');
+          foldBtn.type = 'button';
+          foldBtn.className = 'agy-code-fold-btn';
+          foldBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.appendChild(foldBtn);
+        }
+        const updateFoldLabel = () => {
+          const folded = card.getAttribute('data-agy-code-folded') === 'true';
+          const label = folded
+            ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
+            : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
+          if (foldBtn.textContent !== label) foldBtn.textContent = label;
+        };
+        foldBtn.onclick = e => {
           e.stopPropagation();
           const next = card.getAttribute('data-agy-code-folded') !== 'true';
           card.setAttribute('data-agy-code-folded', String(next));
-          updateLabel();
+          updateFoldLabel();
         };
-        header.appendChild(btn);
+        updateFoldLabel();
       }
-      const updateLabel = () => {
-        const folded = card.getAttribute('data-agy-code-folded') === 'true';
-        const label = folded
-          ? text(`${lines} 行 · 展开 ▾`, `${lines} lines · Expand ▾`)
-          : text(`${lines} 行 · 收起 ▴`, `${lines} lines · Fold ▴`);
-        if (btn.textContent !== label) btn.textContent = label;
-      };
-      updateLabel();
+    }
+
+    // 3) Excel-ready Markdown Table TSV Copy & UTF-8 BOM CSV Export
+    let tableIndex = 0;
+    for (const table of root.querySelectorAll('[data-testid="planner-response-text"] table')) {
+      if (isExcluded(table)) continue;
+      const rows = table.querySelectorAll('tr');
+      let cap = table.querySelector(':scope > caption.agy-table-tools');
+      if (!rows.length) {
+        cap?.remove();
+        continue;
+      }
+      tableIndex++;
+      const currentIndex = tableIndex;
+      if (!cap) {
+        cap = document.createElement('caption');
+        cap.className = 'agy-table-tools';
+        cap.setAttribute('data-ag-localization-skip', 'true');
+        table.insertBefore(cap, table.firstChild);
+      }
+      let bar = cap.querySelector('.agy-table-tools-bar');
+      if (!bar) {
+        bar = document.createElement('span');
+        bar.className = 'agy-table-tools-bar';
+        const tsvBtn = document.createElement('button');
+        tsvBtn.type = 'button';
+        tsvBtn.dataset.tableAct = 'tsv';
+        const csvBtn = document.createElement('button');
+        csvBtn.type = 'button';
+        csvBtn.dataset.tableAct = 'csv';
+        tsvBtn.onclick = async e => {
+          e.stopPropagation();
+          const tsv = tableToDelimited(table, '\t');
+          await writeClipboard(tsv);
+          tsvBtn.textContent = text('✓ 已复制 TSV', '✓ Copied TSV');
+          setTimeout(() => { tsvBtn.textContent = text('📊 复制表格 (Excel)', '📊 Copy TSV'); }, 1400);
+        };
+        csvBtn.onclick = e => {
+          e.stopPropagation();
+          downloadTableCsv(table, currentIndex);
+          csvBtn.textContent = text('✓ 已导出 .csv', '✓ Saved .csv');
+          setTimeout(() => { csvBtn.textContent = text('💾 导出 .csv', '💾 .csv'); }, 1400);
+        };
+        bar.append(tsvBtn, csvBtn);
+        cap.appendChild(bar);
+      }
+      const [tsvBtn, csvBtn] = bar.querySelectorAll('button');
+      const wantTsv = text('📊 复制表格 (Excel)', '📊 Copy TSV');
+      const wantCsv = text('💾 导出 .csv', '💾 .csv');
+      if (tsvBtn && !tsvBtn.textContent.startsWith('✓') && tsvBtn.textContent !== wantTsv) tsvBtn.textContent = wantTsv;
+      if (csvBtn && !csvBtn.textContent.startsWith('✓') && csvBtn.textContent !== wantCsv) csvBtn.textContent = wantCsv;
     }
   }
 
@@ -10093,7 +10655,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, .agy-code-fold-btn')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-table-tools')) continue;
       scheduleRender();
       break;
     }
@@ -10226,6 +10788,8 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     exportMarkdown,
     exportBookishHtml,
     downloadBookishHtml,
+    tableToDelimited,
+    buildPreviewSrcdoc,
     copyMarkdown,
     quoteSelectionIntoComposer,
     updateSelectionPill,
@@ -10714,6 +11278,31 @@ window.__agySuiteModules.prompts=function(){
       renderModal();
       document.getElementById('agy-pv-edit-title')?.focus();
     };
+    const importFileInput = document.createElement('input');
+    importFileInput.type = 'file';
+    importFileInput.accept = '.json,application/json';
+    importFileInput.style.display = 'none';
+    importFileInput.onchange = async () => {
+      const f = importFileInput.files?.[0];
+      if (!f) return;
+      try {
+        const count = await importPromptsJson(await f.text());
+        setStatus(text(`✓ 成功导入 ${count} 个模板`, `✓ Imported ${count} templates`));
+        renderModal();
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      } finally {
+        importFileInput.value = '';
+      }
+    };
+    const importBtn = document.createElement('button');
+    importBtn.type = 'button';
+    importBtn.id = 'agy-pv-import-btn';
+    importBtn.className = 'agy-pv-btn';
+    importBtn.title = text('从 JSON 文件导入提示词模板包', 'Import templates from JSON file');
+    importBtn.textContent = text('导入', 'Import');
+    importBtn.onclick = () => importFileInput.click();
+
     const exportBtn = document.createElement('button');
     exportBtn.type = 'button';
     exportBtn.className = 'agy-pv-btn';
@@ -10725,7 +11314,7 @@ window.__agySuiteModules.prompts=function(){
         setStatus(text('✓ 已复制模板库 JSON 到剪贴板', '✓ Copied templates JSON to clipboard'));
       } catch {}
     };
-    leftFoot.append(addBtn, exportBtn);
+    leftFoot.append(addBtn, importBtn, exportBtn, importFileInput);
     left.append(leftHead, list, leftFoot);
 
     // Right column
@@ -11061,11 +11650,41 @@ window.__agySuiteModules.prompts=function(){
   document.addEventListener('keydown', onKeyDown);
   scheduleRender();
 
+  async function importPromptsJson(rawJson) {
+    let parsed;
+    try {
+      parsed = typeof rawJson === 'string' ? JSON.parse(rawJson) : rawJson;
+    } catch {
+      throw new Error(text('JSON 格式无效', 'Invalid JSON format'));
+    }
+    const items = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.prompts) ? parsed.prompts : []);
+    const valid = items.filter(it => it && typeof it.title === 'string' && it.title.trim() && typeof it.content === 'string' && it.content.trim());
+    if (!valid.length) throw new Error(text('未找到有效的模板条目', 'No valid templates found'));
+    let latest = prompts;
+    for (const it of valid.slice(0, 50)) {
+      latest = await apiCall({
+        action: 'upsert',
+        prompt: {
+          id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
+          title: it.title.trim().slice(0, 80),
+          category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
+          pinned: Boolean(it.pinned),
+          content: it.content.trim()
+        }
+      });
+    }
+    prompts = latest;
+    saveCachedPrompts(prompts);
+    if (!selectedId && prompts[0]) selectedId = prompts[0].id;
+    return Math.min(valid.length, 50);
+  }
+
   window.__agyPromptVault = {
     open,
     openWithDraft: draft => open(draft),
     close,
     refresh,
+    importPromptsJson,
     getPrompts: () => prompts.length ? prompts : loadCachedPrompts(),
     parseVariables,
     composePrompt,
@@ -11457,12 +12076,24 @@ window.__agySuiteModules.prompts=function(){
         keywords: 'official native model 官方 原生 模型',
         run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('official')
       });
-      for (const m of (st.models || []).filter(x => x.enabled !== false)) {
+      const enabledModels = (st.models || []).filter(x => x.enabled !== false);
+      if (enabledModels.length > 0) {
+        list.push({
+          id: 'mdl-race-fastest',
+          group: apiGroup,
+          title: text('🏁 并发测速全部中转模型并优选最快节点', '🏁 Benchmark All Relay Models & Pick Fastest'),
+          badge: `${enabledModels.length} ${text('个节点', 'nodes')}`,
+          keywords: 'benchmark latency race fastest speed 并发 测速 赛马 最快 延迟 节点',
+          run: () => window.__AGY_MODEL_SWITCHER.benchmarkModels?.({ autoSelectFastest: true })
+        });
+      }
+      for (const m of enabledModels) {
+        const latencyHint = m.lastTestOk === true && Number.isFinite(m.lastTestLatencyMs) ? `${m.lastTestLatencyMs}ms` : (m.protocol || '');
         list.push({
           id: 'mdl-' + m.id,
           group: apiGroup,
           title: `⚡ ${m.name || m.modelId}`,
-          badge: st.activeMode === 'custom' && st.activeModelId === m.id ? text('当前', 'Active') : (m.protocol || ''),
+          badge: st.activeMode === 'custom' && st.activeModelId === m.id ? text('当前', 'Active') : latencyHint,
           keywords: `relay api custom model 中转 模型 ${m.name || ''} ${m.modelId || ''}`,
           run: () => window.__AGY_MODEL_SWITCHER.selectModel?.('custom', m.id)
         });
@@ -11677,4 +12308,4 @@ window.__agySuiteModules.prompts=function(){
   };
 })();
 
-window.__agyRendererBundleId="c08b749a0921dbb00177c7283de87ecb43a006cea649b884126539790c6d91e2";})();
+window.__agyRendererBundleId="33d1bf268ecb677c27d65ad34991ddbf3f3c721e7351a7e78bc61e6b9062aea4";})();

@@ -32,24 +32,26 @@
 **All four modules can now be enabled independently.** Choose the modules you need during installation, then use **Enhancement Suite Control Center** on the left (above **Connect Relay API**) to toggle the Claude skin, Chinese localization, multi-account switching, and API relay separately. You can keep the official colors with Chinese-only localization, or keep the English UI and use only the account or API modules. The update self-healing scheduled task is optional and disabled by default.
 
 1. 🎨 **Claude-inspired parchment theme (`antigravity-claude-skin`)**
-   - Recreates Claude's signature **warm parchment white (`#FAF9F5`)** and **warm charcoal dark (`#1F1E1D`)** palettes, replacing harsh cool-white light.
-   - **Offline humanist serif typography**: bundles `Source Serif 4` and a Chinese serif companion, giving you **crisp modern questions and warm, book-like AI answers**.
-2. 🇨🇳 **Full Simplified Chinese localization (`antigravity-claude-skin/i18n`)**
-   - Builds on [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) and adds the latest Antigravity v2.22.0+ strings (**2,126+ translation rules**).
-   - Covers the **main UI, settings, top menus, context menus, and system tray menus**, while protecting code blocks, terminals, and user input from being translated.
+   - Recreates Claude's signature **warm parchment white (`#FAF9F5` / sidebar `#F0EEE6`)** and **warm charcoal dark (`#1F1E1D` / sidebar `#161514`)** palettes across the new inset shell and glass surfaces, replacing harsh cool-white light.
+   - **Offline humanist serif typography & reading widths**: bundles `Source Serif 4` and a Chinese serif companion, with instant switching between Standard (`51rem`), Wide (`68rem`), and Full (`92%`) conversation widths.
+2. 🇨🇳 **Full Simplified Chinese localization 2.0 (`antigravity-claude-skin/i18n`)**
+   - Builds on [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) and adds the latest Antigravity v2.22.0+ strings (**2,147+ static entries + reversible dynamic pattern localization**).
+   - Covers the **main UI, personalized greetings, accessibility turn counters, settings, top menus, context menus, and system tray menus**, while protecting code blocks, terminals, and user input.
 3. 👥 **Google multi-account hot switching and smart quota insights (`antigravity-account-switcher`)**
    - Adds visual account cards to the native **Settings → Account** page and the right sidebar panel.
-   - **Quick switching & reset countdowns**: the composer account capsule shows the limiting quota window, live countdown until reset (e.g., `⏱ 2h 15m reset`), and a one-click **⚡ Switch to highest quota** action.
+   - **Quick switching & reset countdowns**: the composer account capsule shows the limiting quota window with 3-tier health colors, live countdown until reset (e.g., `⏱ 2h 15m reset`), and a one-click **⚡ Switch to highest quota** action.
    - **License preflight**: if the target account has no Antigravity license, the suite warns you and keeps the current account instead of dropping you back to onboarding.
-4. 🔌 **Seamless third-party API / relay model switching (`antigravity-model-switcher`)**
-   - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and multi-select batch import after fetching a model list.
-   - **Use it directly in the native composer**: pick a relay model from the composer's model menu; supported models expose a reasoning-effort submenu whose options depend on the protocol and model.
-   - **Mix models in one conversation**: switch between official and relay models, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution. Actual behavior still depends on the provider's API capabilities, context window, and limits.
-5. 📑 **Exclusive Workflow Power Tools (Conversation Outline & Bookish HTML Export · Selection Quote Pill · Parameterized Prompt Vault · Command Palette)**
-   - **Conversation Outline, Long-Code Folding & Multi-Format Export (`Alt+O`)**: a minimal floating turn pill on the right edge lets you jump to any turn or `H1–H3` sub-heading inside long AI answers, reuse earlier prompts, star (`★`) key milestone turns, fold 18+ line code blocks non-destructively, and export full or starred turns as clean GitHub Flavored Markdown or a **self-contained, dual-theme Claude bookish HTML offline report with built-in TOC**.
+4. 🔌 **Seamless third-party API / relay bridge & parallel latency benchmark (`antigravity-model-switcher`)**
+   - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and **instant keyword filtering + batch selection** after fetching `/v1/models`.
+   - **🏁 Parallel Relay Latency Race**: benchmark all saved relay nodes concurrently, inspect visual response-time bars and `🏆 Fastest` badges, and click **⚡ Pick Fastest** (or run from `Alt+K`) to switch straight to the lowest-latency healthy node.
+   - **Mix models in one conversation**: pick relay models and reasoning effort directly from the native composer menu, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution.
+5. 📑 **Exclusive Workflow Power Tools (Conversation Outline & Bookish HTML Export · Sandboxed Live Preview · Table Export · Selection Pill · Prompt Vault · Command Palette)**
+   - **Conversation Outline, Long-Code Folding & Multi-Format Export (`Alt+O`)**: jump to any turn or `H1–H3` sub-heading, reuse earlier prompts (`↺`), star (`★`) key milestone turns, fold 18+ line code blocks non-destructively, and export full or starred turns as clean GitHub Flavored Markdown or a **self-contained, dual-theme Claude bookish HTML offline report with built-in TOC**.
+   - **🎨 Inline Zero-Trust Sandboxed HTML / SVG Live Preview**: `html` and `svg` code blocks mount a **▶ Preview HTML / SVG** button that renders interactive markup inside an opaque `sandbox="allow-scripts"` iframe (without `allow-same-origin` and with CSP `connect-src 'none'`), complete with desktop `100%` / mobile `390px` viewport toggle, light/dark canvas toggle, and standalone file download.
+   - **📊 Excel-Ready Table TSV Copy & UTF-8 BOM CSV Export**: every AI Markdown table mounts one-click actions to copy tab-separated rows directly for Excel / Google Sheets / Notion or download RFC 4180 `.csv` files with a UTF-8 BOM so CJK characters open cleanly in Microsoft Excel.
    - **Floating Selection Action Pill**: selecting text inside any message surfaces a lightweight **❝ Quote & Ask · ✦ Save Template · 📋 Copy** pill to quote passages directly into the composer or save them into your Prompt Vault.
-   - **Parameterized Prompt Vault (`Alt+P`)**: ships with curated engineering and research templates supporting `{{variable:default}}` placeholders, rendering interactive fill-in inputs with live preview and `Ctrl+Enter` insertion directly into the native Lexical composer.
-   - **Unified Command Palette (`Alt+K`)**: keyboard-first fuzzy search to switch themes, adjust reading width (`51rem` / `68rem` / `92%`), hot-switch accounts or relay models, export Markdown / bookish HTML, and launch prompts.
+   - **Parameterized Prompt Vault (`Alt+P`)**: ships with curated engineering and research templates supporting `{{variable:default}}` placeholders and one-click JSON template pack import/export, rendering interactive fill-in inputs with live preview and `Ctrl+Enter` insertion directly into the native Lexical composer.
+   - **Unified Command Palette (`Alt+K`)**: keyboard-first fuzzy search to switch themes, adjust reading width, hot-switch accounts, benchmark & pick the fastest relay model, export Markdown / bookish HTML, and launch prompts.
 
 ---
 
