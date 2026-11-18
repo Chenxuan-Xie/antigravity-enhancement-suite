@@ -52,6 +52,33 @@
     #agy-outline-pill .agy-op-star-dot {
       width: 5px; height: 5px; border-radius: 50%; background: #D97757;
     }
+    #agy-outline-pill .agy-op-hide {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--foreground, #141413);
+      color: var(--background, #FAF9F5);
+      font: 700 11px/17px system-ui, sans-serif;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.14s ease, transform 0.14s ease, background 0.14s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+    }
+    #agy-outline-pill:hover .agy-op-hide,
+    #agy-outline-pill:focus-within .agy-op-hide {
+      opacity: 0.92;
+      pointer-events: auto;
+    }
+    #agy-outline-pill .agy-op-hide:hover {
+      opacity: 1;
+      background: #C94A4A;
+      color: #fff;
+      transform: scale(1.08);
+    }
     #agy-outline-drawer {
       position: fixed;
       right: 16px;
@@ -1053,13 +1080,23 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     botBtn.textContent = '↓';
     botBtn.title = text('跳至最新回复', 'Jump to bottom');
     botBtn.onclick = () => scrollEdge(true);
+    const pillToggleBtn = document.createElement('button');
+    pillToggleBtn.type = 'button';
+    pillToggleBtn.className = 'agy-od-icon-btn';
+    pillToggleBtn.dataset.toggleOutlinePill = 'true';
+    const pillShown = Boolean(window.__agySuiteSettings?.showOutlinePill);
+    pillToggleBtn.textContent = pillShown ? '⊘' : '◉';
+    pillToggleBtn.title = pillShown
+      ? text('隐藏侧边悬浮球（仍可按 Alt+O 打开目录）', 'Hide floating pill (Alt+O still works)')
+      : text('在侧边常驻显示目录悬浮球', 'Show floating outline pill');
+    pillToggleBtn.onclick = () => setOutlinePillVisible(!pillShown);
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'agy-od-icon-btn';
     closeBtn.textContent = '×';
     closeBtn.setAttribute('aria-label', text('关闭目录', 'Close outline'));
     closeBtn.onclick = () => close();
-    navBtns.append(topBtn, botBtn, closeBtn);
+    navBtns.append(topBtn, botBtn, pillToggleBtn, closeBtn);
     header.append(titleGroup, navBtns);
 
     const stats = getConversationStats();
@@ -1799,6 +1836,25 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     if (drawer) drawer.style.right = extraRight ? `${extraRight + 16}px` : '';
   }
 
+  function setOutlinePillVisible(visible) {
+    const next = Boolean(visible);
+    if (window.__agySuite?.save) {
+      window.__agySuite.save({ showOutlinePill: next });
+      return;
+    }
+    if (window.__agySuiteSettings) window.__agySuiteSettings.showOutlinePill = next;
+    fetch('http://127.0.0.1:19823/api/suite/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showOutlinePill: next })
+    }).catch(() => {});
+    render();
+  }
+
+  function hideOutlinePill() {
+    setOutlinePillVisible(false);
+  }
+
   function render() {
     if (disposed) return;
     const enabled = window.__agySuiteSettings?.outline !== false;
@@ -1815,21 +1871,35 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
     const stars = loadStars();
     const hasStarred = turns.some(t => stars.has(t.id));
+    const showPill = Boolean(window.__agySuiteSettings?.showOutlinePill);
 
-    if (!pill) {
-      pill = document.createElement('button');
-      pill.id = 'agy-outline-pill';
-      pill.type = 'button';
-      pill.setAttribute('data-ag-localization-skip', 'true');
-      pill.onclick = () => toggle();
-      document.body.appendChild(pill);
+    if (showPill) {
+      if (!pill) {
+        pill = document.createElement('button');
+        pill.id = 'agy-outline-pill';
+        pill.type = 'button';
+        pill.setAttribute('data-ag-localization-skip', 'true');
+        pill.onclick = e => {
+          if (e.target?.closest?.('[data-hide-outline-pill]')) {
+            e.stopPropagation();
+            hideOutlinePill();
+            return;
+          }
+          toggle();
+        };
+        document.body.appendChild(pill);
+      }
+      pill.setAttribute('aria-expanded', String(openState));
+      pill.title = text(`对话目录与导出 (${turns.length} 轮) · Alt+O（右上角 × 可隐藏）`, `Conversation Outline & Export (${turns.length} turns) · Alt+O`);
+      pill.innerHTML =
+        `<span class="agy-op-hide" role="button" tabindex="0" data-hide-outline-pill="true" title="${text('隐藏悬浮球（仍可按 Alt+O 打开）', 'Hide floating pill (Alt+O still works)')}" aria-label="${text('隐藏目录悬浮球', 'Hide outline pill')}">×</span>` +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
+        `<span class="agy-op-count">${turns.length}</span>` +
+        (hasStarred ? '<span class="agy-op-star-dot" aria-hidden="true"></span>' : '');
+    } else if (pill) {
+      pill.remove();
+      pill = null;
     }
-    pill.setAttribute('aria-expanded', String(openState));
-    pill.title = text(`对话目录与导出 (${turns.length} 轮) · Alt+O`, `Conversation Outline & Export (${turns.length} turns) · Alt+O`);
-    pill.innerHTML =
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
-      `<span class="agy-op-count">${turns.length}</span>` +
-      (hasStarred ? '<span class="agy-op-star-dot" aria-hidden="true"></span>' : '');
 
     if (openState) renderDrawer(turns, stars);
     else document.getElementById('agy-outline-drawer')?.remove();
@@ -2043,6 +2113,8 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     toggleZenMode,
     setZenMode,
     isZenMode: () => zenActive,
+    hideOutlinePill,
+    setOutlinePillVisible,
     exportMarkdown,
     exportBookishHtml,
     downloadBookishHtml,

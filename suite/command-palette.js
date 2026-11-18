@@ -177,6 +177,16 @@
         keywords: 'handoff summary compact context 接力 精简 压缩 新会话 摘要',
         run: () => window.__agyConvTools?.createAndPinHandoff?.()
       });
+      list.push({
+        id: 'conv-toggle-pill',
+        group: convGroup,
+        title: s.showOutlinePill
+          ? text('⊘ 隐藏对话右侧目录悬浮球', '⊘ Hide Floating Conversation Outline Pill')
+          : text('◉ 显示对话右侧目录悬浮球', '◉ Show Floating Conversation Outline Pill'),
+        badge: s.showOutlinePill ? text('已显示', 'Shown') : text('已隐藏', 'Hidden'),
+        keywords: 'outline pill floating hide show 目录 悬浮球 隐藏 按钮',
+        run: () => window.__agySuite?.save({ showOutlinePill: !s.showOutlinePill })
+      });
     }
     if (window.__agyConvTools?.toggleZenMode) {
       list.push({

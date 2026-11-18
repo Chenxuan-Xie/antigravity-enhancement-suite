@@ -7,7 +7,7 @@ try{
   const storage=()=>{const values=new Map();return {getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),clear:()=>values.clear(),key:index=>[...values.keys()][index]||null,get length(){return values.size;}};};
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
-  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,prompts:true,sidePreview:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
+  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,showOutlinePill:false,prompts:true,sidePreview:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
   let vaultPrompts=[{id:'tpl-1',title:'Audit Module',category:'Engineering',pinned:true,content:'Audit {{module}} with constraint {{limit:zero-regression}}.'}];
   let pinItems=[];
   let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[],savedModels=[],activeMode='official',activeModelId=null;
@@ -42,7 +42,7 @@ try{
     assert(d.querySelector('#agy-suite-sidebar-button')&&!d.querySelector('#agy-suite-center'),'suite is accessible from the sidebar without adding content to native settings');
     d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
     assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
-    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===11,'four modules and independent outline, prompt vault, side preview, quota, usage, reminders and recovery switches are accessible');
+    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===12,'four modules and independent outline, outline pill, prompt vault, side preview, quota, usage, reminders and recovery switches are accessible');
     assert(d.querySelectorAll('.suite-feature').length===4&&d.querySelectorAll('#agy-suite-center h3').length===3,'control center groups feature cards, appearance and background preferences');
     d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     assert(!d.querySelector('#agy-suite-center')&&d.activeElement.id==='agy-suite-sidebar-button','Escape closes the dialog and restores focus to the sidebar');
@@ -61,11 +61,15 @@ try{
     assert(!d.querySelector('[data-setting=showUsage]').checked&&!d.querySelector('[data-setting=showUsage]').disabled&&d.querySelector('[role=status]').textContent.includes('Fixture save failure'),'failed save restores committed checkbox state and reports the error');
     await w.__agySuite.save({skin:true,replyFont:'sans',replySize:'large',readingWidth:'wide'});await pause(60);
     assert(d.querySelector('#agy-claude-skin')&&w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontSize==='18px'&&w.getComputedStyle(d.body).getPropertyValue('--max-conversation-width').trim()==='68rem','skin, font, font size and reading width update without page reload');
-    assert(d.querySelector('#agy-outline-pill .agy-op-count')?.textContent==='2','floating conversation outline pill counts active turns');
+    assert(!d.querySelector('#agy-outline-pill')&&w.__agyConvTools,'floating conversation outline pill is hidden by default to avoid split-pane clutter');
+    await w.__agySuite.save({showOutlinePill:true});await pause(40);
+    assert(d.querySelector('#agy-outline-pill .agy-op-count')?.textContent==='2'&&d.querySelector('#agy-outline-pill [data-hide-outline-pill="true"]'),'when enabled, floating conversation outline pill counts active turns and mounts a direct hide button');
     w.__agyConvTools.open();await pause(30);
     assert(d.querySelectorAll('#agy-outline-drawer .agy-od-item').length===2&&d.querySelector('#agy-outline-drawer .agy-od-heading-chip')?.textContent.includes('Architecture')&&d.querySelector('#agy-outline-drawer .agy-od-telemetry')?.textContent.includes('tokens')&&d.querySelector('#agy-outline-drawer .agy-od-tel-langs')?.textContent.includes('js ×1'),'conversation outline renders turn list, AI sub-headings, and context token telemetry');
     d.querySelector('#agy-outline-drawer [data-star-turn="2"]').click();
     assert(d.querySelector('#agy-outline-pill .agy-op-star-dot')&&w.__agyConvTools.exportMarkdown({onlyStarred:true}).includes('| Metric | Ops |')&&!w.__agyConvTools.exportMarkdown({onlyStarred:true}).includes('const cap = 64;'),'starring a turn persists and exports clean GFM table Markdown for starred turns only');
+    d.querySelector('#agy-outline-pill [data-hide-outline-pill="true"]').click();await pause(40);
+    assert(!d.querySelector('#agy-outline-pill')&&w.__agySuite.getSettings().showOutlinePill===false&&d.querySelector('#agy-outline-drawer'),'clicking the × hide button on outline pill hides the pill immediately while keeping outline tools active');
     const handoff=w.__agyConvTools.buildHandoffBrief();
     assert(handoff.includes('<SESSION_HANDOFF')&&handoff.includes('Design a cache module')&&handoff.includes('| Metric | Ops |'),'session handoff compiler packages initial goal, starred milestones, and latest progress');
     w.__agyConvTools.toggleZenMode();

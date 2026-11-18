@@ -3,14 +3,14 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const file = process.env.AGY_SUITE_SETTINGS_FILE || path.join(root, 'data', 'suite-settings.json');
 const defaults = { version: 1, skin: true, themeMode: 'light', i18n: true, accounts: true, api: true,
-  guardian: false, replyFont: 'default', replySize: 'standard', readingWidth: 'standard', outline: true, prompts: true, sidePreview: true, showUsage: false, showQuota: true, quotaReminder: true };
+  guardian: false, replyFont: 'default', replySize: 'standard', readingWidth: 'standard', outline: true, showOutlinePill: false, prompts: true, sidePreview: true, showUsage: false, showQuota: true, quotaReminder: true };
 function readSettings() {
   if (!fs.existsSync(file)) return { ...defaults };
   const data = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   return validate({ ...defaults, ...data });
 }
 function validate(data) {
-  for (const key of ['skin','i18n','accounts','api','guardian','outline','prompts','sidePreview','showUsage','showQuota','quotaReminder']) {
+  for (const key of ['skin','i18n','accounts','api','guardian','outline','showOutlinePill','prompts','sidePreview','showUsage','showQuota','quotaReminder']) {
     if (typeof data[key] !== 'boolean') throw Error(`${key} must be boolean`);
   }
   if (!['light','dark','system'].includes(data.themeMode)) throw Error('Invalid themeMode setting');
