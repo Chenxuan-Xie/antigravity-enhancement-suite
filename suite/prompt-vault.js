@@ -909,9 +909,15 @@
 
     const accountCapsule = document.getElementById('agy-account-capsule');
     if (accountCapsule && accountCapsule.parentElement === composer) {
-      document.getElementById('agy-prompt-capsule')?.remove();
+      const oldHost = document.getElementById('agy-prompt-capsule');
+      if (oldHost) {
+        const pinBtn = document.getElementById('agy-pinboard-trigger');
+        if (pinBtn && pinBtn.parentElement === oldHost) accountCapsule.insertBefore(pinBtn, accountCapsule.firstChild);
+        oldHost.remove();
+      }
       if (btn.parentElement !== accountCapsule) {
-        accountCapsule.insertBefore(btn, accountCapsule.firstChild);
+        const badge = document.getElementById('agy-account-badge');
+        accountCapsule.insertBefore(btn, badge || null);
       }
     } else {
       let host = document.getElementById('agy-prompt-capsule');
@@ -1013,8 +1019,10 @@
     return true;
   }
 
+  const SEND_BTN_SEL = 'button[data-testid="send-button"], button[aria-label="Send message"], button[aria-label="发送消息"], button[data-tooltip-id*="send-button-send"]';
+
   function onCaptureClick(e) {
-    const sendBtn = e.target?.closest?.('[data-testid="send-button"]');
+    const sendBtn = e.target?.closest?.(SEND_BTN_SEL);
     if (!sendBtn) return;
     const box = sendBtn.closest('[data-testid="agent-input-box"]');
     checkSecretBeforeSend(e, box, () => sendBtn.click());
@@ -1027,7 +1035,7 @@
     if (document.querySelector('[role="listbox"], .lexical-typeahead-menu')) return;
     const box = editor.closest('[data-testid="agent-input-box"]');
     checkSecretBeforeSend(e, box, () => {
-      box?.querySelector('[data-testid="send-button"]')?.click();
+      box?.querySelector(SEND_BTN_SEL)?.click();
     });
   }
 
@@ -1058,6 +1066,7 @@
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('agy-composer-capsules-sync', scheduleRender);
   document.addEventListener('focusin', onFocusIn);
   document.addEventListener('input', onComposerInput, true);
   window.addEventListener('click', onCaptureClick, true);
@@ -1118,6 +1127,7 @@
     clearTimeout(draftSaveTimer);
     observer.disconnect();
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('agy-composer-capsules-sync', scheduleRender);
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('input', onComposerInput, true);
     window.removeEventListener('click', onCaptureClick, true);

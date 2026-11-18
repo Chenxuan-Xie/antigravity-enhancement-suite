@@ -1684,6 +1684,9 @@ function buildRendererScript(dictJson, entriesJson) {
         match = normalized.match(/^Load older messages,\\s*showing\\s+(\\d+)\\s+of\\s+(\\d+)$/i);
         if (match) return "加载更早消息（已显示 " + match[1] + " / " + match[2] + "）";
 
+        match = normalized.match(/^No more older messages,\\s*showing\\s+(\\d+)\\s+of\\s+(\\d+)$/i);
+        if (match) return "没有更早的消息了（已显示 " + match[1] + " / " + match[2] + "）";
+
         match = normalized.match(/^Showing\\s+(\\d+)\\s+of\\s+(\\d+)\\s+messages?$/i);
         if (match) return "已显示 " + match[1] + " / " + match[2] + " 条消息";
 
@@ -3255,12 +3258,17 @@ function buildRendererScript(dictJson, entriesJson) {
                         }
                     }
                 } else {
+                    const allowBlockedButtonAttr = tag === 'BUTTON' && !node.closest?.('[' + SKIP_TRANSLATION_ATTR + ']');
                     for (const attr of ['aria-label', 'title', 'placeholder']) {
                         const v = node.getAttribute(attr);
                         if (v) {
                             const searchingTrans = getSearchingStatusTranslation(v);
                             if (searchingTrans && searchingTrans !== v) {
                                 node.setAttribute(attr, searchingTrans);
+                            } else if (allowBlockedButtonAttr && (attr === 'aria-label' || attr === 'title')) {
+                                const t = norm(v);
+                                const target = map.get(t) || lowerMap.get(t.toLowerCase()) || getDynamicProductUiTranslation(t);
+                                if (target && target !== v) node.setAttribute(attr, target);
                             }
                         }
                     }

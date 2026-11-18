@@ -12,6 +12,7 @@
   let returnFocus = null;
   let toastTimer = null;
   let scheduled = false;
+  let mutating = 0;
 
   const text = (cn, en) => window.__agySuiteSettings?.i18n === false ? en : cn;
 
@@ -165,9 +166,10 @@
   }
 
   async function refresh() {
+    if (mutating > 0) return pins;
     try {
       const next = await apiCall();
-      if (Array.isArray(next)) {
+      if (mutating === 0 && Array.isArray(next)) {
         pins = next;
         saveCache(pins);
       }
@@ -199,10 +201,13 @@
     pins = [item, ...pins].slice(0, 100);
     saveCache(pins);
     renderTrigger();
+    mutating++;
     try {
       pins = await apiCall({ action: 'upsert', pin: item });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
     showToast(text(`📌 已钉入跨会话暂存匣（共 ${pins.length} 条 · Alt+B）`, `📌 Pinned to Context Pinboard (${pins.length} total · Alt+B)`));
@@ -212,10 +217,13 @@
   async function togglePin(id, enabled) {
     pins = pins.map(p => p.id === id ? { ...p, enabled: enabled === undefined ? !p.enabled : Boolean(enabled) } : p);
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'toggle', id, enabled });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
     renderTrigger();
   }
@@ -223,10 +231,13 @@
   async function deletePin(id) {
     pins = pins.filter(p => p.id !== id);
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'delete', id });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
   }
@@ -234,10 +245,13 @@
   async function clearPins() {
     pins = [];
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'clear' });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
   }
@@ -560,6 +574,7 @@
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('agy-composer-capsules-sync', scheduleRender);
   document.addEventListener('keydown', onKeyDown);
   refresh();
 
@@ -581,6 +596,7 @@
     observer.disconnect();
     clearTimeout(toastTimer);
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('agy-composer-capsules-sync', scheduleRender);
     document.removeEventListener('keydown', onKeyDown);
     document.getElementById('agy-pinboard-trigger')?.remove();
     document.getElementById('agy-pinboard-backdrop')?.remove();

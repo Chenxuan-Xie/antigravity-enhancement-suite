@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="6075a2f2f96018e43790cbfedf131a48d6b32b05cfa55a1e095d9f9edd4df662"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="bbb4f90db07ab038a147a3305be4913285bab1eae1f251fa5e16d31f9dd964d8"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -1708,6 +1708,9 @@ window.__agySuiteModules={i18n:function(){
         match = normalized.match(/^Load older messages,\s*showing\s+(\d+)\s+of\s+(\d+)$/i);
         if (match) return "加载更早消息（已显示 " + match[1] + " / " + match[2] + "）";
 
+        match = normalized.match(/^No more older messages,\s*showing\s+(\d+)\s+of\s+(\d+)$/i);
+        if (match) return "没有更早的消息了（已显示 " + match[1] + " / " + match[2] + "）";
+
         match = normalized.match(/^Showing\s+(\d+)\s+of\s+(\d+)\s+messages?$/i);
         if (match) return "已显示 " + match[1] + " / " + match[2] + " 条消息";
 
@@ -3277,11 +3280,16 @@ window.__agySuiteModules={i18n:function(){
                         }
                     }
                 } else {
+                    const allowBlockedButtonAttr = tag === 'BUTTON' && !node.closest?.('[' + SKIP_TRANSLATION_ATTR + ']');
                     for (const attr of ['aria-label', 'title', 'placeholder']) {
                         const v = node.getAttribute(attr);
                         if (v) {
                             const searchingTrans = getSearchingStatusTranslation(v);
                             if (searchingTrans && searchingTrans !== v) { recordOrigAttr(node, attr); node.setAttribute(attr, searchingTrans);
+                            } else if (allowBlockedButtonAttr && (attr === 'aria-label' || attr === 'title')) {
+                                const t = norm(v);
+                                const target = map.get(t) || lowerMap.get(t.toLowerCase()) || getDynamicProductUiTranslation(t);
+                                if (target && target !== v) { recordOrigAttr(node, attr); node.setAttribute(attr, target); }
                             }
                         }
                     }
@@ -4306,6 +4314,17 @@ window.__agySuiteModules.accounts=function(){
     .agy-as-input:focus {
       border-color: #D97757;
     }
+    .dark .agy-as-input, [data-theme="dark"] .agy-as-input, .theme-dark .agy-as-input {
+      background: #1B1A18;
+      color: #ECE9E2;
+      border-color: rgba(236, 233, 226, 0.2);
+    }
+    .dark .agy-as-tag, [data-theme="dark"] .agy-as-tag, .theme-dark .agy-as-tag {
+      background: rgba(236, 233, 226, 0.11);
+    }
+    .dark .agy-as-btn, [data-theme="dark"] .agy-as-btn, .theme-dark .agy-as-btn {
+      border-color: rgba(236, 233, 226, 0.18);
+    }
     .agy-as-list {
       display: flex;
       flex-direction: column;
@@ -4926,9 +4945,24 @@ window.__agySuiteModules.accounts=function(){
     popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){closeMenu();button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
   }
+  function detachAccountCapsule(){
+    document.getElementById('agy-account-badge')?.remove();
+    const cap=document.getElementById('agy-account-capsule');
+    if(cap){
+      const extra=[...cap.children].filter(el=>el.id!=='agy-account-badge');
+      if(extra.length&&cap.parentElement){
+        let fallback=document.getElementById('agy-prompt-capsule');
+        if(!fallback){fallback=document.createElement('div');fallback.id='agy-prompt-capsule';cap.parentElement.appendChild(fallback);}
+        for(const el of extra)fallback.appendChild(el);
+      }
+      cap.remove();
+    }
+    window.dispatchEvent(new CustomEvent('agy-composer-capsules-sync'));
+  }
   function render(){
-    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();return;}const composer=[...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el=>!el.closest('[data-side-panel-body]'))||document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
-    let host=document.getElementById('agy-account-capsule');if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
+    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){detachAccountCapsule();closeMenu();return;}const composer=[...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el=>!el.closest('[data-side-panel-body]'))||document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
+    let host=document.getElementById('agy-account-capsule');const created=!host;if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
+    if(created)window.dispatchEvent(new CustomEvent('agy-composer-capsules-sync'));
     let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-expanded','false');button.setAttribute('data-ag-localization-skip','true');button.innerHTML='<span class="quota-dot" aria-hidden="true"></span><span class="quota-label"></span><span class="quota-chevron" aria-hidden="true">⌄</span>';button.onclick=()=>{if(popup)closeMenu();else openMenu(button);};}
     if(button.parentElement!==host)host.appendChild(button);
     const current=accounts.find(a=>a.isCurrent),quota=selection(current,label()),percent=quota?.percent??null;
@@ -4955,7 +4989,7 @@ window.__agySuiteModules.accounts=function(){
   });observer.observe(document.documentElement,{childList:true,subtree:true});
   const timer=setInterval(refresh,60000);refresh();
   window.__agyQuotaBadge={percentage,selection,refresh,getAccounts:()=>accounts};
-  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();closeToast();style.remove();};
+  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);detachAccountCapsule();closeMenu();closeToast();style.remove();};
   const cleanup=window.__agyAccountSwitcherCleanup;window.__agyAccountSwitcherCleanup=()=>{window.__agyQuotaBadgeCleanup();cleanup?.();};
 })();
 
@@ -9634,6 +9668,44 @@ window.__agySuiteModules.outline=function(){
       transition: background 0.12s, color 0.12s;
     }
     #agy-selection-pill button:hover { background: rgba(217, 119, 87, 0.14); color: #D97757; }
+    .agy-od-telemetry {
+      padding: 8px 14px; border-bottom: 1px solid var(--border, rgba(20, 20, 19, 0.07));
+      display: flex; flex-direction: column; gap: 5px; background: rgba(217, 119, 87, 0.035);
+      font-size: 11px; font-variant-numeric: tabular-nums;
+    }
+    .agy-od-tel-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+    .agy-od-tel-bar {
+      height: 4px; border-radius: 99px; overflow: hidden; display: flex;
+      background: rgba(128, 128, 128, 0.14);
+    }
+    .agy-od-tel-langs { display: flex; flex-wrap: wrap; gap: 4px; opacity: 0.78; font-size: 10.5px; }
+    body.agy-zen-focus-mode nav.bg-sidebar,
+    body.agy-zen-focus-mode .agy-inset-shell > .contents > nav,
+    body.agy-zen-focus-mode [data-testid="sidebar-container"] {
+      display: none !important;
+    }
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:not(:focus-within) {
+      opacity: 0.42; transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:hover,
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:focus-within {
+      opacity: 1; transform: none;
+    }
+    #agy-zen-exit-pill {
+      position: fixed; top: 14px; right: 18px; z-index: 10030;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid rgba(217, 119, 87, 0.42);
+      background: var(--glass, rgba(250, 249, 245, 0.92));
+      color: var(--foreground, #141413);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      font: 500 11.5px/1.3 system-ui, sans-serif; cursor: pointer;
+    }
+    body.theme-dark #agy-zen-exit-pill, html.dark #agy-zen-exit-pill {
+      background: rgba(35, 34, 32, 0.92); color: #ECE9E2;
+    }
+    #agy-zen-exit-pill:hover { border-color: #D97757; color: #D97757; }
   `;
   document.head.appendChild(style);
 
@@ -9897,6 +9969,108 @@ window.__agySuiteModules.outline=function(){
     const userPart = `### ${text('提问', 'Prompt')}\n\n${turn.prompt.trim()}`;
     const aiPart = replyMd ? `\n\n### ${text('回复', 'Response')}\n\n${replyMd}` : '';
     return `${header}\n\n${userPart}${aiPart}`;
+  }
+
+  function estimateTokens(raw) {
+    const str = String(raw || '');
+    if (!str) return 0;
+    let cjk = 0;
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if ((code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3000 && code <= 0x30FF) || (code >= 0xFF00 && code <= 0xFFEF)) cjk++;
+    }
+    const rest = str.length - cjk;
+    return Math.max(1, Math.round(cjk * 0.68 + rest * 0.27));
+  }
+
+  function getConversationStats() {
+    const turns = getTurns();
+    let promptTokens = 0, proseTokens = 0, codeTokens = 0, codeBlocks = 0, tables = 0;
+    const langCounts = {};
+    for (const t of turns) {
+      promptTokens += estimateTokens(t.prompt);
+      tables += t.tableCount;
+      for (const replyEl of t.replyNodes) {
+        const fullReplyTok = estimateTokens(replyEl.textContent || '');
+        let replyCodeTok = 0;
+        for (const card of replyEl.querySelectorAll('.rounded-xl.bg-muted.border, pre')) {
+          if (card.tagName === 'DIV' && card.closest('pre')) continue;
+          if (card.tagName === 'PRE' && card.closest('.rounded-xl.bg-muted.border')) continue;
+          const info = resolveCodeCard(card);
+          if (!info) continue;
+          codeBlocks++;
+          const tok = estimateTokens(info.rawCode);
+          replyCodeTok += tok;
+          const l = info.lang || 'text';
+          langCounts[l] = (langCounts[l] || 0) + 1;
+        }
+        codeTokens += replyCodeTok;
+        proseTokens += Math.max(0, fullReplyTok - replyCodeTok);
+      }
+    }
+    const totalTokens = promptTokens + proseTokens + codeTokens;
+    const tier = totalTokens >= 96000 ? 'heavy' : totalTokens >= 32000 ? 'medium' : 'light';
+    return { turns: turns.length, totalTokens, promptTokens, proseTokens, codeTokens, codeBlocks, tables, langCounts, tier };
+  }
+
+  function buildHandoffBrief() {
+    const turns = getTurns();
+    if (!turns.length) return '';
+    const stars = loadStars();
+    const title = (document.title || 'Conversation').replace(/\s*[-|]\s*Antigravity.*$/i, '').trim() || 'Conversation';
+    const picked = new Map();
+    picked.set(turns[0].index, turns[0]);
+    for (const t of turns) {
+      if (stars.has(t.id)) picked.set(t.index, t);
+    }
+    for (const t of turns.slice(-2)) picked.set(t.index, t);
+    const ordered = [...picked.values()].sort((a, b) => a.index - b.index);
+    const sections = ordered.map(t => {
+      const tag = t.index === 1 ? text('【初始目标】', '[Initial Goal]') : (stars.has(t.id) ? text('【★ 星标结论】', '[★ Milestone]') : text('【近期进展】', '[Recent State]'));
+      return `### ${tag} #${t.index}\n**Q:** ${t.prompt.trim()}\n\n${t.replyNodes.map(el => blockMarkdown(el)).join('\n').trim()}`;
+    }).join('\n\n---\n\n');
+    return `<SESSION_HANDOFF source="${title}" total_turns="${turns.length}">\n${sections}\n</SESSION_HANDOFF>\n`;
+  }
+
+  async function createAndPinHandoff() {
+    const brief = buildHandoffBrief();
+    if (!brief) return '';
+    await writeClipboard(brief);
+    const title = (document.title || '').replace(/\s*[-|]\s*Antigravity.*$/i, '').trim() || text('长对话接力摘要', 'Session Handoff');
+    if (window.__agyPinboard?.addPin) {
+      await window.__agyPinboard.addPin({
+        title: `🚀 ${text('会话接力包', 'Handoff')}: ${title.slice(0, 36)}`,
+        content: brief,
+        source: title
+      });
+    }
+    flashStatus(text('✓ 已生成精简接力包：已复制并钉入暂存匣 (Alt+B)', '✓ Handoff brief copied & pinned to Pinboard (Alt+B)'));
+    return brief;
+  }
+
+  let zenActive = false;
+  function setZenMode(enable) {
+    zenActive = Boolean(enable);
+    document.body?.classList.toggle('agy-zen-focus-mode', zenActive);
+    let pill = document.getElementById('agy-zen-exit-pill');
+    if (!zenActive) {
+      pill?.remove();
+      return false;
+    }
+    if (!pill) {
+      pill = document.createElement('button');
+      pill.id = 'agy-zen-exit-pill';
+      pill.type = 'button';
+      pill.setAttribute('data-ag-localization-skip', 'true');
+      pill.onclick = () => setZenMode(false);
+      document.body.appendChild(pill);
+    }
+    pill.textContent = text('🧘 沉浸阅读中 · Alt+Z 退出', '🧘 Zen Reading · Alt+Z to exit');
+    return true;
+  }
+
+  function toggleZenMode() {
+    return setZenMode(!zenActive);
   }
 
   function exportMarkdown({ onlyStarred = false } = {}) {
@@ -10196,6 +10370,38 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     navBtns.append(topBtn, botBtn, closeBtn);
     header.append(titleGroup, navBtns);
 
+    const stats = getConversationStats();
+    const tel = document.createElement('div');
+    tel.className = 'agy-od-telemetry';
+    const telTop = document.createElement('div');
+    telTop.className = 'agy-od-tel-top';
+    const tokStr = stats.totalTokens >= 1000 ? `~${(stats.totalTokens / 1000).toFixed(1)}k` : `~${stats.totalTokens}`;
+    const tierBadge = stats.tier === 'heavy'
+      ? text('🟠 上下文偏重，建议生成接力包开新会话', '🟠 Heavy context — consider Handoff')
+      : stats.tier === 'medium'
+        ? text('🟡 上下文适中', '🟡 Moderate context')
+        : text('🟢 上下文轻快', '🟢 Healthy context');
+    const leftStat = document.createElement('span');
+    leftStat.innerHTML = `<strong>${tokStr} tokens</strong> · ${tierBadge}`;
+    telTop.appendChild(leftStat);
+
+    const bar = document.createElement('div');
+    bar.className = 'agy-od-tel-bar';
+    const totalT = Math.max(1, stats.totalTokens);
+    for (const [part, color] of [[stats.promptTokens, '#8A867C'], [stats.proseTokens, '#D97757'], [stats.codeTokens, '#2E7D47']]) {
+      const seg = document.createElement('span');
+      seg.style.cssText = `width:${Math.round((part / totalT) * 100)}%;background:${color};height:100%`;
+      bar.appendChild(seg);
+    }
+    tel.append(telTop, bar);
+    const langEntries = Object.entries(stats.langCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (langEntries.length > 0) {
+      const langs = document.createElement('div');
+      langs.className = 'agy-od-tel-langs';
+      langs.textContent = text('代码构成：', 'Code: ') + langEntries.map(([k, c]) => `${k} ×${c}`).join(' · ');
+      tel.appendChild(langs);
+    }
+
     const toolbar = document.createElement('div');
     toolbar.className = 'agy-od-toolbar';
     const search = document.createElement('input');
@@ -10375,7 +10581,14 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     htmlBtn.textContent = text('📄 书卷 HTML', '📄 HTML');
     htmlBtn.title = text('导出为带目录与深浅色切换的 Claude 书卷排版单文件 HTML', 'Export self-contained dual-theme bookish HTML report');
     htmlBtn.onclick = () => downloadBookishHtml({ onlyStarred: starOnly });
-    exportRow.append(copyBtn, dlBtn, htmlBtn);
+    const handoffBtn = document.createElement('button');
+    handoffBtn.type = 'button';
+    handoffBtn.className = 'agy-od-btn';
+    handoffBtn.id = 'agy-od-handoff';
+    handoffBtn.textContent = text('🚀 接力包', '🚀 Handoff');
+    handoffBtn.title = text('提炼首轮目标 + 星标结论 + 最近进展，复制并钉入跨会话暂存匣以便开启无负担新会话', 'Compile initial goal + starred milestones + latest turns into Pinboard for a fresh session');
+    handoffBtn.onclick = () => createAndPinHandoff();
+    exportRow.append(copyBtn, dlBtn, htmlBtn, handoffBtn);
 
     const status = document.createElement('div');
     status.className = 'agy-od-status';
@@ -10383,7 +10596,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     status.textContent = statusNotice;
     footer.append(exportRow, status);
 
-    drawer.append(header, toolbar, list, footer);
+    drawer.append(header, tel, toolbar, list, footer);
 
     if (hadSearchFocus) {
       search.focus();
@@ -10966,9 +11179,15 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
         e.preventDefault();
         toggle();
       }
+    } else if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'z') {
+      if (window.__agySuiteSettings?.outline === false) return;
+      e.preventDefault();
+      toggleZenMode();
     } else if (e.key === 'Escape' && openState) {
       e.preventDefault();
       close();
+    } else if (e.key === 'Escape' && zenActive && !document.querySelector('[role="dialog"]')) {
+      setZenMode(false);
     }
   }
 
@@ -11126,6 +11345,12 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     toggle,
     isOpen: () => openState,
     getTurns,
+    getConversationStats,
+    buildHandoffBrief,
+    createAndPinHandoff,
+    toggleZenMode,
+    setZenMode,
+    isZenMode: () => zenActive,
     exportMarkdown,
     exportBookishHtml,
     downloadBookishHtml,
@@ -11155,6 +11380,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();
     document.getElementById('agy-outline-drawer')?.remove();
+    setZenMode(false);
     removeSelectionPill();
     cleanupCodeFolds();
     document.querySelectorAll('[data-agy-jump-highlight]').forEach(n => n.removeAttribute('data-agy-jump-highlight'));
@@ -12076,9 +12302,15 @@ window.__agySuiteModules.prompts=function(){
 
     const accountCapsule = document.getElementById('agy-account-capsule');
     if (accountCapsule && accountCapsule.parentElement === composer) {
-      document.getElementById('agy-prompt-capsule')?.remove();
+      const oldHost = document.getElementById('agy-prompt-capsule');
+      if (oldHost) {
+        const pinBtn = document.getElementById('agy-pinboard-trigger');
+        if (pinBtn && pinBtn.parentElement === oldHost) accountCapsule.insertBefore(pinBtn, accountCapsule.firstChild);
+        oldHost.remove();
+      }
       if (btn.parentElement !== accountCapsule) {
-        accountCapsule.insertBefore(btn, accountCapsule.firstChild);
+        const badge = document.getElementById('agy-account-badge');
+        accountCapsule.insertBefore(btn, badge || null);
       }
     } else {
       let host = document.getElementById('agy-prompt-capsule');
@@ -12180,8 +12412,10 @@ window.__agySuiteModules.prompts=function(){
     return true;
   }
 
+  const SEND_BTN_SEL = 'button[data-testid="send-button"], button[aria-label="Send message"], button[aria-label="发送消息"], button[data-tooltip-id*="send-button-send"]';
+
   function onCaptureClick(e) {
-    const sendBtn = e.target?.closest?.('[data-testid="send-button"]');
+    const sendBtn = e.target?.closest?.(SEND_BTN_SEL);
     if (!sendBtn) return;
     const box = sendBtn.closest('[data-testid="agent-input-box"]');
     checkSecretBeforeSend(e, box, () => sendBtn.click());
@@ -12194,7 +12428,7 @@ window.__agySuiteModules.prompts=function(){
     if (document.querySelector('[role="listbox"], .lexical-typeahead-menu')) return;
     const box = editor.closest('[data-testid="agent-input-box"]');
     checkSecretBeforeSend(e, box, () => {
-      box?.querySelector('[data-testid="send-button"]')?.click();
+      box?.querySelector(SEND_BTN_SEL)?.click();
     });
   }
 
@@ -12225,6 +12459,7 @@ window.__agySuiteModules.prompts=function(){
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('agy-composer-capsules-sync', scheduleRender);
   document.addEventListener('focusin', onFocusIn);
   document.addEventListener('input', onComposerInput, true);
   window.addEventListener('click', onCaptureClick, true);
@@ -12285,6 +12520,7 @@ window.__agySuiteModules.prompts=function(){
     clearTimeout(draftSaveTimer);
     observer.disconnect();
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('agy-composer-capsules-sync', scheduleRender);
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('input', onComposerInput, true);
     window.removeEventListener('click', onCaptureClick, true);
@@ -12314,6 +12550,7 @@ window.__agySuiteModules.prompts=function(){
   let returnFocus = null;
   let toastTimer = null;
   let scheduled = false;
+  let mutating = 0;
 
   const text = (cn, en) => window.__agySuiteSettings?.i18n === false ? en : cn;
 
@@ -12467,9 +12704,10 @@ window.__agySuiteModules.prompts=function(){
   }
 
   async function refresh() {
+    if (mutating > 0) return pins;
     try {
       const next = await apiCall();
-      if (Array.isArray(next)) {
+      if (mutating === 0 && Array.isArray(next)) {
         pins = next;
         saveCache(pins);
       }
@@ -12501,10 +12739,13 @@ window.__agySuiteModules.prompts=function(){
     pins = [item, ...pins].slice(0, 100);
     saveCache(pins);
     renderTrigger();
+    mutating++;
     try {
       pins = await apiCall({ action: 'upsert', pin: item });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
     showToast(text(`📌 已钉入跨会话暂存匣（共 ${pins.length} 条 · Alt+B）`, `📌 Pinned to Context Pinboard (${pins.length} total · Alt+B)`));
@@ -12514,10 +12755,13 @@ window.__agySuiteModules.prompts=function(){
   async function togglePin(id, enabled) {
     pins = pins.map(p => p.id === id ? { ...p, enabled: enabled === undefined ? !p.enabled : Boolean(enabled) } : p);
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'toggle', id, enabled });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
     renderTrigger();
   }
@@ -12525,10 +12769,13 @@ window.__agySuiteModules.prompts=function(){
   async function deletePin(id) {
     pins = pins.filter(p => p.id !== id);
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'delete', id });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
   }
@@ -12536,10 +12783,13 @@ window.__agySuiteModules.prompts=function(){
   async function clearPins() {
     pins = [];
     saveCache(pins);
+    mutating++;
     try {
       pins = await apiCall({ action: 'clear' });
       saveCache(pins);
-    } catch {}
+    } catch {} finally {
+      mutating--;
+    }
     renderTrigger();
     if (document.getElementById('agy-pinboard-backdrop')) renderModal();
   }
@@ -12862,6 +13112,7 @@ window.__agySuiteModules.prompts=function(){
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('agy-composer-capsules-sync', scheduleRender);
   document.addEventListener('keydown', onKeyDown);
   refresh();
 
@@ -12883,6 +13134,7 @@ window.__agySuiteModules.prompts=function(){
     observer.disconnect();
     clearTimeout(toastTimer);
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('agy-composer-capsules-sync', scheduleRender);
     document.removeEventListener('keydown', onKeyDown);
     document.getElementById('agy-pinboard-trigger')?.remove();
     document.getElementById('agy-pinboard-backdrop')?.remove();
@@ -12984,7 +13236,7 @@ window.__agySuiteModules.prompts=function(){
     center.replaceChildren();const heading=document.createElement('h2');heading.id='agy-suite-heading';heading.textContent=text('增强套件控制中心','Enhancement Suite');center.appendChild(heading);
     const subtitle=document.createElement('p');subtitle.className='suite-subtitle';subtitle.textContent=text('按需启用，让工作空间更顺手','Make this workspace yours, one feature at a time');center.appendChild(subtitle);
     const quickbar=document.createElement('div');quickbar.className='suite-quickbar';
-    for(const [id,zh,en,kbd,fn] of [['agy-suite-open-palette','⌘ 全能命令面板','⌘ Command Palette','Alt+K',()=>{closeCenter();window.__agyCommandPalette?.open();}],['agy-suite-open-prompts','✦ 提示词灵感库','✦ Prompt Vault','Alt+P',()=>{closeCenter();window.__agyPromptVault?.open();}],['agy-suite-open-pinboard','📌 跨会话暂存匣','📌 Context Pinboard','Alt+B',()=>{closeCenter();window.__agyPinboard?.open();}],['agy-suite-open-outline','📑 对话目录与导出','📑 Conversation Outline','Alt+O',()=>{closeCenter();window.__agyConvTools?.open();}]] ){
+    for(const [id,zh,en,kbd,fn] of [['agy-suite-open-palette','⌘ 全能命令面板','⌘ Command Palette','Alt+K',()=>{closeCenter();window.__agyCommandPalette?.open();}],['agy-suite-open-prompts','✦ 提示词灵感库','✦ Prompt Vault','Alt+P',()=>{closeCenter();window.__agyPromptVault?.open();}],['agy-suite-open-pinboard','📌 跨会话暂存匣','📌 Context Pinboard','Alt+B',()=>{closeCenter();window.__agyPinboard?.open();}],['agy-suite-open-outline','📑 对话目录与导出','📑 Conversation Outline','Alt+O',()=>{closeCenter();window.__agyConvTools?.open();}],['agy-suite-open-zen','🧘 沉浸阅读','🧘 Zen Focus','Alt+Z',()=>{closeCenter();window.__agyConvTools?.toggleZenMode?.();}]] ){
       const pill=document.createElement('button');pill.type='button';pill.id=id;pill.className='suite-quick-pill';pill.onclick=fn;
       const lbl=document.createElement('span');lbl.textContent=text(zh,en);const keyEl=document.createElement('span');keyEl.className='suite-quick-kbd';keyEl.textContent=kbd;
       pill.append(lbl,keyEl);quickbar.appendChild(pill);
@@ -13188,6 +13440,26 @@ window.__agySuiteModules.prompts=function(){
         badge: 'HTML',
         keywords: 'html export report bookish archive 书卷 报告 网页 归档 导出',
         run: () => window.__agyConvTools?.downloadBookishHtml({ onlyStarred: false })
+      });
+      list.push({
+        id: 'conv-handoff',
+        group: convGroup,
+        title: text('🚀 生成长对话精简接力包并钉入跨会话暂存匣', '🚀 Generate Session Handoff Brief & Pin to Pinboard'),
+        badge: 'Handoff',
+        keywords: 'handoff summary compact context 接力 精简 压缩 新会话 摘要',
+        run: () => window.__agyConvTools?.createAndPinHandoff?.()
+      });
+    }
+    if (window.__agyConvTools?.toggleZenMode) {
+      list.push({
+        id: 'zen-focus',
+        group: appearanceGroup,
+        title: window.__agyConvTools.isZenMode?.()
+          ? text('🧘 退出沉浸专注阅读模式', '🧘 Exit Zen Focus Reading Mode')
+          : text('🧘 开启沉浸专注阅读模式（隐藏侧栏干扰）', '🧘 Enter Zen Focus Reading Mode'),
+        badge: 'Alt+Z',
+        keywords: 'zen focus distraction free reading 沉浸 专注 阅读 禅意 全屏',
+        run: () => window.__agyConvTools?.toggleZenMode?.()
       });
     }
 
@@ -13529,4 +13801,4 @@ window.__agySuiteModules.prompts=function(){
   };
 })();
 
-window.__agyRendererBundleId="6075a2f2f96018e43790cbfedf131a48d6b32b05cfa55a1e095d9f9edd4df662";})();
+window.__agyRendererBundleId="bbb4f90db07ab038a147a3305be4913285bab1eae1f251fa5e16d31f9dd964d8";})();

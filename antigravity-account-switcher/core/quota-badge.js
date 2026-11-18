@@ -74,9 +74,24 @@
     popup.addEventListener('keydown',event=>{const rows=[...popup.querySelectorAll('button:not(:disabled)')];let index=rows.indexOf(document.activeElement);if(event.key==='Escape'){closeMenu();button.focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length]?.focus();}});
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
   }
+  function detachAccountCapsule(){
+    document.getElementById('agy-account-badge')?.remove();
+    const cap=document.getElementById('agy-account-capsule');
+    if(cap){
+      const extra=[...cap.children].filter(el=>el.id!=='agy-account-badge');
+      if(extra.length&&cap.parentElement){
+        let fallback=document.getElementById('agy-prompt-capsule');
+        if(!fallback){fallback=document.createElement('div');fallback.id='agy-prompt-capsule';cap.parentElement.appendChild(fallback);}
+        for(const el of extra)fallback.appendChild(el);
+      }
+      cap.remove();
+    }
+    window.dispatchEvent(new CustomEvent('agy-composer-capsules-sync'));
+  }
   function render(){
-    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();return;}const composer=[...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el=>!el.closest('[data-side-panel-body]'))||document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
-    let host=document.getElementById('agy-account-capsule');if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
+    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){detachAccountCapsule();closeMenu();return;}const composer=[...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el=>!el.closest('[data-side-panel-body]'))||document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
+    let host=document.getElementById('agy-account-capsule');const created=!host;if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
+    if(created)window.dispatchEvent(new CustomEvent('agy-composer-capsules-sync'));
     let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-expanded','false');button.setAttribute('data-ag-localization-skip','true');button.innerHTML='<span class="quota-dot" aria-hidden="true"></span><span class="quota-label"></span><span class="quota-chevron" aria-hidden="true">⌄</span>';button.onclick=()=>{if(popup)closeMenu();else openMenu(button);};}
     if(button.parentElement!==host)host.appendChild(button);
     const current=accounts.find(a=>a.isCurrent),quota=selection(current,label()),percent=quota?.percent??null;
@@ -103,6 +118,6 @@
   });observer.observe(document.documentElement,{childList:true,subtree:true});
   const timer=setInterval(refresh,60000);refresh();
   window.__agyQuotaBadge={percentage,selection,refresh,getAccounts:()=>accounts};
-  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();closeToast();style.remove();};
+  window.__agyQuotaBadgeCleanup=()=>{disposed=true;observer.disconnect();clearInterval(timer);document.removeEventListener('pointerdown',onPointer);window.removeEventListener('agy-accounts-updated',onAccountsUpdated);window.removeEventListener('message',onMessage);window.removeEventListener('agy-suite-settings-updated',render);detachAccountCapsule();closeMenu();closeToast();style.remove();};
   const cleanup=window.__agyAccountSwitcherCleanup;window.__agyAccountSwitcherCleanup=()=>{window.__agyQuotaBadgeCleanup();cleanup?.();};
 })();

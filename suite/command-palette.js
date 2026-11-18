@@ -169,6 +169,26 @@
         keywords: 'html export report bookish archive 书卷 报告 网页 归档 导出',
         run: () => window.__agyConvTools?.downloadBookishHtml({ onlyStarred: false })
       });
+      list.push({
+        id: 'conv-handoff',
+        group: convGroup,
+        title: text('🚀 生成长对话精简接力包并钉入跨会话暂存匣', '🚀 Generate Session Handoff Brief & Pin to Pinboard'),
+        badge: 'Handoff',
+        keywords: 'handoff summary compact context 接力 精简 压缩 新会话 摘要',
+        run: () => window.__agyConvTools?.createAndPinHandoff?.()
+      });
+    }
+    if (window.__agyConvTools?.toggleZenMode) {
+      list.push({
+        id: 'zen-focus',
+        group: appearanceGroup,
+        title: window.__agyConvTools.isZenMode?.()
+          ? text('🧘 退出沉浸专注阅读模式', '🧘 Exit Zen Focus Reading Mode')
+          : text('🧘 开启沉浸专注阅读模式（隐藏侧栏干扰）', '🧘 Enter Zen Focus Reading Mode'),
+        badge: 'Alt+Z',
+        keywords: 'zen focus distraction free reading 沉浸 专注 阅读 禅意 全屏',
+        run: () => window.__agyConvTools?.toggleZenMode?.()
+      });
     }
 
     // 3. Prompt Vault & Cross-Session Pinboard

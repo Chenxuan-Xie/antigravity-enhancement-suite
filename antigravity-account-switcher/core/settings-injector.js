@@ -142,6 +142,17 @@
     .agy-as-input:focus {
       border-color: #D97757;
     }
+    .dark .agy-as-input, [data-theme="dark"] .agy-as-input, .theme-dark .agy-as-input {
+      background: #1B1A18;
+      color: #ECE9E2;
+      border-color: rgba(236, 233, 226, 0.2);
+    }
+    .dark .agy-as-tag, [data-theme="dark"] .agy-as-tag, .theme-dark .agy-as-tag {
+      background: rgba(236, 233, 226, 0.11);
+    }
+    .dark .agy-as-btn, [data-theme="dark"] .agy-as-btn, .theme-dark .agy-as-btn {
+      border-color: rgba(236, 233, 226, 0.18);
+    }
     .agy-as-list {
       display: flex;
       flex-direction: column;

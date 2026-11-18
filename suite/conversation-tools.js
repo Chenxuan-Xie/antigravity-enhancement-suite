@@ -360,6 +360,44 @@
       transition: background 0.12s, color 0.12s;
     }
     #agy-selection-pill button:hover { background: rgba(217, 119, 87, 0.14); color: #D97757; }
+    .agy-od-telemetry {
+      padding: 8px 14px; border-bottom: 1px solid var(--border, rgba(20, 20, 19, 0.07));
+      display: flex; flex-direction: column; gap: 5px; background: rgba(217, 119, 87, 0.035);
+      font-size: 11px; font-variant-numeric: tabular-nums;
+    }
+    .agy-od-tel-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+    .agy-od-tel-bar {
+      height: 4px; border-radius: 99px; overflow: hidden; display: flex;
+      background: rgba(128, 128, 128, 0.14);
+    }
+    .agy-od-tel-langs { display: flex; flex-wrap: wrap; gap: 4px; opacity: 0.78; font-size: 10.5px; }
+    body.agy-zen-focus-mode nav.bg-sidebar,
+    body.agy-zen-focus-mode .agy-inset-shell > .contents > nav,
+    body.agy-zen-focus-mode [data-testid="sidebar-container"] {
+      display: none !important;
+    }
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:not(:focus-within) {
+      opacity: 0.42; transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:hover,
+    body.agy-zen-focus-mode [data-testid="agent-input-box"]:focus-within {
+      opacity: 1; transform: none;
+    }
+    #agy-zen-exit-pill {
+      position: fixed; top: 14px; right: 18px; z-index: 10030;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid rgba(217, 119, 87, 0.42);
+      background: var(--glass, rgba(250, 249, 245, 0.92));
+      color: var(--foreground, #141413);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      font: 500 11.5px/1.3 system-ui, sans-serif; cursor: pointer;
+    }
+    body.theme-dark #agy-zen-exit-pill, html.dark #agy-zen-exit-pill {
+      background: rgba(35, 34, 32, 0.92); color: #ECE9E2;
+    }
+    #agy-zen-exit-pill:hover { border-color: #D97757; color: #D97757; }
   `;
   document.head.appendChild(style);
 
@@ -623,6 +661,108 @@
     const userPart = `### ${text('提问', 'Prompt')}\n\n${turn.prompt.trim()}`;
     const aiPart = replyMd ? `\n\n### ${text('回复', 'Response')}\n\n${replyMd}` : '';
     return `${header}\n\n${userPart}${aiPart}`;
+  }
+
+  function estimateTokens(raw) {
+    const str = String(raw || '');
+    if (!str) return 0;
+    let cjk = 0;
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if ((code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3000 && code <= 0x30FF) || (code >= 0xFF00 && code <= 0xFFEF)) cjk++;
+    }
+    const rest = str.length - cjk;
+    return Math.max(1, Math.round(cjk * 0.68 + rest * 0.27));
+  }
+
+  function getConversationStats() {
+    const turns = getTurns();
+    let promptTokens = 0, proseTokens = 0, codeTokens = 0, codeBlocks = 0, tables = 0;
+    const langCounts = {};
+    for (const t of turns) {
+      promptTokens += estimateTokens(t.prompt);
+      tables += t.tableCount;
+      for (const replyEl of t.replyNodes) {
+        const fullReplyTok = estimateTokens(replyEl.textContent || '');
+        let replyCodeTok = 0;
+        for (const card of replyEl.querySelectorAll('.rounded-xl.bg-muted.border, pre')) {
+          if (card.tagName === 'DIV' && card.closest('pre')) continue;
+          if (card.tagName === 'PRE' && card.closest('.rounded-xl.bg-muted.border')) continue;
+          const info = resolveCodeCard(card);
+          if (!info) continue;
+          codeBlocks++;
+          const tok = estimateTokens(info.rawCode);
+          replyCodeTok += tok;
+          const l = info.lang || 'text';
+          langCounts[l] = (langCounts[l] || 0) + 1;
+        }
+        codeTokens += replyCodeTok;
+        proseTokens += Math.max(0, fullReplyTok - replyCodeTok);
+      }
+    }
+    const totalTokens = promptTokens + proseTokens + codeTokens;
+    const tier = totalTokens >= 96000 ? 'heavy' : totalTokens >= 32000 ? 'medium' : 'light';
+    return { turns: turns.length, totalTokens, promptTokens, proseTokens, codeTokens, codeBlocks, tables, langCounts, tier };
+  }
+
+  function buildHandoffBrief() {
+    const turns = getTurns();
+    if (!turns.length) return '';
+    const stars = loadStars();
+    const title = (document.title || 'Conversation').replace(/\s*[-|]\s*Antigravity.*$/i, '').trim() || 'Conversation';
+    const picked = new Map();
+    picked.set(turns[0].index, turns[0]);
+    for (const t of turns) {
+      if (stars.has(t.id)) picked.set(t.index, t);
+    }
+    for (const t of turns.slice(-2)) picked.set(t.index, t);
+    const ordered = [...picked.values()].sort((a, b) => a.index - b.index);
+    const sections = ordered.map(t => {
+      const tag = t.index === 1 ? text('【初始目标】', '[Initial Goal]') : (stars.has(t.id) ? text('【★ 星标结论】', '[★ Milestone]') : text('【近期进展】', '[Recent State]'));
+      return `### ${tag} #${t.index}\n**Q:** ${t.prompt.trim()}\n\n${t.replyNodes.map(el => blockMarkdown(el)).join('\n').trim()}`;
+    }).join('\n\n---\n\n');
+    return `<SESSION_HANDOFF source="${title}" total_turns="${turns.length}">\n${sections}\n</SESSION_HANDOFF>\n`;
+  }
+
+  async function createAndPinHandoff() {
+    const brief = buildHandoffBrief();
+    if (!brief) return '';
+    await writeClipboard(brief);
+    const title = (document.title || '').replace(/\s*[-|]\s*Antigravity.*$/i, '').trim() || text('长对话接力摘要', 'Session Handoff');
+    if (window.__agyPinboard?.addPin) {
+      await window.__agyPinboard.addPin({
+        title: `🚀 ${text('会话接力包', 'Handoff')}: ${title.slice(0, 36)}`,
+        content: brief,
+        source: title
+      });
+    }
+    flashStatus(text('✓ 已生成精简接力包：已复制并钉入暂存匣 (Alt+B)', '✓ Handoff brief copied & pinned to Pinboard (Alt+B)'));
+    return brief;
+  }
+
+  let zenActive = false;
+  function setZenMode(enable) {
+    zenActive = Boolean(enable);
+    document.body?.classList.toggle('agy-zen-focus-mode', zenActive);
+    let pill = document.getElementById('agy-zen-exit-pill');
+    if (!zenActive) {
+      pill?.remove();
+      return false;
+    }
+    if (!pill) {
+      pill = document.createElement('button');
+      pill.id = 'agy-zen-exit-pill';
+      pill.type = 'button';
+      pill.setAttribute('data-ag-localization-skip', 'true');
+      pill.onclick = () => setZenMode(false);
+      document.body.appendChild(pill);
+    }
+    pill.textContent = text('🧘 沉浸阅读中 · Alt+Z 退出', '🧘 Zen Reading · Alt+Z to exit');
+    return true;
+  }
+
+  function toggleZenMode() {
+    return setZenMode(!zenActive);
   }
 
   function exportMarkdown({ onlyStarred = false } = {}) {
@@ -922,6 +1062,38 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     navBtns.append(topBtn, botBtn, closeBtn);
     header.append(titleGroup, navBtns);
 
+    const stats = getConversationStats();
+    const tel = document.createElement('div');
+    tel.className = 'agy-od-telemetry';
+    const telTop = document.createElement('div');
+    telTop.className = 'agy-od-tel-top';
+    const tokStr = stats.totalTokens >= 1000 ? `~${(stats.totalTokens / 1000).toFixed(1)}k` : `~${stats.totalTokens}`;
+    const tierBadge = stats.tier === 'heavy'
+      ? text('🟠 上下文偏重，建议生成接力包开新会话', '🟠 Heavy context — consider Handoff')
+      : stats.tier === 'medium'
+        ? text('🟡 上下文适中', '🟡 Moderate context')
+        : text('🟢 上下文轻快', '🟢 Healthy context');
+    const leftStat = document.createElement('span');
+    leftStat.innerHTML = `<strong>${tokStr} tokens</strong> · ${tierBadge}`;
+    telTop.appendChild(leftStat);
+
+    const bar = document.createElement('div');
+    bar.className = 'agy-od-tel-bar';
+    const totalT = Math.max(1, stats.totalTokens);
+    for (const [part, color] of [[stats.promptTokens, '#8A867C'], [stats.proseTokens, '#D97757'], [stats.codeTokens, '#2E7D47']]) {
+      const seg = document.createElement('span');
+      seg.style.cssText = `width:${Math.round((part / totalT) * 100)}%;background:${color};height:100%`;
+      bar.appendChild(seg);
+    }
+    tel.append(telTop, bar);
+    const langEntries = Object.entries(stats.langCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (langEntries.length > 0) {
+      const langs = document.createElement('div');
+      langs.className = 'agy-od-tel-langs';
+      langs.textContent = text('代码构成：', 'Code: ') + langEntries.map(([k, c]) => `${k} ×${c}`).join(' · ');
+      tel.appendChild(langs);
+    }
+
     const toolbar = document.createElement('div');
     toolbar.className = 'agy-od-toolbar';
     const search = document.createElement('input');
@@ -1101,7 +1273,14 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     htmlBtn.textContent = text('📄 书卷 HTML', '📄 HTML');
     htmlBtn.title = text('导出为带目录与深浅色切换的 Claude 书卷排版单文件 HTML', 'Export self-contained dual-theme bookish HTML report');
     htmlBtn.onclick = () => downloadBookishHtml({ onlyStarred: starOnly });
-    exportRow.append(copyBtn, dlBtn, htmlBtn);
+    const handoffBtn = document.createElement('button');
+    handoffBtn.type = 'button';
+    handoffBtn.className = 'agy-od-btn';
+    handoffBtn.id = 'agy-od-handoff';
+    handoffBtn.textContent = text('🚀 接力包', '🚀 Handoff');
+    handoffBtn.title = text('提炼首轮目标 + 星标结论 + 最近进展，复制并钉入跨会话暂存匣以便开启无负担新会话', 'Compile initial goal + starred milestones + latest turns into Pinboard for a fresh session');
+    handoffBtn.onclick = () => createAndPinHandoff();
+    exportRow.append(copyBtn, dlBtn, htmlBtn, handoffBtn);
 
     const status = document.createElement('div');
     status.className = 'agy-od-status';
@@ -1109,7 +1288,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     status.textContent = statusNotice;
     footer.append(exportRow, status);
 
-    drawer.append(header, toolbar, list, footer);
+    drawer.append(header, tel, toolbar, list, footer);
 
     if (hadSearchFocus) {
       search.focus();
@@ -1692,9 +1871,15 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
         e.preventDefault();
         toggle();
       }
+    } else if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'z') {
+      if (window.__agySuiteSettings?.outline === false) return;
+      e.preventDefault();
+      toggleZenMode();
     } else if (e.key === 'Escape' && openState) {
       e.preventDefault();
       close();
+    } else if (e.key === 'Escape' && zenActive && !document.querySelector('[role="dialog"]')) {
+      setZenMode(false);
     }
   }
 
@@ -1852,6 +2037,12 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     toggle,
     isOpen: () => openState,
     getTurns,
+    getConversationStats,
+    buildHandoffBrief,
+    createAndPinHandoff,
+    toggleZenMode,
+    setZenMode,
+    isZenMode: () => zenActive,
     exportMarkdown,
     exportBookishHtml,
     downloadBookishHtml,
@@ -1881,6 +2072,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();
     document.getElementById('agy-outline-drawer')?.remove();
+    setZenMode(false);
     removeSelectionPill();
     cleanupCodeFolds();
     document.querySelectorAll('[data-agy-jump-highlight]').forEach(n => n.removeAttribute('data-agy-jump-highlight'));
