@@ -256,13 +256,14 @@
       const accGroup = text('Google 账号热切换', 'ACCOUNTS');
       const accs = window.__agyQuotaBadge.getAccounts?.() || [];
       for (const acc of accs) {
-        const pct = window.__agyQuotaBadge.percentage?.(acc, '') ?? null;
+        const gemPct = window.__agyQuotaBadge.percentage?.(acc, 'Gemini');
+        const pct = gemPct ?? window.__agyQuotaBadge.percentage?.(acc, '') ?? null;
         list.push({
           id: 'acc-' + acc.email,
           group: accGroup,
           title: (acc.isCurrent ? '✓ ' : '⇄ ') + (acc.label || acc.email),
-          badge: pct !== null ? `${pct}%` : (acc.isCurrent ? text('当前', 'Current') : ''),
-          keywords: `account switch google 账号 切换 配额 ${acc.email} ${acc.label || ''}`,
+          badge: pct !== null ? `${gemPct !== null && gemPct !== undefined ? 'Gemini ' : ''}${pct}%` : (acc.isCurrent ? text('当前', 'Current') : ''),
+          keywords: `account switch google gemini 账号 切换 配额 ${acc.email} ${acc.label || ''}`,
           run: async () => {
             if (!acc.isCurrent) {
               await fetch('http://127.0.0.1:19823/api/switch', {

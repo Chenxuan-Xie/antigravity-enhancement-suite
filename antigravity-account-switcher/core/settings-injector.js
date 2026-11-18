@@ -260,27 +260,84 @@
     }
     .agy-as-quotas {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-      gap: 6px;
-      padding-top: 6px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 7px;
+      padding-top: 7px;
       border-top: 1px solid rgba(20, 20, 19, 0.07);
+    }
+    .dark .agy-as-quotas, [data-theme="dark"] .agy-as-quotas, .theme-dark .agy-as-quotas {
+      border-top-color: rgba(236, 233, 226, 0.09);
     }
     .agy-as-qitem {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
       font-size: 11px;
-      opacity: 0.85;
+      opacity: 0.88;
+      padding: 5px 8px;
+      border-radius: 7px;
+      background: rgba(20, 20, 19, 0.025);
+    }
+    .dark .agy-as-qitem, [data-theme="dark"] .agy-as-qitem, .theme-dark .agy-as-qitem {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .agy-as-qitem.gemini-primary {
+      opacity: 1;
+      background: rgba(217, 119, 87, 0.08);
+      border: 1px solid rgba(217, 119, 87, 0.22);
+    }
+    .dark .agy-as-qitem.gemini-primary, [data-theme="dark"] .agy-as-qitem.gemini-primary, .theme-dark .agy-as-qitem.gemini-primary {
+      background: rgba(217, 119, 87, 0.13);
+      border-color: rgba(217, 119, 87, 0.30);
     }
     .agy-as-qrow {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .agy-as-qlabel {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .agy-as-qitem.gemini-primary .agy-as-qlabel {
+      font-weight: 600;
+      color: #B85A3A;
+    }
+    .dark .agy-as-qitem.gemini-primary .agy-as-qlabel, [data-theme="dark"] .agy-as-qitem.gemini-primary .agy-as-qlabel, .theme-dark .agy-as-qitem.gemini-primary .agy-as-qlabel {
+      color: #F09B7E;
+    }
+    .agy-as-qreset {
+      font-size: 10px;
+      opacity: 0.68;
+      font-weight: 400;
+    }
+    .agy-as-tier {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 99px;
+      background: rgba(217, 119, 87, 0.13);
+      color: #C46344;
+    }
+    .dark .agy-as-tier, [data-theme="dark"] .agy-as-tier, .theme-dark .agy-as-tier {
+      background: rgba(217, 119, 87, 0.2);
+      color: #F09B7E;
     }
     .agy-as-qbar {
       height: 4px;
       border-radius: 99px;
       background: rgba(20, 20, 19, 0.10);
       overflow: hidden;
+    }
+    .dark .agy-as-qbar, [data-theme="dark"] .agy-as-qbar, .theme-dark .agy-as-qbar {
+      background: rgba(255, 255, 255, 0.12);
     }
     .agy-as-qfill {
       height: 100%;
@@ -430,20 +487,58 @@
       }
     }
 
+    let autoQuotaSyncAt = 0;
+
+    function formatShortReset(iso) {
+      const ms = Date.parse(iso || "");
+      if (!Number.isFinite(ms)) return "";
+      const diff = ms - Date.now();
+      if (diff <= 0) return "";
+      if (diff < 60_000) return "<1m";
+      if (diff < 3_600_000) return `${Math.ceil(diff / 60_000)}m`;
+      if (diff < 86_400_000) {
+        const h = Math.floor(diff / 3_600_000);
+        const m = Math.floor((diff % 3_600_000) / 60_000);
+        return m > 0 ? `${h}h${m}m` : `${h}h`;
+      }
+      const d = Math.floor(diff / 86_400_000);
+      const h = Math.floor((diff % 86_400_000) / 3_600_000);
+      return h > 0 ? `${d}d${h}h` : `${d}d`;
+    }
+
     function renderQuotas(qs) {
       if (!qs || !Array.isArray(qs.groups)) return "";
+      const orderedGroups = [...qs.groups].sort((a, b) => {
+        const aGem = /gemini/i.test(a.displayName) ? 0 : 1;
+        const bGem = /gemini/i.test(b.displayName) ? 0 : 1;
+        return aGem - bGem;
+      });
       const cells = [];
-      for (const g of qs.groups) {
-        const prefix = /gemini/i.test(g.displayName) ? "Gemini" : "Claude/GPT";
+      for (const g of orderedGroups) {
+        const isGemini = /gemini/i.test(g.displayName);
         for (const b of g.buckets || []) {
           if (typeof b.remainingPercent !== "number") continue;
-          const win = b.window === "5h" ? "5h" : "周";
+          const baseName = isGemini
+            ? /^gemini\s+(pro|flash)/i.test(b.displayName || "")
+              ? b.displayName
+              : "Gemini"
+            : "Claude/GPT";
+          const win =
+            b.window === "5h"
+              ? "5h"
+              : b.window === "daily"
+              ? "日"
+              : "周";
+          const resetHint = formatShortReset(b.resetTime);
           const pct = b.remainingPercent;
           const cls = pct >= 50 ? "high" : pct <= 15 ? "low" : "";
           cells.push(`
-            <div class="agy-as-qitem">
+            <div class="agy-as-qitem ${isGemini ? "gemini-primary" : ""}" data-quota-family="${isGemini ? "gemini" : "3p"}">
               <div class="agy-as-qrow">
-                <span>${escapeHtml(prefix)} (${win})</span>
+                <span class="agy-as-qlabel">
+                  <span>${escapeHtml(baseName)} (${win})</span>
+                  ${resetHint ? `<span class="agy-as-qreset">· ${escapeHtml(resetHint)}</span>` : ""}
+                </span>
                 <strong>${pct}%</strong>
               </div>
               <div class="agy-as-qbar">
@@ -469,6 +564,14 @@
             ? `<img src="${escapeHtml(acc.picture)}" alt="" referrerpolicy="no-referrer" />`
             : `<span>${escapeHtml(init)}</span>`;
 
+          const formattedTier = String(acc.planTier || "")
+            .replace(/^Google\s+AI\s+/i, "AI ")
+            .replace(/^Antigravity\s+Starter\s+Quota$/i, "免费套餐")
+            .trim();
+          const tierBadge = formattedTier && !/^antigravity$/i.test(formattedTier)
+            ? `<span class="agy-as-tier">${escapeHtml(formattedTier)}</span>`
+            : "";
+
           const right = acc.isCurrent
             ? `<span class="agy-as-badge-active">● 当前使用中</span>`
             : `<button type="button" class="agy-as-btn agy-as-btn-primary" data-switch="${escapeHtml(acc.email)}">点击切换</button>
@@ -482,6 +585,7 @@
                   <div class="agy-as-meta">
                     <div class="agy-as-name-line">
                       <span class="agy-as-name">${escapeHtml(acc.name || acc.email)}</span>
+                      ${tierBadge}
                       <span class="agy-as-tag" data-edit-tag="${escapeHtml(acc.email)}" title="点击修改备注">${escapeHtml(acc.label || "备注")} ✎</span>
                     </div>
                     <div class="agy-as-email">${escapeHtml(acc.email)}</div>
@@ -554,6 +658,19 @@
         const d = await apiRequest("/api/accounts", null, 5);
         if (d.ok && Array.isArray(d.accounts)) {
           renderList(d.accounts);
+          const missingGemini = d.accounts.some(
+            (a) =>
+              a.hasRefreshToken &&
+              !(a.quotaSummary?.groups || []).some((g) => /gemini/i.test(g.displayName))
+          );
+          if (missingGemini && Date.now() - autoQuotaSyncAt > 60_000) {
+            autoQuotaSyncAt = Date.now();
+            apiRequest("/api/accounts/quota", {})
+              .then((q) => {
+                if (q && q.ok && Array.isArray(q.accounts)) renderList(q.accounts);
+              })
+              .catch(() => {});
+          }
         }
       } catch (_) {
         const hasCached = Boolean(listEl.querySelector(".agy-as-card"));

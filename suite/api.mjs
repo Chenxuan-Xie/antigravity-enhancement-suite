@@ -1,12 +1,13 @@
 import settings from './settings.cjs';
 import promptsStore from './prompts.cjs';
 import pinboardStore from './pinboard.cjs';
+import filePreview from './file-preview.cjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 const run = promisify(execFile);
 export async function handleSuiteApi(req,res,pathname) {
-  if (pathname !== '/api/suite/settings' && pathname !== '/api/suite/prompts' && pathname !== '/api/suite/pinboard') return false;
+  if (pathname !== '/api/suite/settings' && pathname !== '/api/suite/prompts' && pathname !== '/api/suite/pinboard' && pathname !== '/api/suite/file-preview') return false;
   const origin = req.headers?.origin || '';
   if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(origin)) {
     res.writeHead(403);res.end();return true;
@@ -16,6 +17,27 @@ export async function handleSuiteApi(req,res,pathname) {
     'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Private-Network':'true'});res.end(JSON.stringify(value));};
   try {
     if(req.method==='OPTIONS'){send(200,{ok:true});return true;}
+    if(pathname==='/api/suite/file-preview'){
+      const reqUrl=new URL(req.url||'/',`http://${req.headers?.host||'127.0.0.1'}`);
+      if(req.method==='GET'){
+        const uri=reqUrl.searchParams.get('uri')||'';
+        if(reqUrl.searchParams.get('raw')==='1'){
+          filePreview.streamRawFile(uri,req,res,origin);
+          return true;
+        }
+        const zipEntry=reqUrl.searchParams.get('zipEntry')||'';
+        send(200,filePreview.inspectFilePreview(uri,{zipEntry}));
+        return true;
+      }
+      if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}
+      const chunks=[];let size=0;
+      for await(const chunk of req){size+=chunk.length;if(size>65536)throw Error('Preview request body too large');chunks.push(chunk);}
+      const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid request body');
+      if(body.action==='inspect')return send(200,filePreview.inspectFilePreview(body.uri,{zipEntry:body.zipEntry||''})),true;
+      if(body.action==='reveal'||body.action==='openExternal')return send(200,filePreview.openSystemFileAction(body.uri,body.action)),true;
+      throw Error('Unknown file-preview action');
+    }
     if(pathname==='/api/suite/pinboard'){
       if(req.method==='GET'){send(200,{ok:true,pins:pinboardStore.listPins()});return true;}
       if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}

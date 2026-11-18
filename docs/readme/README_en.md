@@ -13,7 +13,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Antigravity-v2.22%2B-D97757?style=flat-square" alt="Antigravity v2.22+" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=flat-square" alt="Windows 10/11" />
-  <img src="https://img.shields.io/badge/Translations-2%2C147%2B-2E7D47?style=flat-square" alt="2,147+ translations" />
+  <img src="https://img.shields.io/badge/Translations-2%2C155%2B-2E7D47?style=flat-square" alt="2,155+ translations" />
   <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
 </p>
 
@@ -35,17 +35,18 @@
    - Recreates Claude's signature **warm parchment white (`#FAF9F5` / sidebar `#F0EEE6`)** and **warm charcoal dark (`#1F1E1D` / sidebar `#161514`)** palettes across the new inset shell and glass surfaces, replacing harsh cool-white light.
    - **Offline humanist serif typography & reading widths**: bundles `Source Serif 4` and a Chinese serif companion, with instant switching between Standard (`51rem`), Wide (`68rem`), and Full (`92%`) conversation widths.
 2. 🇨🇳 **Full Simplified Chinese localization 2.0 (`antigravity-claude-skin/i18n`)**
-   - Builds on [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) and adds the latest Antigravity v2.22.0+ strings (**2,147+ static entries + reversible dynamic pattern localization**).
-   - Covers the **main UI, personalized greetings, accessibility turn counters, settings, top menus, context menus, and system tray menus**, while protecting code blocks, terminals, and user input.
-3. 👥 **Google multi-account hot switching and smart quota insights (`antigravity-account-switcher`)**
-   - Adds visual account cards to the native **Settings → Account** page and the right sidebar panel.
-   - **Quick switching & reset countdowns**: the composer account capsule shows the limiting quota window with 3-tier health colors, live countdown until reset (e.g., `⏱ 2h 15m reset`), and a one-click **⚡ Switch to highest quota** action.
-   - **License preflight**: if the target account has no Antigravity license, the suite warns you and keeps the current account instead of dropping you back to onboarding.
+   - Builds on [`Silas-02/antigravity-desktop-cn`](https://github.com/Silas-02/antigravity-desktop-cn) and adds the latest Antigravity v2.22.0+ strings (**2,155+ static entries + reversible dynamic pattern localization**).
+   - Covers the **main UI, personalized greetings, accessibility turn counters, account plan & AI credits settings, top menus, context menus, and system tray menus**, while protecting code blocks, terminals, and user input.
+3. 👥 **Google multi-account hot switching & Gemini-first quota insights (`antigravity-account-switcher`)**
+   - Adds visual account cards to the native **Settings → Account** page and the right sidebar panel, resolving subscription plan badges (`AI Ultra`, `AI Pro`) via `loadCodeAssist` and highlighting real-time **1P Gemini quotas** first (supporting unified or split `Gemini Pro/4` & `Gemini Flash` pools alongside `Claude/GPT` limits).
+   - **Quick switching & reset countdowns**: the composer account capsule matches the active model pool's limiting quota window with 3-tier health colors, live countdown until reset (e.g., `⏱ 2h 15m reset`), and a one-click **⚡ Switch to highest quota** action.
+   - **Project-aware license preflight**: automatically binds each account's CloudCode project before preflight checks so valid accounts never hit false 403 rejections and unlicensed accounts stay safely blocked without logging out.
 4. 🔌 **Seamless third-party API / relay bridge & parallel latency benchmark (`antigravity-model-switcher`)**
    - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and **instant keyword filtering + batch selection** after fetching `/v1/models`.
    - **🏁 Parallel Relay Latency Race**: benchmark all saved relay nodes concurrently, inspect visual response-time bars and `🏆 Fastest` badges, and click **⚡ Pick Fastest** (or run from `Alt+K`) to switch straight to the lowest-latency healthy node.
    - **Mix models in one conversation**: pick relay models and reasoning effort directly from the native composer menu, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution.
-5. 📑 **Exclusive Workflow Power Tools (Code Evolution Diff · Cross-Session Pinboard · Sandboxed Preview · Secret Leak Shield · Bookish HTML Export · Prompt Vault · Command Palette)**
+5. 📑 **Exclusive Workflow Power Tools (Universal Side-Panel Preview · Code Evolution Diff · Cross-Session Pinboard · Sandboxed Preview · Secret Leak Shield · Bookish HTML Export · Prompt Vault · Command Palette)**
+   - **📂 Universal Side-Panel File Preview Enhancer (`suite/side-preview.js`)**: upgrades Antigravity's native side-panel viewer in-place without touching `app.asar` — zero-dependency previews for **PDFs** (HTTP 206 byte-range streaming inside Chromium's PDF viewer), **Office files (`.docx` headings/paragraphs/tables, `.xlsx` multi-sheet tables & live filter, `.pptx` slide cards)**, **UTF-16LE / UTF-16BE / GB18030 text & logs** (solving NUL-byte binary misclassification), **Jupyter `.ipynb` notebooks**, **`.zip` / `.whl` / `.vsix` archive trees with inline entry viewing**, **SQLite3 (`.sqlite` / `.db`) DDL schemas**, and head+tail sampling for >20MB logs, plus a **👁️ Rich Preview** toggle pill for `.csv` / `.tsv` / `.jsonl` / `.svg` / `.html` and a right-docked preview fallback when `file://` links outside the workspace are dropped by Antigravity.
    - **⇄ Turn-to-Turn Code Evolution Diff Inspector**: when AI iterates on a code block across turns, a **⇄ Diff (+X/-Y)** badge mounts automatically in the code header to inspect inline line-level additions/deletions, switch baseline versions, or copy a standard `.diff` patch.
    - **📌 Cross-Session Context Pinboard (`Alt+B`)**: pin key formulas, architectural invariants, or findings from any chat via the selection pill (`📌 Pin`) or outline drawer, then press `Alt+B` in any new conversation to inject curated `<CONTEXT_PINBOARD>` blocks in one click.
    - **🛡️ Pre-Send Secret Leak Shield & 🕒 Unsent Draft Time Machine**: detects high-confidence live API keys, tokens, and private keys (`sk-proj-...`, `ghp_...`, `AIzaSy...`, PEM keys) locally before submission with one-click in-place **`✂️ Redact Secrets`** masking, while automatically snapshotting unsent composer drafts for instant recovery in `Alt+P` (`🕒 Drafts`) or `Alt+K`.

@@ -6,6 +6,6 @@ try{
   const original=await cdp.evaluate('location.href');
   await cdp.evaluate('window.__agySuite.openCenter()');await new Promise(r=>setTimeout(r,100));
   const result=await cdp.evaluate(`(()=>{const center=document.getElementById('agy-suite-center'),button=document.getElementById('agy-suite-sidebar-button'),api=document.querySelector('[data-agy-custom-api-nav="1"]');return {visible:!!center?.getClientRects().length,dialog:center?.getAttribute('role')==='dialog',aboveApi:!api||button?.nextElementSibling===api,inSettings:!!center?.closest('.settings-modal-container,[data-testid="settings-content"]'),switches:center?.querySelectorAll('[role=switch]').length,url:location.href};})()`);
-  assert(result.visible&&result.dialog&&result.aboveApi&&!result.inSettings&&result.switches===8&&result.url===original,JSON.stringify(result));
+  assert(result.visible&&result.dialog&&result.aboveApi&&!result.inSettings&&result.switches===11&&result.url===original,JSON.stringify(result));
   console.log('PASS independent control center opens above relay entry without navigating or modifying native settings');
 }finally{if(!wasOpen)await cdp.evaluate('window.__agySuite?.closeCenter()');cdp.close();}

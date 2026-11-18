@@ -42,17 +42,27 @@ function escapeHtml(str) {
 
 function renderQuotaSummary(quotaSummary) {
   if (!quotaSummary || !Array.isArray(quotaSummary.groups)) return "";
+  const orderedGroups = [...quotaSummary.groups].sort((a, b) => {
+    const aGem = /gemini/i.test(a.displayName) ? 0 : 1;
+    const bGem = /gemini/i.test(b.displayName) ? 0 : 1;
+    return aGem - bGem;
+  });
   const items = [];
-  for (const g of quotaSummary.groups) {
+  for (const g of orderedGroups) {
     const isGemini = /gemini/i.test(g.displayName);
-    const prefix = isGemini ? "Gemini" : "Claude/GPT";
     for (const b of g.buckets || []) {
       if (typeof b.remainingPercent !== "number") continue;
-      const winLabel = b.window === "5h" ? "5小时" : "周额度";
+      const prefix = isGemini
+        ? /^gemini\s+(pro|flash)/i.test(b.displayName || "")
+          ? b.displayName
+          : "Gemini"
+        : "Claude/GPT";
+      const winLabel =
+        b.window === "5h" ? "5小时" : b.window === "daily" ? "日额度" : "周额度";
       const pct = b.remainingPercent;
       const colorClass = pct >= 50 ? "high" : pct <= 15 ? "low" : "";
       items.push(`
-        <div class="quota-item">
+        <div class="quota-item ${isGemini ? "gemini-primary" : ""}">
           <div class="quota-label-row">
             <span>${escapeHtml(prefix)} · ${winLabel}</span>
             <span class="quota-pct">${pct}%</span>

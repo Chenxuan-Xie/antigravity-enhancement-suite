@@ -26,12 +26,14 @@
     const normal=value=>String(value).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'').replace(/models?$|模型$/,'');
     const target=normal(label);
     const matches=value=>String(value||'').split(/\s+and\s+|[\/&,|]/i).some(part=>{const name=normal(part);return target&&name&&(target.includes(name)||name.includes(target));});
-    const matched=buckets.filter(b=>matches(b.group)||matches(b.displayName));
+    const matchedRaw=buckets.filter(b=>matches(b.group)||matches(b.displayName));
+    const tierNarrowed=target.includes('gemini')&&matchedRaw.length>1?(/flash/i.test(label)?matchedRaw.filter(b=>/flash/i.test(b.displayName)):(/(pro|ultra|carbon|hydrogen|gemini4|gemini38)/i.test(target)?matchedRaw.filter(b=>/(pro|4)/i.test(b.displayName)):[])):[];
+    const matched=tierNarrowed.length?tierNarrowed:matchedRaw;
     const list=(matched.length?matched:buckets).filter(b=>Number.isFinite(b.remainingPercent));
     let selected=null;
     for(const bucket of list){
       const period=String(bucket.window||'').toLowerCase();
-      const window=period==='5h'?'5h':/^(week|weekly)$/.test(period)?'weekly':null;
+      const window=period==='5h'?'5h':period==='daily'?'daily':/^(week|weekly)$/.test(period)?'weekly':null;
       const percent=Math.max(0,Math.min(100,bucket.remainingPercent));
       if(!selected||percent<selected.percent||(percent===selected.percent&&window==='weekly'&&selected.window!=='weekly'))selected={percent,window,resetTime:bucket.resetTime||''};
     }
@@ -39,7 +41,7 @@
   }
   const formatReset=iso=>{const ms=Date.parse(iso||'');if(!Number.isFinite(ms))return '';const diff=ms-Date.now();if(diff<=0)return '';if(diff<60000)return text('即将重置','resets <1m');if(diff<3600000)return Math.ceil(diff/60000)+text(' 分钟后重置','m reset');if(diff<86400000)return Math.floor(diff/3600000)+'h '+Math.floor((diff%3600000)/60000)+'m '+text('后重置','reset');return Math.floor(diff/86400000)+text('天 ','d ')+Math.floor((diff%86400000)/3600000)+'h '+text('后重置','reset');};
   const percentage=(account,label='')=>selection(account,label)?.percent??null;
-  const periodLabel=quota=>quota?.window==='5h'?'5h':quota?.window==='weekly'?text('周','week'):'';
+  const periodLabel=quota=>quota?.window==='5h'?'5h':quota?.window==='daily'?text('日','day'):quota?.window==='weekly'?text('周','week'):'';
   const quotaLabel=quota=>quota?[periodLabel(quota),quota.percent+'%'].filter(Boolean).join(' '):'—';
   const label=()=>{const button=document.querySelector('[data-testid="model-selector-trigger"]');return button?.querySelector('.agy-ms-trigger-custom-label')?.textContent||button?.innerText||button?.textContent||'';};
   const generating=()=>!!window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat||!!document.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]');

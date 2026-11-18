@@ -3,7 +3,7 @@
   window.__agySuiteCleanup?.();
   let disposed=false,settings=null,saving=false,queued={},pending={},saveTask=null,statusMessage='',statusError=false,poll,scheduled=false,returnFocus=null;
   const active={};
-  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],outline:['对话目录与导出','Conversation outline & export'],prompts:['提示词灵感库','Prompt vault & variables'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['中转 API Token 消耗','Relay API token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
+  const labels={skin:['Claude 皮肤','Claude theme'],i18n:['中文汉化','Chinese localization'],accounts:['多账号切换','Account switcher'],api:['API 中转切换','API model switcher'],outline:['对话目录与导出','Conversation outline & export'],prompts:['提示词灵感库','Prompt vault & variables'],sidePreview:['侧边万能文件预览','Universal side-panel preview'],guardian:['更新自愈守护（计划任务）','Update recovery (scheduled task)'],showQuota:['显示账号额度','Show account quota'],showUsage:['中转 API Token 消耗','Relay API token usage'],quotaReminder:['配额低水位提醒','Low quota reminders']};
   const text=(cn,en)=>settings?.i18n?cn:en;
   const style=document.createElement('style');style.id='agy-suite-style';
   document.querySelectorAll('.agy-suite-greeting,.agy-claude-hero-greeting,.agy-claude-starter-pills').forEach(el=>el.remove());
@@ -16,8 +16,8 @@
     if(settings&&JSON.stringify(settings)===JSON.stringify(next))return;
     const previous=settings;
     settings=next;window.__agySuiteSettings=settings;
-    for(const key of ['i18n','accounts','api','skin','outline','prompts']){
-      const enabled=(key==='outline'||key==='prompts')?next[key]!==false:Boolean(next[key]);
+    for(const key of ['i18n','accounts','api','skin','outline','prompts','sidePreview']){
+      const enabled=(key==='outline'||key==='prompts'||key==='sidePreview')?next[key]!==false:Boolean(next[key]);
       if(active[key]===enabled)continue;
       if(key==='api'&&!enabled&&window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)continue;
       if(enabled)window.__agySuiteModules[key]?.();
@@ -26,6 +26,7 @@
       else if(key==='skin') {window.__agyThemeSwitcherCleanup?.();delete window.__AGY_THEME_SWITCHER;}
       else if(key==='outline') window.__agyConvToolsCleanup?.();
       else if(key==='prompts') window.__agyPromptVaultCleanup?.();
+      else if(key==='sidePreview') window.__agySidePreviewCleanup?.();
       else {window.__AGY_MODEL_SWITCHER_CLEANUP?.();delete window.__AGY_MODEL_SWITCHER;}
       active[key]=enabled;
     }
@@ -81,7 +82,7 @@
     if(!center){center=document.createElement('section');center.id='agy-suite-center';center.setAttribute('data-ag-localization-skip','true');center.setAttribute('role','dialog');center.setAttribute('aria-modal','true');center.setAttribute('aria-labelledby','agy-suite-heading');anchor.prepend(center);rebuild=true;}
     else if(center.parentElement!==anchor)anchor.prepend(center);
     if(!rebuild&&center.dataset.locale===String(settings.i18n)){
-      for(const input of center.querySelectorAll('[data-setting]')){const key=input.dataset.setting,value=key in pending?pending[key]:settings[key];if(input.type==='checkbox')input.checked=(key==='outline'||key==='prompts')?value!==false:Boolean(value);else if(document.activeElement!==input)input.value=value??'';input.disabled=key in pending||(['themeMode','replyFont','replySize','readingWidth'].includes(key)&&!settings.skin);const waiting=String(key in pending);if(input.dataset.pending!==waiting)input.dataset.pending=waiting;}
+      for(const input of center.querySelectorAll('[data-setting]')){const key=input.dataset.setting,value=key in pending?pending[key]:settings[key];if(input.type==='checkbox')input.checked=(key==='outline'||key==='prompts'||key==='sidePreview')?value!==false:Boolean(value);else if(document.activeElement!==input)input.value=value??'';input.disabled=key in pending||(['themeMode','replyFont','replySize','readingWidth'].includes(key)&&!settings.skin);const waiting=String(key in pending);if(input.dataset.pending!==waiting)input.dataset.pending=waiting;}
       const status=center.querySelector('[role=status]'),message=statusMessage||text('设置自动保存到本机','Settings save automatically on this device');if(status.textContent!==message)status.textContent=message;status.dataset.error=String(statusError);return;
     }
     const focused=center.contains(document.activeElement)?document.activeElement.dataset.setting:null;
@@ -99,11 +100,11 @@
     const close=document.createElement('button');close.id='agy-suite-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',text('关闭','Close'));close.onclick=closeCenter;center.appendChild(close);
     const section=(title,classes)=>{const h=document.createElement('h3');h.textContent=title;const content=document.createElement('div');content.className=classes;center.append(h,content);return content;};
     const modules=section(text('功能模块','FEATURES'),'suite-grid'),appearance=section(text('外观设置','APPEARANCE'),'suite-form'),options=section(text('显示与后台','DISPLAY & BACKGROUND'),'suite-form');
-    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],outline:['右侧悬浮轮次导航、重点星标与纯净 Markdown 导出（Alt+O）','Floating turn outline, bookmarks & clean Markdown export (Alt+O)'],prompts:['输入框快捷调出 {{参数}} 提示词模板与实时填空（Alt+P）','Parameterized {{variable}} prompt templates & live fill-in (Alt+P)'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates'],showUsage:['仅统计中转 API，官方模型不计入','Relay API only; excludes official models']};
+    const descriptions={skin:['暖白与深色主题，自定义字体','Warm light and dark themes, custom typography'],i18n:['中文菜单与界面文案','Chinese menus and interface'],accounts:['切换账号，查看剩余额度','Switch accounts and view quota'],api:['接入自己的服务商与模型','Connect your providers and models'],outline:['右侧悬浮轮次导航、重点星标与纯净 Markdown 导出（Alt+O）','Floating turn outline, bookmarks & clean Markdown export (Alt+O)'],prompts:['输入框快捷调出 {{参数}} 提示词模板与实时填空（Alt+P）','Parameterized {{variable}} prompt templates & live fill-in (Alt+P)'],sidePreview:['侧边栏直接预览 PDF、Word/Excel/PPT、UTF-16、压缩包与 SQLite','Preview PDF, Word/Excel/PPT, UTF-16, ZIP & SQLite right in side panel'],guardian:['官方更新后自动恢复套件','Recover the suite after app updates'],showUsage:['仅统计中转 API，官方模型不计入','Relay API only; excludes official models']};
     for(const key of Object.keys(labels)){
       const row=document.createElement('label');row.className='suite-row';const label=document.createElement('span');label.textContent=labels[key][settings.i18n?0:1];
       if(descriptions[key]){const desc=document.createElement('small');desc.className='suite-description';desc.textContent=descriptions[key][settings.i18n?0:1];label.appendChild(desc);}
-      const input=document.createElement('input');input.type='checkbox';input.setAttribute('role','switch');input.setAttribute('aria-label',labels[key][settings.i18n?0:1]);input.dataset.setting=key;input.checked=(key==='outline'||key==='prompts')?settings[key]!==false:Boolean(settings[key]);input.onchange=()=>save({[key]:input.checked});row.append(label,input);if(['skin','i18n','accounts','api'].includes(key)){row.classList.add('suite-feature');modules.appendChild(row);}else options.appendChild(row);
+      const input=document.createElement('input');input.type='checkbox';input.setAttribute('role','switch');input.setAttribute('aria-label',labels[key][settings.i18n?0:1]);input.dataset.setting=key;input.checked=(key==='outline'||key==='prompts'||key==='sidePreview')?settings[key]!==false:Boolean(settings[key]);input.onchange=()=>save({[key]:input.checked});row.append(label,input);if(['skin','i18n','accounts','api'].includes(key)){row.classList.add('suite-feature');modules.appendChild(row);}else options.appendChild(row);
     }
     for(const [key,cn,en,options] of [['themeMode','切换皮肤（白天/黑夜/跟随系统）','Skin theme mode',[['light','☀️ 白天（羊皮纸浅色）','☀️ Light (Warm Parchment)'],['dark','🌙 黑夜（暖炭黑深色）','🌙 Dark (Warm Charcoal)'],['system','💻 跟随系统','💻 Follow System']]],['replyFont','AI 回复字体','Reply font',[['default','跟随主题','Follow theme'],['serif','书卷衬线体','Serif'],['sans','现代无衬线体','Sans serif']]],['replySize','字号','Reply size',[['small','小','Small'],['standard','标准','Standard'],['large','大','Large']]],['readingWidth','对话阅读宽度','Reading width',[['standard','标准书卷（51rem）','Standard (51rem)'],['wide','宽屏代码（68rem）','Wide (68rem)'],['full','全宽画布（92%）','Full width (92%)']]]]){
       const row=document.createElement('label');row.className='suite-row';row.appendChild(document.createTextNode(text(cn,en)));
@@ -121,5 +122,5 @@
   poll=setInterval(refresh,5000);refresh();
   document.addEventListener('keydown',onKey);
   window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter,isSaving:()=>saving};
-  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();window.__agyPinboardCleanup?.();window.__agyCommandPaletteCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
+  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();window.__agyPinboardCleanup?.();window.__agySidePreviewCleanup?.();window.__agyCommandPaletteCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
 })();

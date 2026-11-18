@@ -1,5 +1,5 @@
-import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import http from 'node:http';
-import {execFileSync,spawn} from 'node:child_process';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';import os from 'node:os';
+import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import http from 'node:http';import zlib from 'node:zlib';
+import {execFileSync,spawn} from 'node:child_process';import {createRequire} from 'node:module';import {fileURLToPath,pathToFileURL} from 'node:url';import os from 'node:os';
 const require=createRequire(import.meta.url),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const scratch=path.join(root,'artifacts');fs.mkdirSync(scratch,{recursive:true});const fixture=fs.mkdtempSync(path.join(scratch,'suite-regression-'));
 process.env.AGY_SUITE_SETTINGS_FILE=path.join(fixture,'suite.json');process.env.AGY_SUITE_PROMPTS_FILE=path.join(fixture,'prompts.json');process.env.AGY_SUITE_PINBOARD_FILE=path.join(fixture,'pinboard.json');process.env.AGY_SUITE_TEST='1';process.env.AGY_MODEL_DATA_DIR=path.join(fixture,'models');
@@ -41,6 +41,47 @@ try{
   check(pinnedList.length===1&&pinnedList[0].enabled===true,'pinboard persists cross-session context items to disk');
   const toggledPins=(await call('/api/suite/pinboard',{action:'toggle',id:'pin-arch',enabled:false})).data.pins;
   check(toggledPins[0].enabled===false&&(await call('/api/suite/pinboard',{action:'delete',id:'pin-arch'})).data.pins.length===0,'pinboard supports toggling and deleting items');
+  const buildZip=(files)=>{
+    const localParts=[],cdParts=[];let offset=0;
+    for(const [name,raw] of Object.entries(files)){
+      const nameBuf=Buffer.from(name,'utf8'),srcBuf=Buffer.isBuffer(raw)?raw:Buffer.from(String(raw),'utf8');
+      const comp=zlib.deflateRawSync(srcBuf);
+      const lh=Buffer.alloc(30);lh.writeUInt32LE(0x04034b50,0);lh.writeUInt16LE(20,4);lh.writeUInt16LE(0x0800,6);lh.writeUInt16LE(8,8);
+      lh.writeUInt32LE(comp.length,18);lh.writeUInt32LE(srcBuf.length,22);lh.writeUInt16LE(nameBuf.length,26);
+      localParts.push(lh,nameBuf,comp);
+      const cd=Buffer.alloc(46);cd.writeUInt32LE(0x02014b50,0);cd.writeUInt16LE(20,4);cd.writeUInt16LE(20,6);cd.writeUInt16LE(0x0800,8);cd.writeUInt16LE(8,10);
+      cd.writeUInt32LE(comp.length,20);cd.writeUInt32LE(srcBuf.length,24);cd.writeUInt16LE(nameBuf.length,28);cd.writeUInt32LE(offset,42);
+      cdParts.push(cd,nameBuf);offset+=30+nameBuf.length+comp.length;
+    }
+    const cdBuf=Buffer.concat(cdParts),eocd=Buffer.alloc(22);const count=Object.keys(files).length;
+    eocd.writeUInt32LE(0x06054b50,0);eocd.writeUInt16LE(count,8);eocd.writeUInt16LE(count,10);eocd.writeUInt32LE(cdBuf.length,12);eocd.writeUInt32LE(offset,16);
+    return Buffer.concat([...localParts,cdBuf,eocd]);
+  };
+  check((await call('/api/suite/file-preview?uri='+encodeURIComponent(path.join(fixture,'x.txt')),null,'https://evil.example')).status===403,'unrelated websites cannot read local file previews');
+  const secretEnv=path.join(fixture,'.env.production');fs.writeFileSync(secretEnv,'API_SECRET=123');
+  check((await call('/api/suite/file-preview?uri='+encodeURIComponent(secretEnv))).status===400,'sensitive credential and .env files are blocked from preview');
+  const utf16File=path.join(fixture,'中文日志-utf16.log');fs.writeFileSync(utf16File,'\uFEFF第一行：服务启动正常\nLine 2: UTF-16LE decoded','utf16le');
+  const utf16Res=(await call('/api/suite/file-preview?uri='+encodeURIComponent(pathToFileURL(utf16File).href+'#L2'))).data;
+  check(utf16Res.ok&&utf16Res.kind==='text'&&utf16Res.encoding==='UTF-16LE'&&utf16Res.content.includes('第一行：服务启动正常')&&utf16Res.lineRange?.start===2,'UTF-16LE files with NUL bytes decode cleanly instead of failing as binary');
+  const docxFile=path.join(fixture,'spec.docx');
+  fs.writeFileSync(docxFile,buildZip({'word/document.xml':'<w:document><w:body><w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>架构总览</w:t></w:r></w:p><w:p><w:r><w:t>零侵入设计说明</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:r><w:t>模块</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>状态</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>'}));
+  const docxRes=(await call('/api/suite/file-preview?uri='+encodeURIComponent(docxFile))).data;
+  check(docxRes.ok&&docxRes.kind==='docx'&&docxRes.blocks[0].type==='heading'&&docxRes.blocks[0].text==='架构总览'&&docxRes.blocks[2].type==='table'&&docxRes.blocks[2].rows[0][0]==='模块','DOCX parser extracts Word headings, paragraphs and tables without external dependencies');
+  const xlsxFile=path.join(fixture,'metrics.xlsx');
+  fs.writeFileSync(xlsxFile,buildZip({'xl/workbook.xml':'<workbook><sheets><sheet name="Latency" sheetId="1" r:id="rId1"/></sheets></workbook>','xl/sharedStrings.xml':'<sst><si><t>Node</t></si><si><t>Tokyo</t></si></sst>','xl/worksheets/sheet1.xml':'<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="inlineStr"><is><t>P95</t></is></c></row><row r="2"><c r="A2" t="s"><v>1</v></c><c r="C2"><v>128</v></c></row></sheetData></worksheet>'}));
+  const xlsxRes=(await call('/api/suite/file-preview?uri='+encodeURIComponent(xlsxFile))).data;
+  check(xlsxRes.ok&&xlsxRes.kind==='xlsx'&&xlsxRes.sheets[0].name==='Latency'&&xlsxRes.sheets[0].rows[1][0]==='Tokyo'&&xlsxRes.sheets[0].rows[1][1]===''&&xlsxRes.sheets[0].rows[1][2]==='128','XLSX parser resolves shared strings and preserves sparse column alignment');
+  const zipFile=path.join(fixture,'bundle.zip');fs.writeFileSync(zipFile,buildZip({'src/hello.txt':'Hello from archive'}));
+  const zipList=(await call('/api/suite/file-preview?uri='+encodeURIComponent(zipFile))).data;
+  const zipEntry=(await call('/api/suite/file-preview?uri='+encodeURIComponent(zipFile)+'&zipEntry='+encodeURIComponent('src/hello.txt'))).data;
+  check(zipList.kind==='archive'&&zipList.entries[0].name==='src/hello.txt'&&zipEntry.kind==='zip-entry'&&zipEntry.content==='Hello from archive','ZIP inspector lists entries and previews inner text files on demand');
+  const pdfFile=path.join(fixture,'sample.pdf');fs.writeFileSync(pdfFile,'%PDF-1.4\n1 0 obj << /Type /Page >> endobj\n%%EOF');
+  const pdfInspect=(await call('/api/suite/file-preview?uri='+encodeURIComponent(pdfFile))).data;
+  const pdfStream=await fetch(base+'/api/suite/file-preview?uri='+encodeURIComponent(pdfFile)+'&raw=1',{headers:{Range:'bytes=0-7'}});
+  check(pdfInspect.kind==='pdf'&&pdfInspect.pageCount===1&&pdfStream.status===206&&pdfStream.headers.get('content-type')==='application/pdf'&&(await pdfStream.text())==='%PDF-1.4','PDF preview endpoint reports page count and serves HTTP 206 byte-range streams');
+  const nbFile=path.join(fixture,'demo.ipynb');fs.writeFileSync(nbFile,JSON.stringify({metadata:{kernelspec:{language:'python'}},cells:[{cell_type:'markdown',source:['# Analysis']},{cell_type:'code',execution_count:1,source:['print(42)'],outputs:[{output_type:'stream',text:['42\n']}]}]}));
+  const nbRes=(await call('/api/suite/file-preview?uri='+encodeURIComponent(nbFile))).data;
+  check(nbRes.kind==='ipynb'&&nbRes.cells.length===2&&nbRes.cells[1].outputs[0].text.trim()==='42','Jupyter notebook parser extracts markdown, code cells and execution outputs');
   await call('/api/suite/settings',{showQuota:false});
   check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');
   check((await call('/api/suite/settings',{showQuota:'false'})).status===400,'quota display requires a boolean value');

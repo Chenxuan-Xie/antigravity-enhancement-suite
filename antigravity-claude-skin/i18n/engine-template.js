@@ -3859,6 +3859,9 @@ function buildRendererScript(dictJson, entriesJson) {
                     newVal = newVal.replace(/^(\\d+)\\s+pages?(\\s*[>›]?)\\s*$/i, (m, n, suffix) => n + " 个页面" + suffix);
                     newVal = newVal.replace(/^(?:ran|run|executed)\\s+(\\d+)\\s+commands?(\\s*[>›]?)\\s*$/i, (m, n, suffix) => "运行了 " + n + " 条命令" + (suffix || ""));
                     newVal = newVal.replace(/^(\\d+)\\s+commands?(\\s*[>›]?)\\s*$/i, (m, n, suffix) => n + " 条命令" + (suffix || ""));
+                    newVal = newVal.replace(/^Your Plan:\\s*(.+)$/i, (m, plan) => "当前套餐：" + plan);
+                    newVal = newVal.replace(/^Available AI Credits:\\s*(.+)$/i, (m, credits) => "可用 AI 额度：" + credits);
+                    newVal = newVal.replace(/^File exceeds the (\\d+MB) display limit \\((.+?)\\)\\.?$/i, (m, lim, sz) => "文件超出原生 " + lim + " 预览上限（" + sz + "）");
                 }
                 if (hasRecommended) {
                     newVal = '（推荐）' + newVal;

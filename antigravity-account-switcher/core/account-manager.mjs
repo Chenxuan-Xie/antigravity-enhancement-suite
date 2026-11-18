@@ -117,10 +117,14 @@ const OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/experimentsandconfigs",
 ].join(" ");
 
-const QUOTA_SUMMARY_ENDPOINTS = [
-  "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
-  "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+const CLOUDCODE_BASES = [
+  "https://daily-cloudcode-pa.googleapis.com",
+  "https://cloudcode-pa.googleapis.com",
 ];
+
+const QUOTA_SUMMARY_ENDPOINTS = CLOUDCODE_BASES.map(
+  (base) => `${base}/v1internal:retrieveUserQuotaSummary`
+);
 
 // Active OAuth Flow State
 let activeOAuthFlow = null;
@@ -486,6 +490,7 @@ export function getAccountsWithActiveSync() {
       hasRefreshToken: Boolean(acc.refresh_token),
       addedAt: acc.addedAt,
       lastActiveAt: acc.lastActiveAt,
+      planTier: acc.planTier || "",
       quotaSummary: acc.quotaSummary || null,
     };
   });
@@ -752,12 +757,224 @@ export function removeAccount(emailOrId) {
 }
 
 /**
+ * Infer quota window ("5h", "daily", "weekly") from explicit window string or resetTime delta.
+ */
+export function inferQuotaWindow(resetTime = "", explicitWindow = "", nowMs = Date.now()) {
+  const win = String(explicitWindow || "").trim().toLowerCase();
+  if (win === "5h" || /^5\s*h/i.test(win)) return "5h";
+  if (win === "daily" || win === "24h" || /^1\s*d/i.test(win)) return "daily";
+  if (win === "weekly" || win === "week" || /^7\s*d/i.test(win)) return "weekly";
+  const resetMs = Date.parse(resetTime || "");
+  if (Number.isFinite(resetMs)) {
+    const diffHours = (resetMs - nowMs) / 3600_000;
+    if (diffHours > 0 && diffHours <= 6.5) return "5h";
+    if (diffHours > 6.5 && diffHours <= 28) return "daily";
+    if (diffHours > 28) return "weekly";
+  }
+  return "5h";
+}
+
+/**
+ * Normalize per-model Gemini quota entries from `v1internal:retrieveUserQuota`
+ * (or fallback `v1internal:fetchAvailableModels`) into a clean primary Gemini quota group.
+ */
+export function buildGeminiQuotaGroup(quotaBuckets = [], availableModels = null, nowMs = Date.now()) {
+  const rawItems = [];
+  if (Array.isArray(quotaBuckets)) {
+    for (const b of quotaBuckets) {
+      const id = String(b?.modelId || b?.bucketId || "");
+      const name = String(b?.displayName || "");
+      if (!/gemini/i.test(id) && !/gemini/i.test(name)) continue;
+      if (typeof b?.remainingFraction !== "number" || !Number.isFinite(b.remainingFraction)) continue;
+      rawItems.push({
+        id,
+        name,
+        fraction: Math.max(0, Math.min(1, b.remainingFraction)),
+        resetTime: b.resetTime || "",
+        window: inferQuotaWindow(b.resetTime, b.window, nowMs),
+      });
+    }
+  }
+  if (rawItems.length === 0 && availableModels && typeof availableModels === "object") {
+    for (const [id, info] of Object.entries(availableModels)) {
+      const name = String(info?.displayName || "");
+      if (!/gemini/i.test(id) && !/gemini/i.test(name)) continue;
+      const qi = info?.quotaInfo;
+      if (typeof qi?.remainingFraction !== "number" || !Number.isFinite(qi.remainingFraction)) continue;
+      rawItems.push({
+        id,
+        name,
+        fraction: Math.max(0, Math.min(1, qi.remainingFraction)),
+        resetTime: qi.resetTime || "",
+        window: inferQuotaWindow(qi.resetTime, qi.window, nowMs),
+      });
+    }
+  }
+  if (rawItems.length === 0) return null;
+
+  const pickLowest = (items) => {
+    let best = null;
+    for (const item of items) {
+      const pct = Math.round(item.fraction * 100);
+      if (
+        !best ||
+        pct < best.remainingPercent ||
+        (pct === best.remainingPercent &&
+          item.resetTime &&
+          (!best.resetTime || Date.parse(item.resetTime) < Date.parse(best.resetTime)))
+      ) {
+        best = {
+          remainingPercent: pct,
+          window: item.window,
+          resetTime: item.resetTime,
+        };
+      }
+    }
+    return best;
+  };
+
+  const proItems = rawItems.filter((it) =>
+    /gemini-(?:4|3\.8)|pro|ultra|carbon|hydrogen/i.test(`${it.id} ${it.name}`) &&
+    !/flash-lite/i.test(`${it.id} ${it.name}`)
+  );
+  const flashItems = rawItems.filter((it) =>
+    /flash/i.test(`${it.id} ${it.name}`) && !proItems.includes(it)
+  );
+
+  const proBest = pickLowest(proItems);
+  const flashBest = pickLowest(flashItems);
+
+  // When Pro/4 and Flash share the same pool (within 1% & same window), emit a single clean Gemini bucket.
+  if (
+    proBest &&
+    flashBest &&
+    (Math.abs(proBest.remainingPercent - flashBest.remainingPercent) > 1 ||
+      proBest.window !== flashBest.window)
+  ) {
+    return {
+      displayName: "Gemini models",
+      buckets: [
+        {
+          bucketId: "gemini-pro",
+          displayName: "Gemini Pro/4",
+          window: proBest.window,
+          remainingPercent: proBest.remainingPercent,
+          resetTime: proBest.resetTime,
+        },
+        {
+          bucketId: "gemini-flash",
+          displayName: "Gemini Flash",
+          window: flashBest.window,
+          remainingPercent: flashBest.remainingPercent,
+          resetTime: flashBest.resetTime,
+        },
+      ],
+    };
+  }
+
+  const unified = pickLowest(rawItems);
+  if (!unified) return null;
+  return {
+    displayName: "Gemini models",
+    buckets: [
+      {
+        bucketId: "gemini-primary",
+        displayName: "Gemini",
+        window: unified.window,
+        remainingPercent: unified.remainingPercent,
+        resetTime: unified.resetTime,
+      },
+    ],
+  };
+}
+
+/**
+ * Merge server-returned quota summary groups with the normalized Gemini group,
+ * always ordering Gemini groups first because Gemini is the primary model family.
+ */
+export function mergeQuotaGroups(summaryGroups = [], geminiGroup = null) {
+  const normalized = (Array.isArray(summaryGroups) ? summaryGroups : []).map((g) => ({
+    displayName: g.displayName || "",
+    buckets: (g.buckets || []).map((b) => ({
+      bucketId: b.bucketId || "",
+      displayName: b.displayName || "",
+      window: inferQuotaWindow(b.resetTime, b.window),
+      remainingPercent:
+        typeof b.remainingPercent === "number"
+          ? b.remainingPercent
+          : typeof b.remainingFraction === "number"
+          ? Math.round(b.remainingFraction * 100)
+          : null,
+      resetTime: b.resetTime || "",
+    })),
+  }));
+
+  const hasGeminiGroup = normalized.some(
+    (g) => /gemini/i.test(g.displayName) && Array.isArray(g.buckets) && g.buckets.length > 0
+  );
+  if (geminiGroup && !hasGeminiGroup) {
+    normalized.unshift(geminiGroup);
+  }
+  return normalized.sort((a, b) => {
+    const aGem = /gemini/i.test(a.displayName) ? 0 : 1;
+    const bGem = /gemini/i.test(b.displayName) ? 0 : 1;
+    return aGem - bGem;
+  });
+}
+
+/**
+ * Resolve CloudCode companion project & subscription tier via loadCodeAssist.
+ * Accounts without a pre-bound default project require `project` in quota RPC bodies.
+ */
+async function resolveCloudCodeContext(account) {
+  if (!account?.access_token) return { project: "", planTier: "" };
+  for (const base of CLOUDCODE_BASES) {
+    try {
+      const res = await httpsRequestJson(`${base}/v1internal:loadCodeAssist`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${account.access_token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "antigravity/1.104.0 win32/x64",
+        },
+        body: JSON.stringify({
+          metadata: {
+            ideType: "ANTIGRAVITY",
+            platform: "PLATFORM_UNSPECIFIED",
+            pluginType: "GEMINI",
+          },
+        }),
+        timeoutMs: 8000,
+      });
+      if (res.status === 200 && res.json) {
+        const rawProj = res.json.cloudaicompanionProject;
+        const project =
+          typeof rawProj === "string"
+            ? rawProj
+            : typeof rawProj?.id === "string"
+            ? rawProj.id
+            : account.cloudCodeProject || "";
+        const planTier =
+          res.json.paidTier?.name ||
+          res.json.currentTier?.description ||
+          res.json.currentTier?.name ||
+          "";
+        return { project, planTier, base };
+      }
+    } catch {}
+  }
+  return { project: account.cloudCodeProject || "", planTier: account.planTier || "", base: CLOUDCODE_BASES[0] };
+}
+
+/**
  * Check whether an account is licensed for Antigravity before switching.
  * Only an explicit 403 license response blocks the switch; a network failure
  * stays non-blocking so a temporary outage does not make accounts unusable.
  */
 export async function checkAccountLicense(account) {
   if (!account?.access_token) return { ok: true, unknown: true };
+  const ctx = await resolveCloudCodeContext(account);
+  const reqBody = JSON.stringify(ctx.project ? { project: ctx.project } : {});
   for (const endpoint of QUOTA_SUMMARY_ENDPOINTS) {
     try {
       const res = await httpsRequestJson(endpoint, {
@@ -765,8 +982,9 @@ export async function checkAccountLicense(account) {
         headers: {
           Authorization: `Bearer ${account.access_token}`,
           "Content-Type": "application/json",
+          "User-Agent": "antigravity/1.104.0 win32/x64",
         },
-        body: JSON.stringify({}),
+        body: reqBody,
         timeoutMs: 8000,
       });
       if (res.status === 200) return { ok: true };
@@ -782,7 +1000,7 @@ export async function checkAccountLicense(account) {
 }
 
 /**
- * Fetch quota summary for an account (non-blocking helper)
+ * Fetch quota summary (including live 1P Gemini + 3P Claude/GPT quotas) for an account
  */
 export async function refreshAccountQuota(emailOrId) {
   const store = loadAccountsStore();
@@ -816,39 +1034,82 @@ export async function refreshAccountQuota(emailOrId) {
     } catch {}
   }
 
-  for (const endpoint of QUOTA_SUMMARY_ENDPOINTS) {
-    try {
-      const res = await httpsRequestJson(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${target.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-        timeoutMs: 8000,
-      });
-      if (res.status === 200 && res.json && Array.isArray(res.json.groups)) {
-        const groups = res.json.groups.map((g) => ({
-          displayName: g.displayName || "",
-          buckets: (g.buckets || []).map((b) => ({
-            bucketId: b.bucketId || "",
-            displayName: b.displayName || "",
-            window: b.window || "",
-            remainingPercent:
-              typeof b.remainingFraction === "number"
-                ? Math.round(b.remainingFraction * 100)
-                : null,
-            resetTime: b.resetTime || "",
-          })),
-        }));
-        target.quotaSummary = {
-          groups,
-          updatedAt: new Date().toISOString(),
-        };
-        saveAccountsStore(store);
-        return target.quotaSummary;
-      }
-    } catch {}
+  const ctx = await resolveCloudCodeContext(target);
+  if (ctx.project) target.cloudCodeProject = ctx.project;
+  if (ctx.planTier) target.planTier = ctx.planTier;
+  const payload = JSON.stringify(ctx.project ? { project: ctx.project } : {});
+  const reqHeaders = {
+    Authorization: `Bearer ${target.access_token}`,
+    "Content-Type": "application/json",
+    "User-Agent": "antigravity/1.104.0 win32/x64",
+  };
+
+  let summaryGroups = null;
+  let geminiGroup = null;
+
+  for (const base of CLOUDCODE_BASES) {
+    const [summarySettled, userQuotaSettled] = await Promise.allSettled([
+      summaryGroups === null
+        ? httpsRequestJson(`${base}/v1internal:retrieveUserQuotaSummary`, {
+            method: "POST",
+            headers: reqHeaders,
+            body: payload,
+            timeoutMs: 8000,
+          })
+        : Promise.resolve(null),
+      geminiGroup === null
+        ? httpsRequestJson(`${base}/v1internal:retrieveUserQuota`, {
+            method: "POST",
+            headers: reqHeaders,
+            body: payload,
+            timeoutMs: 8000,
+          })
+        : Promise.resolve(null),
+    ]);
+
+    if (
+      summaryGroups === null &&
+      summarySettled.status === "fulfilled" &&
+      summarySettled.value?.status === 200 &&
+      Array.isArray(summarySettled.value.json?.groups)
+    ) {
+      summaryGroups = summarySettled.value.json.groups;
+    }
+
+    if (
+      geminiGroup === null &&
+      userQuotaSettled.status === "fulfilled" &&
+      userQuotaSettled.value?.status === 200 &&
+      Array.isArray(userQuotaSettled.value.json?.buckets)
+    ) {
+      geminiGroup = buildGeminiQuotaGroup(userQuotaSettled.value.json.buckets, null);
+    }
+
+    if (geminiGroup === null) {
+      try {
+        const modelsRes = await httpsRequestJson(`${base}/v1internal:fetchAvailableModels`, {
+          method: "POST",
+          headers: reqHeaders,
+          body: payload,
+          timeoutMs: 8000,
+        });
+        if (modelsRes.status === 200 && modelsRes.json?.models) {
+          geminiGroup = buildGeminiQuotaGroup([], modelsRes.json.models);
+        }
+      } catch {}
+    }
+
+    if (summaryGroups !== null && geminiGroup !== null) break;
+  }
+
+  if (summaryGroups !== null || geminiGroup !== null) {
+    const groups = mergeQuotaGroups(summaryGroups || [], geminiGroup);
+    target.quotaSummary = {
+      groups,
+      updatedAt: new Date().toISOString(),
+    };
+    saveAccountsStore(store);
+    return target.quotaSummary;
   }
   return null;
 }
