@@ -260,10 +260,15 @@
     }
     .agy-as-quotas {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 7px;
       padding-top: 7px;
       border-top: 1px solid rgba(20, 20, 19, 0.07);
+    }
+    @media (max-width: 480px) {
+      .agy-as-quotas {
+        grid-template-columns: 1fr;
+      }
     }
     .dark .agy-as-quotas, [data-theme="dark"] .agy-as-quotas, .theme-dark .agy-as-quotas {
       border-top-color: rgba(236, 233, 226, 0.09);
@@ -513,10 +518,14 @@
         const bGem = /gemini/i.test(b.displayName) ? 0 : 1;
         return aGem - bGem;
       });
+      const windowRank = (w) => (w === "weekly" ? 0 : w === "daily" ? 1 : w === "5h" ? 2 : 3);
       const cells = [];
       for (const g of orderedGroups) {
         const isGemini = /gemini/i.test(g.displayName);
-        for (const b of g.buckets || []) {
+        const orderedBuckets = [...(g.buckets || [])].sort(
+          (a, b) => windowRank(a.window) - windowRank(b.window)
+        );
+        for (const b of orderedBuckets) {
           if (typeof b.remainingPercent !== "number") continue;
           const baseName = isGemini
             ? /^gemini\s+(pro|flash)/i.test(b.displayName || "")
@@ -557,8 +566,16 @@
         return;
       }
 
+      let anchorEmail = "";
+      if (accounts.every((a) => !a.isCurrent)) {
+        const anchorText = findAccountSettingsAnchor()?.textContent || "";
+        const m = anchorText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        if (m) anchorEmail = m[0].toLowerCase();
+      }
+
       listEl.innerHTML = accounts
         .map((acc) => {
+          const isCurrent = Boolean(acc.isCurrent) || (Boolean(anchorEmail) && String(acc.email || "").toLowerCase() === anchorEmail);
           const init = (acc.name || acc.email || "U").trim().charAt(0).toUpperCase();
           const avatar = acc.picture
             ? `<img src="${escapeHtml(acc.picture)}" alt="" referrerpolicy="no-referrer" />`
@@ -572,13 +589,13 @@
             ? `<span class="agy-as-tier">${escapeHtml(formattedTier)}</span>`
             : "";
 
-          const right = acc.isCurrent
+          const right = isCurrent
             ? `<span class="agy-as-badge-active">● 当前使用中</span>`
             : `<button type="button" class="agy-as-btn agy-as-btn-primary" data-switch="${escapeHtml(acc.email)}">点击切换</button>
                <button type="button" class="agy-as-btn" data-remove="${escapeHtml(acc.email)}" title="从列表移除">✕</button>`;
 
           return `
-            <div class="agy-as-card ${acc.isCurrent ? "current" : "switchable"}" data-card-email="${escapeHtml(acc.email)}" data-current="${acc.isCurrent}">
+            <div class="agy-as-card ${isCurrent ? "current" : "switchable"}" data-card-email="${escapeHtml(acc.email)}" data-current="${isCurrent}">
               <div class="agy-as-card-top">
                 <div class="agy-as-user">
                   <div class="agy-as-avatar">${avatar}</div>
@@ -658,11 +675,13 @@
         const d = await apiRequest("/api/accounts", null, 5);
         if (d.ok && Array.isArray(d.accounts)) {
           renderList(d.accounts);
-          const missingGemini = d.accounts.some(
-            (a) =>
-              a.hasRefreshToken &&
-              !(a.quotaSummary?.groups || []).some((g) => /gemini/i.test(g.displayName))
-          );
+          const missingGemini = d.accounts.some((a) => {
+            if (!a.hasRefreshToken) return false;
+            const groups = a.quotaSummary?.groups || [];
+            const gemGroup = groups.find((g) => /gemini/i.test(g.displayName));
+            if (!gemGroup) return true;
+            return (gemGroup.buckets || []).some((b) => b.bucketId === "gemini-primary");
+          });
           if (missingGemini && Date.now() - autoQuotaSyncAt > 60_000) {
             autoQuotaSyncAt = Date.now();
             apiRequest("/api/accounts/quota", {})

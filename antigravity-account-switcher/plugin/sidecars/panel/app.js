@@ -47,10 +47,14 @@ function renderQuotaSummary(quotaSummary) {
     const bGem = /gemini/i.test(b.displayName) ? 0 : 1;
     return aGem - bGem;
   });
+  const windowRank = (w) => (w === "weekly" ? 0 : w === "daily" ? 1 : w === "5h" ? 2 : 3);
   const items = [];
   for (const g of orderedGroups) {
     const isGemini = /gemini/i.test(g.displayName);
-    for (const b of g.buckets || []) {
+    const orderedBuckets = [...(g.buckets || [])].sort(
+      (a, b) => windowRank(a.window) - windowRank(b.window)
+    );
+    for (const b of orderedBuckets) {
       if (typeof b.remainingPercent !== "number") continue;
       const prefix = isGemini
         ? /^gemini\s+(pro|flash)/i.test(b.displayName || "")

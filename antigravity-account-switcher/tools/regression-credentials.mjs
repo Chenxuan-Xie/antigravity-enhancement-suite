@@ -13,6 +13,7 @@ const {
   credentialTargets,
   credentialScopeForAccount,
   oauthAudienceForAccount,
+  getAntigravityClientUserAgent,
   inferQuotaWindow,
   buildGeminiQuotaGroup,
   mergeQuotaGroups,
@@ -88,5 +89,29 @@ assert.equal(mergedGroups.length, 2);
 assert.equal(mergedGroups[0].displayName, 'Gemini models');
 assert.equal(mergedGroups[1].displayName, 'Claude and GPT models');
 
+assert.match(getAntigravityClientUserAgent(), /^antigravity\/\d+\.\d+/);
+const summaryWithDualGemini = mergeQuotaGroups([
+  {
+    displayName: 'Claude and GPT models',
+    buckets: [
+      { bucketId: '3p-5h', window: '5h', remainingFraction: 1 },
+      { bucketId: '3p-weekly', window: 'weekly', remainingFraction: 1 },
+    ],
+  },
+  {
+    displayName: 'Gemini Models',
+    buckets: [
+      { bucketId: 'gemini-5h', window: '5h', remainingFraction: 0.8 },
+      { bucketId: 'gemini-weekly', window: 'weekly', remainingFraction: 0.84 },
+    ],
+  },
+]);
+assert.equal(summaryWithDualGemini[0].displayName, 'Gemini Models');
+assert.equal(summaryWithDualGemini[0].buckets[0].bucketId, 'gemini-weekly');
+assert.equal(summaryWithDualGemini[0].buckets[0].remainingPercent, 84);
+assert.equal(summaryWithDualGemini[0].buckets[1].bucketId, 'gemini-5h');
+assert.equal(summaryWithDualGemini[0].buckets[1].remainingPercent, 80);
+assert.equal(summaryWithDualGemini[1].buckets[0].bucketId, '3p-weekly');
+
 fs.rmSync(root, { recursive: true, force: true });
-console.log('11 credential & Gemini quota checks passed.');
+console.log('13 credential & Gemini weekly/5h quota checks passed.');

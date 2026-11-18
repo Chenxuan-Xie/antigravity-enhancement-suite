@@ -53,6 +53,24 @@ const requireCjs = createRequire(import.meta.url);
 
 // Dynamically resolve OAuth 2.0 Client Config from env or local Antigravity installation (zero hardcoded secrets in repo)
 let cachedOAuthClients = null;
+let cachedClientUserAgent = "";
+
+export function getAntigravityClientUserAgent() {
+  if (cachedClientUserAgent) return cachedClientUserAgent;
+  let version = "2.32.1";
+  try {
+    const { resolveResourcesDir } = requireCjs("../../antigravity-claude-skin/tools/agy-paths.cjs");
+    const { readAsarPackageJson } = requireCjs("../../antigravity-claude-skin/tools/install-core.js");
+    const pkg = readAsarPackageJson(path.join(resolveResourcesDir(), "app.asar"));
+    if (pkg?.version && /^\d+\.\d+/.test(String(pkg.version))) {
+      version = String(pkg.version).trim();
+    }
+  } catch {}
+  const plat = process.platform === "win32" ? "windows" : process.platform;
+  const arch = process.arch === "x64" ? "amd64" : process.arch;
+  cachedClientUserAgent = `antigravity/${version} ${plat}/${arch}`;
+  return cachedClientUserAgent;
+}
 
 function readOfficialOAuthClients() {
   if (cachedOAuthClients) return cachedOAuthClients;
@@ -433,6 +451,7 @@ export function getAccountsWithActiveSync() {
 
   if (sysCred && sysCred.email && sysCred.refresh_token) {
     currentEmail = sysCred.email.toLowerCase();
+    store.lastCurrentEmail = sysCred.email;
     const existingIdx = store.accounts.findIndex(
       (a) => a.email && a.email.toLowerCase() === currentEmail
     );
@@ -467,6 +486,8 @@ export function getAccountsWithActiveSync() {
       });
     }
     saveAccountsStore(store);
+  } else if (store.lastCurrentEmail) {
+    currentEmail = String(store.lastCurrentEmail).toLowerCase();
   }
 
   const sanitizedAccounts = store.accounts.map((acc) => {
@@ -893,21 +914,28 @@ export function buildGeminiQuotaGroup(quotaBuckets = [], availableModels = null,
  * always ordering Gemini groups first because Gemini is the primary model family.
  */
 export function mergeQuotaGroups(summaryGroups = [], geminiGroup = null) {
-  const normalized = (Array.isArray(summaryGroups) ? summaryGroups : []).map((g) => ({
-    displayName: g.displayName || "",
-    buckets: (g.buckets || []).map((b) => ({
-      bucketId: b.bucketId || "",
-      displayName: b.displayName || "",
-      window: inferQuotaWindow(b.resetTime, b.window),
-      remainingPercent:
-        typeof b.remainingPercent === "number"
-          ? b.remainingPercent
-          : typeof b.remainingFraction === "number"
-          ? Math.round(b.remainingFraction * 100)
-          : null,
-      resetTime: b.resetTime || "",
-    })),
-  }));
+  const windowRank = (w) => (w === "weekly" ? 0 : w === "daily" ? 1 : w === "5h" ? 2 : 3);
+  const normalized = (Array.isArray(summaryGroups) ? summaryGroups : []).map((g) => {
+    const buckets = (g.buckets || [])
+      .filter((b) => !b?.disabled)
+      .map((b) => ({
+        bucketId: b.bucketId || "",
+        displayName: b.displayName || "",
+        window: inferQuotaWindow(b.resetTime, b.window),
+        remainingPercent:
+          typeof b.remainingPercent === "number"
+            ? b.remainingPercent
+            : typeof b.remainingFraction === "number"
+            ? Math.round(b.remainingFraction * 100)
+            : null,
+        resetTime: b.resetTime || "",
+      }))
+      .sort((a, b) => windowRank(a.window) - windowRank(b.window));
+    return {
+      displayName: g.displayName || "",
+      buckets,
+    };
+  });
 
   const hasGeminiGroup = normalized.some(
     (g) => /gemini/i.test(g.displayName) && Array.isArray(g.buckets) && g.buckets.length > 0
@@ -928,6 +956,7 @@ export function mergeQuotaGroups(summaryGroups = [], geminiGroup = null) {
  */
 async function resolveCloudCodeContext(account) {
   if (!account?.access_token) return { project: "", planTier: "" };
+  const ua = getAntigravityClientUserAgent();
   for (const base of CLOUDCODE_BASES) {
     try {
       const res = await httpsRequestJson(`${base}/v1internal:loadCodeAssist`, {
@@ -935,7 +964,7 @@ async function resolveCloudCodeContext(account) {
         headers: {
           Authorization: `Bearer ${account.access_token}`,
           "Content-Type": "application/json",
-          "User-Agent": "antigravity/1.104.0 win32/x64",
+          "User-Agent": ua,
         },
         body: JSON.stringify({
           metadata: {
@@ -975,6 +1004,7 @@ export async function checkAccountLicense(account) {
   if (!account?.access_token) return { ok: true, unknown: true };
   const ctx = await resolveCloudCodeContext(account);
   const reqBody = JSON.stringify(ctx.project ? { project: ctx.project } : {});
+  const ua = getAntigravityClientUserAgent();
   for (const endpoint of QUOTA_SUMMARY_ENDPOINTS) {
     try {
       const res = await httpsRequestJson(endpoint, {
@@ -982,7 +1012,7 @@ export async function checkAccountLicense(account) {
         headers: {
           Authorization: `Bearer ${account.access_token}`,
           "Content-Type": "application/json",
-          "User-Agent": "antigravity/1.104.0 win32/x64",
+          "User-Agent": ua,
         },
         body: reqBody,
         timeoutMs: 8000,
@@ -1000,7 +1030,7 @@ export async function checkAccountLicense(account) {
 }
 
 /**
- * Fetch quota summary (including live 1P Gemini + 3P Claude/GPT quotas) for an account
+ * Fetch quota summary (including live 1P Gemini weekly + 5h and 3P Claude/GPT weekly + 5h quotas)
  */
 export async function refreshAccountQuota(emailOrId) {
   const store = loadAccountsStore();
@@ -1041,48 +1071,42 @@ export async function refreshAccountQuota(emailOrId) {
   const reqHeaders = {
     Authorization: `Bearer ${target.access_token}`,
     "Content-Type": "application/json",
-    "User-Agent": "antigravity/1.104.0 win32/x64",
+    "User-Agent": getAntigravityClientUserAgent(),
   };
 
   let summaryGroups = null;
   let geminiGroup = null;
 
   for (const base of CLOUDCODE_BASES) {
-    const [summarySettled, userQuotaSettled] = await Promise.allSettled([
-      summaryGroups === null
-        ? httpsRequestJson(`${base}/v1internal:retrieveUserQuotaSummary`, {
-            method: "POST",
-            headers: reqHeaders,
-            body: payload,
-            timeoutMs: 8000,
-          })
-        : Promise.resolve(null),
-      geminiGroup === null
-        ? httpsRequestJson(`${base}/v1internal:retrieveUserQuota`, {
-            method: "POST",
-            headers: reqHeaders,
-            body: payload,
-            timeoutMs: 8000,
-          })
-        : Promise.resolve(null),
-    ]);
+    try {
+      const summaryRes = await httpsRequestJson(`${base}/v1internal:retrieveUserQuotaSummary`, {
+        method: "POST",
+        headers: reqHeaders,
+        body: payload,
+        timeoutMs: 8000,
+      });
+      if (summaryRes.status === 200 && Array.isArray(summaryRes.json?.groups)) {
+        summaryGroups = summaryRes.json.groups;
+        const summaryHasGemini = summaryGroups.some(
+          (g) => /gemini/i.test(g.displayName) && Array.isArray(g.buckets) && g.buckets.length > 0
+        );
+        if (summaryHasGemini) break;
+      }
+    } catch {}
 
-    if (
-      summaryGroups === null &&
-      summarySettled.status === "fulfilled" &&
-      summarySettled.value?.status === 200 &&
-      Array.isArray(summarySettled.value.json?.groups)
-    ) {
-      summaryGroups = summarySettled.value.json.groups;
-    }
-
-    if (
-      geminiGroup === null &&
-      userQuotaSettled.status === "fulfilled" &&
-      userQuotaSettled.value?.status === 200 &&
-      Array.isArray(userQuotaSettled.value.json?.buckets)
-    ) {
-      geminiGroup = buildGeminiQuotaGroup(userQuotaSettled.value.json.buckets, null);
+    // Fallback to per-model quota endpoints only if summary omitted Gemini
+    if (geminiGroup === null) {
+      try {
+        const uqRes = await httpsRequestJson(`${base}/v1internal:retrieveUserQuota`, {
+          method: "POST",
+          headers: reqHeaders,
+          body: payload,
+          timeoutMs: 8000,
+        });
+        if (uqRes.status === 200 && Array.isArray(uqRes.json?.buckets)) {
+          geminiGroup = buildGeminiQuotaGroup(uqRes.json.buckets, null);
+        }
+      } catch {}
     }
 
     if (geminiGroup === null) {
