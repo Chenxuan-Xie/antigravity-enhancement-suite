@@ -2,7 +2,7 @@ import fs from 'node:fs';import path from 'node:path';import assert from 'node:a
 import {execFileSync,spawn} from 'node:child_process';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';import os from 'node:os';
 const require=createRequire(import.meta.url),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const scratch=path.join(root,'artifacts');fs.mkdirSync(scratch,{recursive:true});const fixture=fs.mkdtempSync(path.join(scratch,'suite-regression-'));
-process.env.AGY_SUITE_SETTINGS_FILE=path.join(fixture,'suite.json');process.env.AGY_SUITE_TEST='1';process.env.AGY_MODEL_DATA_DIR=path.join(fixture,'models');
+process.env.AGY_SUITE_SETTINGS_FILE=path.join(fixture,'suite.json');process.env.AGY_SUITE_PROMPTS_FILE=path.join(fixture,'prompts.json');process.env.AGY_SUITE_TEST='1';process.env.AGY_MODEL_DATA_DIR=path.join(fixture,'models');
 const settings=require('../settings.cjs'),store=await import('../../antigravity-model-switcher/core/model-store.mjs');
 const {createUsageAccumulator,normalizeUsage}=await import('../../antigravity-model-switcher/core/usage.mjs');
 const {handleSuiteApi}=await import('../api.mjs');const {handleModelApiRequest}=await import('../../antigravity-model-switcher/core/api-handler.mjs');
@@ -27,6 +27,13 @@ try{
   await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large',readingWidth:'wide',outline:false});
   check(settings.readSettings().replySize==='large'&&settings.readSettings().readingWidth==='wide'&&settings.readSettings().outline===false,'appearance, reading width and outline settings persist');
   check((await call('/api/suite/settings',{readingWidth:'invalid'})).status===400,'invalid reading width is rejected');
+  check((await call('/api/suite/prompts',null,'https://evil.example')).status===403,'unrelated websites cannot read or mutate prompt vault');
+  const initialPrompts=(await call('/api/suite/prompts')).data.prompts;
+  check(initialPrompts.length===6&&initialPrompts.some(p=>p.id==='builtin-root-cause'),'prompt vault seeds curated parameterized templates');
+  const savedPrompts=(await call('/api/suite/prompts',{action:'upsert',prompt:{title:'Custom Benchmark',category:'优化',pinned:true,content:'Check {{target}} under {{budget:10ms}}'}})).data.prompts;
+  check(savedPrompts.some(p=>p.title==='Custom Benchmark'),'custom parameterized prompt persists to disk');
+  const afterDelete=(await call('/api/suite/prompts',{action:'delete',id:'builtin-root-cause'})).data.prompts;
+  check(!afterDelete.some(p=>p.id==='builtin-root-cause')&&!(await call('/api/suite/prompts')).data.prompts.some(p=>p.id==='builtin-root-cause'),'deleted built-in prompt stays deleted across reads');
   await call('/api/suite/settings',{showQuota:false});
   check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');
   check((await call('/api/suite/settings',{showQuota:'false'})).status===400,'quota display requires a boolean value');

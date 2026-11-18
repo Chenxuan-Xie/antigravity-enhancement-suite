@@ -264,6 +264,10 @@ function buildI18nBundle() {
   if (fs.existsSync(convToolsPath)) {
     js += '\nwindow.__agySuiteModules.outline=function(){\n' + fs.readFileSync(convToolsPath, 'utf8') + '\n};';
   }
+  const promptVaultPath = path.join(skinRoot, '..', 'suite', 'prompt-vault.js');
+  if (fs.existsSync(promptVaultPath)) {
+    js += '\nwindow.__agySuiteModules.prompts=function(){\n' + fs.readFileSync(promptVaultPath, 'utf8') + '\n};';
+  }
   js += fs.readFileSync(path.join(skinRoot,'..','suite','control-center.js'),'utf8');
   const bundleId = crypto.createHash('sha256').update(js).digest('hex');
   js = `(()=>{if(window.__agyRendererBundleId===${JSON.stringify(bundleId)}&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;\n${js}\nwindow.__agyRendererBundleId=${JSON.stringify(bundleId)};})();`;

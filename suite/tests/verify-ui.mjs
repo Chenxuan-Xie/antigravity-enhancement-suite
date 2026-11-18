@@ -7,7 +7,8 @@ try{
   const storage=()=>{const values=new Map();return {getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),clear:()=>values.clear(),key:index=>[...values.keys()][index]||null,get length(){return values.size;}};};
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
-  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
+  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,prompts:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
+  let vaultPrompts=[{id:'tpl-1',title:'Audit Module',category:'Engineering',pinned:true,content:'Audit {{module}} with constraint {{limit:zero-regression}}.'}];
   let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[];
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
@@ -21,6 +22,7 @@ try{
   w.fetch=async(url,options={})=>{
     const value=String(url),body=JSON.parse(options.body||'{}');let payload={ok:true};
     if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}else if(holdInitial)await new Promise(resolve=>{releaseInitial=resolve;});payload.settings=settings;}
+    else if(value.includes('/api/suite/prompts')){if(options.method==='POST'){if(body.action==='upsert'){const item={id:body.prompt.id||'tpl-new',...body.prompt};vaultPrompts=[item,...vaultPrompts.filter(p=>p.id!==item.id)];}else if(body.action==='delete')vaultPrompts=vaultPrompts.filter(p=>p.id!==body.id);}payload.prompts=vaultPrompts;}
     else if(value.includes('/api/models/discover')){discoverCalls++;payload.models=['model-a','model-b','model-c'];payload.endpointUrl='https://fixture.test/v1/models';}
     else if(value.includes('/api/models/import')){imported=body;payload.state={models:[],activeMode:'official',providers};}
     else if(value.includes('/api/models'))payload={ok:true,models:[],providers,activeMode:'official',bridge:{conversationId:new URL(value).searchParams.get('conversationId')||'auto',exchanges:usageExchanges,officialTurnCount:0,customExchangeCount:usageExchanges.length}};
@@ -35,7 +37,7 @@ try{
     assert(d.querySelector('#agy-suite-sidebar-button')&&!d.querySelector('#agy-suite-center'),'suite is accessible from the sidebar without adding content to native settings');
     d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
     assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
-    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===9,'four modules and independent outline, quota, usage, reminders and recovery switches are accessible');
+    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===10,'four modules and independent outline, prompt vault, quota, usage, reminders and recovery switches are accessible');
     assert(d.querySelectorAll('.suite-feature').length===4&&d.querySelectorAll('#agy-suite-center h3').length===3,'control center groups feature cards, appearance and background preferences');
     d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     assert(!d.querySelector('#agy-suite-center')&&d.activeElement.id==='agy-suite-sidebar-button','Escape closes the dialog and restores focus to the sidebar');
@@ -63,6 +65,18 @@ try{
     await w.__agySuite.save({outline:false});await pause(40);
     assert(!d.querySelector('#agy-outline-pill')&&!d.querySelector('#agy-outline-drawer')&&!w.__agyConvTools,'disabling outline immediately removes floating pill and drawer');
     await w.__agySuite.save({outline:true});await pause(40);
+    assert(d.querySelector('#agy-prompt-vault-trigger'),'prompt vault quick trigger mounts on composer');
+    d.querySelector('#agy-prompt-vault-trigger').click();await pause(50);
+    const varInput=d.querySelector('#agy-prompt-vault [data-prompt-var="module"]');
+    assert(varInput&&d.querySelector('#agy-pv-preview').textContent.includes('zero-regression'),'prompt vault renders {{variable}} inputs and applies default values in live preview');
+    varInput.value='auth-router';varInput.dispatchEvent(new w.Event('input'));
+    assert(d.querySelector('#agy-pv-preview').textContent==='Audit auth-router with constraint zero-regression.','typing a variable updates the composed prompt preview live');
+    d.querySelector('#agy-pv-insert').click();
+    assert(!d.querySelector('#agy-prompt-vault-backdrop')&&editor.textContent==='Audit auth-router with constraint zero-regression.','inserting a composed prompt fills the Lexical composer and closes the modal');
+    editor.textContent='';
+    await w.__agySuite.save({prompts:false});await pause(40);
+    assert(!d.querySelector('#agy-prompt-vault-trigger')&&!w.__agyPromptVault,'disabling prompt vault removes its composer trigger immediately');
+    await w.__agySuite.save({prompts:true});await pause(40);
     assert(w.getComputedStyle(d.querySelector('.bg-sidebar')).backgroundColor==='rgb(240, 238, 230)','light mode inset sidebar uses warm parchment beige instead of white');
     assert(!d.querySelector('.agy-suite-greeting')&&!d.querySelector('[data-setting="greetingName"]'),'redundant suite greeting and greeting name input are removed');
     assert(w.getComputedStyle(d.querySelector('[data-testid="planner-response-text"]')).fontFamily.includes('system-ui'),'reply font follows the selected sans serif style');

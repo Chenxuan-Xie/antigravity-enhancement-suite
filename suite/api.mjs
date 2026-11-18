@@ -1,12 +1,13 @@
 import settings from './settings.cjs';
+import promptsStore from './prompts.cjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 const run = promisify(execFile);
 export async function handleSuiteApi(req,res,pathname) {
-  if (pathname !== '/api/suite/settings') return false;
+  if (pathname !== '/api/suite/settings' && pathname !== '/api/suite/prompts') return false;
   const origin = req.headers?.origin || '';
-  if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) {
+  if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(origin)) {
     res.writeHead(403);res.end();return true;
   }
   const send=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
@@ -14,6 +15,18 @@ export async function handleSuiteApi(req,res,pathname) {
     'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Private-Network':'true'});res.end(JSON.stringify(value));};
   try {
     if(req.method==='OPTIONS'){send(200,{ok:true});return true;}
+    if(pathname==='/api/suite/prompts'){
+      if(req.method==='GET'){send(200,{ok:true,prompts:promptsStore.listPrompts()});return true;}
+      if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}
+      const chunks=[];let size=0;
+      for await(const chunk of req){size+=chunk.length;if(size>262144)throw Error('Prompts body too large');chunks.push(chunk);}
+      const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid request body');
+      if(body.action==='upsert')return send(200,{ok:true,prompts:promptsStore.upsertPrompt(body.prompt)}),true;
+      if(body.action==='delete')return send(200,{ok:true,prompts:promptsStore.deletePrompt(body.id)}),true;
+      if(body.action==='import')return send(200,{ok:true,prompts:promptsStore.importPrompts(body.prompts)}),true;
+      throw Error('Unknown prompts action');
+    }
     if(req.method==='GET'){send(200,{ok:true,settings:settings.readSettings()});return true;}
     if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}
     const chunks=[];let size=0;
