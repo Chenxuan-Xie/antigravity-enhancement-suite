@@ -178,9 +178,30 @@
     if (el.textContent !== css) el.textContent = css;
   }
 
+  const uiText = (cn, en) => (window.__agySuiteSettings?.i18n === false ? en : cn);
+
+  function syncWidgetLocale(widget) {
+    if (!widget) return;
+    const lbl = widget.querySelector(".agy-ts-label");
+    const seg = widget.querySelector(".agy-ts-seg");
+    const titleStr = uiText("切换皮肤", "Appearance Theme");
+    if (lbl && lbl.textContent !== titleStr) lbl.textContent = titleStr;
+    if (seg && seg.getAttribute("aria-label") !== titleStr) seg.setAttribute("aria-label", titleStr);
+    const map = {
+      light: uiText("白天", "Light"),
+      dark: uiText("黑夜", "Dark"),
+      system: uiText("跟随系统", "System")
+    };
+    widget.querySelectorAll("[data-theme-mode]").forEach((btn) => {
+      const m = btn.getAttribute("data-theme-mode");
+      if (map[m] && btn.textContent !== map[m]) btn.textContent = map[m];
+    });
+  }
+
   function syncWidgetState(mode) {
     const widget = document.getElementById(WIDGET_ID);
     if (!widget) return;
+    syncWidgetLocale(widget);
     const m = mode || getSavedMode();
     widget.querySelectorAll("[data-theme-mode]").forEach((btn) => {
       const btnMode = btn.getAttribute("data-theme-mode");
@@ -199,13 +220,14 @@
     root.setAttribute("data-ag-i18n-skip", "true");
     root.setAttribute("data-ag-localization-skip", "true");
     root.innerHTML = `
-      <span class="agy-ts-label">切换皮肤</span>
-      <div class="agy-ts-seg" role="group" aria-label="切换皮肤">
-        <button type="button" class="agy-ts-btn" data-theme-mode="light">白天</button>
-        <button type="button" class="agy-ts-btn" data-theme-mode="dark">黑夜</button>
-        <button type="button" class="agy-ts-btn" data-theme-mode="system">跟随系统</button>
+      <span class="agy-ts-label"></span>
+      <div class="agy-ts-seg" role="group">
+        <button type="button" class="agy-ts-btn" data-theme-mode="light"></button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="dark"></button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="system"></button>
       </div>
     `;
+    syncWidgetLocale(root);
 
     root.querySelectorAll("[data-theme-mode]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -292,6 +314,9 @@
     subtree: true
   });
 
+  const onSuiteSettings = () => syncWidgetState();
+  window.addEventListener("agy-suite-settings-updated", onSuiteSettings);
+
   window.__AGY_THEME_SWITCHER = {
     getMode: getSavedMode,
     setMode: setThemeMode,
@@ -302,6 +327,7 @@
   window.__agyThemeSwitcherCleanup = () => {
     if (disposed) return;
     disposed = true;
+    window.removeEventListener("agy-suite-settings-updated", onSuiteSettings);
     try {
       observer.disconnect();
     } catch (_) {}

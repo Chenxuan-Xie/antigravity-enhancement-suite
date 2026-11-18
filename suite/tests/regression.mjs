@@ -2,7 +2,7 @@ import fs from 'node:fs';import path from 'node:path';import assert from 'node:a
 import {execFileSync,spawn} from 'node:child_process';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';import os from 'node:os';
 const require=createRequire(import.meta.url),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const scratch=path.join(root,'artifacts');fs.mkdirSync(scratch,{recursive:true});const fixture=fs.mkdtempSync(path.join(scratch,'suite-regression-'));
-process.env.AGY_SUITE_SETTINGS_FILE=path.join(fixture,'suite.json');process.env.AGY_SUITE_PROMPTS_FILE=path.join(fixture,'prompts.json');process.env.AGY_SUITE_TEST='1';process.env.AGY_MODEL_DATA_DIR=path.join(fixture,'models');
+process.env.AGY_SUITE_SETTINGS_FILE=path.join(fixture,'suite.json');process.env.AGY_SUITE_PROMPTS_FILE=path.join(fixture,'prompts.json');process.env.AGY_SUITE_PINBOARD_FILE=path.join(fixture,'pinboard.json');process.env.AGY_SUITE_TEST='1';process.env.AGY_MODEL_DATA_DIR=path.join(fixture,'models');
 const settings=require('../settings.cjs'),store=await import('../../antigravity-model-switcher/core/model-store.mjs');
 const {createUsageAccumulator,normalizeUsage}=await import('../../antigravity-model-switcher/core/usage.mjs');
 const {handleSuiteApi}=await import('../api.mjs');const {handleModelApiRequest}=await import('../../antigravity-model-switcher/core/api-handler.mjs');
@@ -36,6 +36,11 @@ try{
   check(savedPrompts.some(p=>p.title==='Custom Benchmark'),'custom parameterized prompt persists to disk');
   const afterDelete=(await call('/api/suite/prompts',{action:'delete',id:'builtin-root-cause'})).data.prompts;
   check(!afterDelete.some(p=>p.id==='builtin-root-cause')&&!(await call('/api/suite/prompts')).data.prompts.some(p=>p.id==='builtin-root-cause'),'deleted built-in prompt stays deleted across reads');
+  check((await call('/api/suite/pinboard',null,'https://evil.example')).status===403,'unrelated websites cannot access cross-session pinboard');
+  const pinnedList=(await call('/api/suite/pinboard',{action:'upsert',pin:{id:'pin-arch',title:'Invariant',content:'Keep app.asar untouched',source:'Audit'}})).data.pins;
+  check(pinnedList.length===1&&pinnedList[0].enabled===true,'pinboard persists cross-session context items to disk');
+  const toggledPins=(await call('/api/suite/pinboard',{action:'toggle',id:'pin-arch',enabled:false})).data.pins;
+  check(toggledPins[0].enabled===false&&(await call('/api/suite/pinboard',{action:'delete',id:'pin-arch'})).data.pins.length===0,'pinboard supports toggling and deleting items');
   await call('/api/suite/settings',{showQuota:false});
   check(!settings.readSettings().showQuota&&settings.readSettings().quotaReminder,'quota display can be disabled independently of low quota reminders');
   check((await call('/api/suite/settings',{showQuota:'false'})).status===400,'quota display requires a boolean value');

@@ -1,11 +1,12 @@
 import settings from './settings.cjs';
 import promptsStore from './prompts.cjs';
+import pinboardStore from './pinboard.cjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 const run = promisify(execFile);
 export async function handleSuiteApi(req,res,pathname) {
-  if (pathname !== '/api/suite/settings' && pathname !== '/api/suite/prompts') return false;
+  if (pathname !== '/api/suite/settings' && pathname !== '/api/suite/prompts' && pathname !== '/api/suite/pinboard') return false;
   const origin = req.headers?.origin || '';
   if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(origin)) {
     res.writeHead(403);res.end();return true;
@@ -15,6 +16,19 @@ export async function handleSuiteApi(req,res,pathname) {
     'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Private-Network':'true'});res.end(JSON.stringify(value));};
   try {
     if(req.method==='OPTIONS'){send(200,{ok:true});return true;}
+    if(pathname==='/api/suite/pinboard'){
+      if(req.method==='GET'){send(200,{ok:true,pins:pinboardStore.listPins()});return true;}
+      if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}
+      const chunks=[];let size=0;
+      for await(const chunk of req){size+=chunk.length;if(size>262144)throw Error('Pinboard body too large');chunks.push(chunk);}
+      const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid request body');
+      if(body.action==='upsert')return send(200,{ok:true,pins:pinboardStore.upsertPin(body.pin)}),true;
+      if(body.action==='toggle')return send(200,{ok:true,pins:pinboardStore.togglePin(body.id,body.enabled)}),true;
+      if(body.action==='delete')return send(200,{ok:true,pins:pinboardStore.deletePin(body.id)}),true;
+      if(body.action==='clear')return send(200,{ok:true,pins:pinboardStore.clearPins()}),true;
+      throw Error('Unknown pinboard action');
+    }
     if(pathname==='/api/suite/prompts'){
       if(req.method==='GET'){send(200,{ok:true,prompts:promptsStore.listPrompts()});return true;}
       if(req.method!=='POST'){send(405,{ok:false,error:'Method not allowed'});return true;}

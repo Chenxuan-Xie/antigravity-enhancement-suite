@@ -207,7 +207,7 @@
     .agy-code-header-actions {
       margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
-    .agy-code-fold-btn, .agy-code-preview-btn {
+    .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn {
       padding: 1px 8px; border-radius: 6px;
       border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
       background: transparent; color: inherit; cursor: pointer;
@@ -221,11 +221,51 @@
       font-weight: 600;
     }
     body.theme-dark .agy-code-preview-btn, html.dark .agy-code-preview-btn { color: #E58B6D; }
-    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover {
+    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover, .agy-code-diff-btn:hover {
       opacity: 1; border-color: #D97757; color: #D97757;
     }
-    .agy-code-preview-btn[data-open="true"] {
+    .agy-code-preview-btn[data-open="true"], .agy-code-diff-btn[data-open="true"] {
       background: #D97757; border-color: #D97757; color: #FFFFFF; opacity: 1;
+    }
+    .agy-code-diff-panel {
+      border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      background: var(--background, #FAF9F5);
+      display: flex; flex-direction: column;
+      font: 12px/1.5 Consolas, "Cascadia Code", Monaco, monospace;
+    }
+    body.theme-dark .agy-code-diff-panel, html.dark .agy-code-diff-panel { background: #1A1918; }
+    .agy-code-diff-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 6px 12px; font: 500 11.5px/1.3 system-ui, sans-serif;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.14));
+      background: rgba(217, 119, 87, 0.055);
+    }
+    .agy-code-diff-select {
+      padding: 2px 7px; border-radius: 6px; font: 11px system-ui, sans-serif;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+      background: var(--card, #FFFFFF); color: inherit;
+    }
+    body.theme-dark .agy-code-diff-select, html.dark .agy-code-diff-select { background: #252422; color: #ECE9E2; }
+    .agy-code-diff-body { max-height: 320px; overflow: auto; padding: 4px 0; }
+    .agy-diff-row {
+      display: grid; grid-template-columns: 36px 36px 18px 1fr;
+      padding: 0 10px; white-space: pre-wrap; word-break: break-all;
+    }
+    .agy-diff-row .agy-diff-no {
+      opacity: 0.42; text-align: right; padding-right: 6px; user-select: none; font-size: 11px;
+    }
+    .agy-diff-row .agy-diff-sig { user-select: none; font-weight: 600; }
+    .agy-diff-row[data-diff="add"] { background: rgba(46, 125, 71, 0.13); color: #1E5E32; }
+    .agy-diff-row[data-diff="del"] { background: rgba(201, 64, 56, 0.12); color: #9E2A24; }
+    body.theme-dark .agy-diff-row[data-diff="add"], html.dark .agy-diff-row[data-diff="add"] {
+      background: rgba(72, 168, 104, 0.16); color: #7CE09B;
+    }
+    body.theme-dark .agy-diff-row[data-diff="del"], html.dark .agy-diff-row[data-diff="del"] {
+      background: rgba(224, 90, 82, 0.16); color: #F5938D;
+    }
+    .agy-diff-skip {
+      padding: 3px 14px; font: 11px system-ui, sans-serif; opacity: 0.52;
+      background: rgba(128, 128, 128, 0.06); text-align: center; user-select: none;
     }
     .agy-live-preview-panel {
       border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
@@ -288,7 +328,8 @@
     .agy-table-tools-bar button:hover {
       opacity: 1; border-color: #D97757; color: #D97757;
     }
-    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre,
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] > div:not(.border-b):not(.agy-live-preview-panel):not(.agy-code-diff-panel) {
       max-height: 156px !important;
       overflow: hidden !important;
       mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
@@ -434,27 +475,60 @@
     return inner;
   }
 
-  function extractCodeBlock(preOrCard) {
-    let lang = '';
-    const card = preOrCard.closest?.('.rounded-xl.bg-muted.border') || (preOrCard.matches?.('.rounded-xl.bg-muted.border') ? preOrCard : null);
+  function resolveCodeCard(node) {
+    if (!node) return null;
+    const card = node.matches?.('.rounded-xl.bg-muted.border')
+      ? node
+      : (node.querySelector?.(':scope > .rounded-xl.bg-muted.border, .rounded-xl.bg-muted.border') || node.closest?.('.rounded-xl.bg-muted.border'));
+    const header = card?.querySelector?.(':scope > .border-b') || null;
+    let bodyEl = null;
     if (card) {
-      const header = card.querySelector(':scope > .border-b');
-      if (header) {
+      bodyEl = [...card.children].find(ch =>
+        ch !== header &&
+        !ch.classList.contains('agy-live-preview-panel') &&
+        !ch.classList.contains('agy-code-diff-panel') &&
+        ch.tagName?.toUpperCase() !== 'STYLE'
+      ) || null;
+    } else if (node.tagName?.toUpperCase() === 'PRE') {
+      bodyEl = node;
+    }
+    if (!bodyEl) return null;
+    const codeNode = bodyEl.querySelector?.('pre code, code, .code-block') || bodyEl;
+    let lang = '';
+    if (header) {
+      const dedicated = header.querySelector('.text-muted-foreground');
+      if (dedicated && !dedicated.closest('button, .agy-code-header-actions')) {
+        const tok = (dedicated.textContent || '').trim().split(/\s+/)[0] || '';
+        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(tok) && !/^(copy|复制|preview|raw)$/i.test(tok)) lang = tok.toLowerCase();
+      }
+      if (!lang) {
         const headerText = [...header.childNodes]
-          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
+          .filter(n => {
+            if (n.nodeType === 3) return true;
+            if (n.nodeType !== 1) return false;
+            if (n.matches?.('button, [role="button"], .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions')) return false;
+            if (n.querySelector?.('button') && !(n.textContent || '').replace(/copy|复制|preview|raw/gi, '').trim()) return false;
+            return true;
+          })
           .map(n => n.textContent || '')
           .join(' ');
-        const token = headerText.trim().split(/\s+/)[0] || '';
-        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
+        const tok = headerText.trim().split(/\s+/)[0] || '';
+        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(tok) && !/^(copy|复制|preview|raw)$/i.test(tok)) lang = tok.toLowerCase();
       }
     }
-    const codeEl = preOrCard.querySelector?.('pre code, pre, .code-block') || preOrCard;
     if (!lang) {
-      const cls = codeEl.className || '';
+      const cls = codeNode.className || '';
       const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
-      if (m) lang = m[1];
+      if (m) lang = m[1].toLowerCase();
     }
-    const raw = (codeEl.textContent || '').replace(/\n+$/, '');
+    const rawCode = (codeNode.textContent || '').replace(/\n+$/, '');
+    return { card, header, bodyEl, codeNode, lang, rawCode };
+  }
+
+  function extractCodeBlock(preOrCard) {
+    const info = resolveCodeCard(preOrCard);
+    const lang = info?.lang || '';
+    const raw = info ? info.rawCode : (preOrCard.textContent || '').replace(/\n+$/, '');
     const fence = raw.includes('```') ? '````' : '```';
     return `\n${fence}${lang}\n${raw}\n${fence}\n\n`;
   }
@@ -500,13 +574,13 @@
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
     if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'CAPTION') return '';
-    if (node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) {
+    if (tag === 'PRE') return extractCodeBlock(node);
+    if (node.matches?.('.rounded-xl.bg-muted.border') && resolveCodeCard(node)) {
       return extractCodeBlock(node);
     }
-    if (tag === 'PRE') return extractCodeBlock(node);
     if (tag === 'TABLE') return tableToMarkdown(node);
     if (/^H[1-6]$/.test(tag)) {
       const level = Number(tag[1]);
@@ -632,26 +706,15 @@
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue || '');
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
     if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'CAPTION') return '';
     if (tag === 'BR') return '<br>';
     if (tag === 'HR') return '<hr>';
-    if ((node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) || tag === 'PRE') {
-      const card = node.matches?.('.rounded-xl.bg-muted.border') ? node : node.closest?.('.rounded-xl.bg-muted.border');
-      let lang = 'code';
-      if (card) {
-        const header = card.querySelector(':scope > .border-b');
-        if (header) {
-          const headerText = [...header.childNodes]
-            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
-            .map(n => n.textContent || '').join(' ');
-          const token = headerText.trim().split(/\s+/)[0] || '';
-          if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token)) lang = token.toLowerCase();
-        }
-      }
-      const codeEl = node.querySelector?.('pre code, pre, .code-block') || node;
-      const raw = (codeEl.textContent || '').replace(/\n+$/, '');
+    if (tag === 'PRE' || (node.matches?.('.rounded-xl.bg-muted.border') && resolveCodeCard(node))) {
+      const info = resolveCodeCard(node);
+      const lang = info?.lang || 'code';
+      const raw = info ? info.rawCode : (node.textContent || '').replace(/\n+$/, '');
       return `<div class="code-card"><div class="code-head"><span>${escapeHtml(lang)}</span><button type="button" class="copy-code">Copy</button></div><pre><code>${escapeHtml(raw)}</code></pre></div>`;
     }
     const children = [...node.childNodes].map(safeNodeToHtml).join('');
@@ -929,6 +992,22 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           }
           flashStatus(text(`✓ 已将第 ${turn.index} 轮提问填入输入框`, `✓ Loaded Turn #${turn.index} prompt`));
         };
+        const pinOne = document.createElement('button');
+        pinOne.type = 'button';
+        pinOne.className = 'agy-od-mini-btn';
+        pinOne.dataset.pinTurn = String(turn.index);
+        pinOne.title = text('钉入跨会话上下文暂存匣 (Alt+B)', 'Pin turn to Cross-Session Pinboard (Alt+B)');
+        pinOne.textContent = '📌';
+        pinOne.onclick = async e => {
+          e.stopPropagation();
+          if (window.__agyPinboard?.addPin) {
+            await window.__agyPinboard.addPin({
+              title: `#${turn.index} ${turn.prompt.replace(/\s+/g, ' ').slice(0, 44)}`,
+              content: turnToMarkdown(turn)
+            });
+            flashStatus(text(`✓ 已将第 ${turn.index} 轮钉入暂存匣`, `✓ Pinned Turn #${turn.index} to Pinboard`));
+          }
+        };
         const copyOne = document.createElement('button');
         copyOne.type = 'button';
         copyOne.className = 'agy-od-mini-btn';
@@ -951,7 +1030,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           e.stopPropagation();
           toggleStar(turn.id);
         };
-        actions.append(reuseBtn, copyOne, starToggle);
+        actions.append(reuseBtn, pinOne, copyOne, starToggle);
         top.append(idx, prompt, actions);
         card.appendChild(top);
 
@@ -1088,25 +1167,165 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     return csv;
   }
 
+  function computeLineDiff(oldText, newText) {
+    const a = String(oldText ?? '').replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n');
+    const b = String(newText ?? '').replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n');
+    let start = 0;
+    while (start < a.length && start < b.length && a[start] === b[start]) start++;
+    let endA = a.length - 1;
+    let endB = b.length - 1;
+    while (endA >= start && endB >= start && a[endA] === b[endB]) { endA--; endB--; }
+
+    const ops = [];
+    for (let i = 0; i < start; i++) ops.push({ type: 'eq', line: a[i] });
+
+    const midA = a.slice(start, endA + 1);
+    const midB = b.slice(start, endB + 1);
+    if (midA.length * midB.length <= 360000) {
+      const m = midA.length, n = midB.length;
+      const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+      for (let i = m - 1; i >= 0; i--) {
+        for (let j = n - 1; j >= 0; j--) {
+          dp[i][j] = midA[i] === midB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+      }
+      let i = 0, j = 0;
+      while (i < m && j < n) {
+        if (midA[i] === midB[j]) { ops.push({ type: 'eq', line: midA[i++] }); j++; }
+        else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push({ type: 'del', line: midA[i++] });
+        else ops.push({ type: 'add', line: midB[j++] });
+      }
+      while (i < m) ops.push({ type: 'del', line: midA[i++] });
+      while (j < n) ops.push({ type: 'add', line: midB[j++] });
+    } else {
+      for (const l of midA) ops.push({ type: 'del', line: l });
+      for (const l of midB) ops.push({ type: 'add', line: l });
+    }
+
+    for (let i = endA + 1; i < a.length; i++) ops.push({ type: 'eq', line: a[i] });
+
+    let oldNo = 1, newNo = 1, added = 0, removed = 0;
+    for (const op of ops) {
+      if (op.type === 'eq') { op.oldNo = oldNo++; op.newNo = newNo++; }
+      else if (op.type === 'del') { op.oldNo = oldNo++; op.newNo = null; removed++; }
+      else { op.oldNo = null; op.newNo = newNo++; added++; }
+    }
+    const patchLines = ['--- a/previous', '+++ b/current'];
+    for (const op of ops) {
+      patchLines.push((op.type === 'add' ? '+' : op.type === 'del' ? '-' : ' ') + op.line);
+    }
+    return { added, removed, ops, unifiedPatch: patchLines.join('\n') };
+  }
+
   function cleanupCodeFolds() {
-    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, caption.agy-table-tools').forEach(el => el.remove());
+    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-code-diff-panel, caption.agy-table-tools').forEach(el => el.remove());
     document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
   }
 
-  function extractHeaderLang(header, pre) {
-    const headerText = [...header.childNodes]
-      .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
-      .map(n => n.textContent || '')
-      .join(' ');
-    const token = headerText.trim().split(/\s+/)[0] || '';
-    if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) return token.toLowerCase();
-    const codeEl = pre.querySelector('code') || pre;
-    const cls = codeEl.className || '';
-    const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
-    return m ? m[1].toLowerCase() : '';
+  function mountCodeDiffPanel(card, getRawCode, candidates, defaultBaseIdx) {
+    let panel = card.querySelector(':scope > .agy-code-diff-panel');
+    if (panel) return panel;
+    let selectedBase = defaultBaseIdx;
+
+    panel = document.createElement('div');
+    panel.className = 'agy-code-diff-panel';
+    panel.setAttribute('data-ag-localization-skip', 'true');
+
+    const head = document.createElement('div');
+    head.className = 'agy-code-diff-head';
+    const leftWrap = document.createElement('div');
+    leftWrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    const badge = document.createElement('span');
+    badge.className = 'agy-live-preview-badge';
+    const select = document.createElement('select');
+    select.className = 'agy-code-diff-select';
+    candidates.forEach((cand, idx) => {
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      opt.textContent = text(`对比代码 #${cand.seq}${cand.lang ? ` (${cand.lang})` : ''} · ${cand.lines} 行`, `vs Code #${cand.seq}${cand.lang ? ` (${cand.lang})` : ''} · ${cand.lines} lines`);
+      if (idx === selectedBase) opt.selected = true;
+      select.appendChild(opt);
+    });
+    leftWrap.append(badge, select);
+
+    const copyPatchBtn = document.createElement('button');
+    copyPatchBtn.type = 'button';
+    copyPatchBtn.className = 'agy-code-fold-btn';
+    copyPatchBtn.textContent = text('📋 复制 .diff', '📋 Copy .diff');
+    head.append(leftWrap, copyPatchBtn);
+
+    const body = document.createElement('div');
+    body.className = 'agy-code-diff-body';
+    panel.append(head, body);
+    card.appendChild(panel);
+
+    const renderDiffRows = () => {
+      const base = candidates[selectedBase] || candidates[0];
+      const diff = computeLineDiff(base?.rawCode || '', getRawCode());
+      badge.textContent = `⇄ +${diff.added} / -${diff.removed}`;
+      copyPatchBtn.onclick = async e => {
+        e.stopPropagation();
+        await writeClipboard(diff.unifiedPatch);
+        copyPatchBtn.textContent = text('✓ 已复制 Patch', '✓ Copied Patch');
+        setTimeout(() => { copyPatchBtn.textContent = text('📋 复制 .diff', '📋 Copy .diff'); }, 1400);
+      };
+
+      body.replaceChildren();
+      const keep = new Uint8Array(diff.ops.length);
+      diff.ops.forEach((op, i) => {
+        if (op.type !== 'eq') {
+          for (let k = Math.max(0, i - 3); k <= Math.min(diff.ops.length - 1, i + 3); k++) keep[k] = 1;
+        }
+      });
+      if (diff.added === 0 && diff.removed === 0) {
+        const same = document.createElement('div');
+        same.className = 'agy-diff-skip';
+        same.textContent = text('两处代码块内容完全一致', 'Both code blocks are identical');
+        body.appendChild(same);
+        return;
+      }
+      let skipped = 0;
+      const flushSkip = () => {
+        if (!skipped) return;
+        const sk = document.createElement('div');
+        sk.className = 'agy-diff-skip';
+        sk.textContent = text(`⋯ 折叠未改动代码 ${skipped} 行 ⋯`, `⋯ ${skipped} unchanged lines hidden ⋯`);
+        body.appendChild(sk);
+        skipped = 0;
+      };
+      diff.ops.forEach((op, idx) => {
+        if (!keep[idx]) { skipped++; return; }
+        flushSkip();
+        const row = document.createElement('div');
+        row.className = 'agy-diff-row';
+        row.dataset.diff = op.type;
+        const n1 = document.createElement('span');
+        n1.className = 'agy-diff-no';
+        n1.textContent = op.oldNo ?? '';
+        const n2 = document.createElement('span');
+        n2.className = 'agy-diff-no';
+        n2.textContent = op.newNo ?? '';
+        const sig = document.createElement('span');
+        sig.className = 'agy-diff-sig';
+        sig.textContent = op.type === 'add' ? '+' : op.type === 'del' ? '-' : ' ';
+        const code = document.createElement('span');
+        code.textContent = op.line;
+        row.append(n1, n2, sig, code);
+        body.appendChild(row);
+      });
+      flushSkip();
+    };
+
+    select.onchange = e => {
+      e.stopPropagation();
+      selectedBase = Number(select.value) || 0;
+      renderDiffRows();
+    };
+    renderDiffRows();
+    return panel;
   }
 
-  function mountLivePreviewPanel(card, pre, kind) {
+  function mountLivePreviewPanel(card, getRawCode, kind) {
     let panel = card.querySelector(':scope > .agy-live-preview-panel');
     if (panel) return panel;
     let darkCanvas = document.body.classList.contains('theme-dark') || document.documentElement.classList.contains('dark');
@@ -1151,7 +1370,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     frame.title = kind === 'svg' ? 'SVG Live Preview' : 'HTML Live Preview';
 
     const syncFrame = () => {
-      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const raw = getRawCode();
       frame.dataset.viewport = viewport;
       frame.style.background = darkCanvas ? '#1A1918' : '#FAF9F5';
       frame.srcdoc = buildPreviewSrcdoc(raw, kind, darkCanvas);
@@ -1165,7 +1384,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     reloadBtn.onclick = e => { e.stopPropagation(); syncFrame(); };
     dlBtn.onclick = e => {
       e.stopPropagation();
-      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const raw = getRawCode();
       const ext = kind === 'svg' ? 'svg' : 'html';
       const mime = kind === 'svg' ? 'image/svg+xml;charset=utf-8' : 'text/html;charset=utf-8';
       downloadBlobText(raw, `snippet-${Date.now().toString(36)}.${ext}`, mime);
@@ -1183,19 +1402,51 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
   function enhanceLongCodeBlocks() {
     const root = primaryRoot();
     if (!root) return;
+    const historyBlocks = [];
+    let codeSeq = 0;
+
     for (const card of root.querySelectorAll('[data-testid="planner-response-text"] .rounded-xl.bg-muted.border')) {
-      const header = card.querySelector(':scope > .border-b');
-      const pre = card.querySelector('pre');
-      if (!header || !pre) continue;
-      const rawCode = (pre.textContent || '').replace(/\n+$/, '');
-      const lines = rawCode.split('\n').length;
-      const lang = extractHeaderLang(header, pre);
+      if (isExcluded(card)) continue;
+      const info = resolveCodeCard(card);
+      if (!info || !info.header || !info.bodyEl) continue;
+      const { header, lang, rawCode } = info;
+      const getRawCode = () => resolveCodeCard(card)?.rawCode || '';
+      const lines = rawCode ? rawCode.split('\n').length : 0;
       const previewMeta = detectPreviewableCode(lang, rawCode);
+      codeSeq++;
+
+      let diffTargetIdx = -1;
+      let diffSummary = null;
+      const candidates = historyBlocks.slice();
+      if (lines >= 2 && candidates.length > 0) {
+        const curLineSet = new Set(rawCode.split('\n').map(l => l.trim()).filter(l => l.length >= 6));
+        for (let i = candidates.length - 1; i >= 0; i--) {
+          const prev = candidates[i];
+          if (prev.lines < 2 || prev.rawCode.trim() === rawCode.trim()) continue;
+          const sameLang = Boolean(lang && prev.lang && lang === prev.lang);
+          const hasSharedLine = [...curLineSet].some(l => prev.lineSet.has(l));
+          if (sameLang || hasSharedLine) {
+            diffTargetIdx = i;
+            diffSummary = computeLineDiff(prev.rawCode, rawCode);
+            break;
+          }
+        }
+      }
+      if (lines >= 2) {
+        historyBlocks.push({
+          seq: codeSeq,
+          lang,
+          rawCode,
+          lines,
+          lineSet: new Set(rawCode.split('\n').map(l => l.trim()).filter(l => l.length >= 6))
+        });
+      }
 
       let actionsWrap = header.querySelector(':scope > .agy-code-header-actions');
-      if (!previewMeta.previewable && lines < 18) {
+      if (!previewMeta.previewable && lines < 18 && diffTargetIdx < 0) {
         actionsWrap?.remove();
         card.querySelector(':scope > .agy-live-preview-panel')?.remove();
+        card.querySelector(':scope > .agy-code-diff-panel')?.remove();
         card.removeAttribute('data-agy-code-folded');
         continue;
       }
@@ -1237,13 +1488,44 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           e.stopPropagation();
           const existing = card.querySelector(':scope > .agy-live-preview-panel');
           if (existing) existing.remove();
-          else mountLivePreviewPanel(card, pre, previewMeta.kind);
+          else mountLivePreviewPanel(card, getRawCode, previewMeta.kind);
           updatePreviewBtn();
         };
         updatePreviewBtn();
       }
 
-      // 2) Long Code Block Fold button (18+ lines)
+      // 2) Turn-to-Turn Code Diff button
+      let diffBtn = actionsWrap.querySelector('.agy-code-diff-btn');
+      if (diffTargetIdx < 0 || !diffSummary) {
+        diffBtn?.remove();
+        card.querySelector(':scope > .agy-code-diff-panel')?.remove();
+      } else {
+        if (!diffBtn) {
+          diffBtn = document.createElement('button');
+          diffBtn.type = 'button';
+          diffBtn.className = 'agy-code-diff-btn';
+          diffBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.appendChild(diffBtn);
+        }
+        const updateDiffBtn = () => {
+          const isOpen = Boolean(card.querySelector(':scope > .agy-code-diff-panel'));
+          diffBtn.dataset.open = String(isOpen);
+          const lbl = isOpen
+            ? text('✕ 收起对比', '✕ Close Diff')
+            : text(`⇄ 对比 (+${diffSummary.added}/-${diffSummary.removed})`, `⇄ Diff (+${diffSummary.added}/-${diffSummary.removed})`);
+          if (diffBtn.textContent !== lbl) diffBtn.textContent = lbl;
+        };
+        diffBtn.onclick = e => {
+          e.stopPropagation();
+          const existing = card.querySelector(':scope > .agy-code-diff-panel');
+          if (existing) existing.remove();
+          else mountCodeDiffPanel(card, getRawCode, candidates, diffTargetIdx);
+          updateDiffBtn();
+        };
+        updateDiffBtn();
+      }
+
+      // 3) Long Code Block Fold button (18+ lines)
       let foldBtn = actionsWrap.querySelector('.agy-code-fold-btn');
       if (lines < 18) {
         foldBtn?.remove();
@@ -1325,6 +1607,19 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
   }
 
+  function syncMainEdgeOffset(pill, drawer) {
+    const mainEl = document.querySelector('[data-main-content-body]');
+    let extraRight = 0;
+    if (mainEl) {
+      const r = mainEl.getBoundingClientRect();
+      if (r.width > 180 && window.innerWidth - r.right > 80) {
+        extraRight = Math.max(0, Math.round(window.innerWidth - r.right));
+      }
+    }
+    if (pill) pill.style.right = extraRight ? `${extraRight + 12}px` : '';
+    if (drawer) drawer.style.right = extraRight ? `${extraRight + 16}px` : '';
+  }
+
   function render() {
     if (disposed) return;
     const enabled = window.__agySuiteSettings?.outline !== false;
@@ -1359,6 +1654,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
     if (openState) renderDrawer(turns, stars);
     else document.getElementById('agy-outline-drawer')?.remove();
+    syncMainEdgeOffset(pill, document.getElementById('agy-outline-drawer'));
   }
 
   function open() {
@@ -1413,7 +1709,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-table-tools')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools')) continue;
       scheduleRender();
       break;
     }
@@ -1421,19 +1717,21 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('resize', scheduleRender);
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('pointerdown', onPointerDown);
   scheduleRender();
 
   let selTimer = null;
-  function quoteSelectionIntoComposer(rawText) {
+  function quoteSelectionIntoComposer(rawText, sourceHost = null) {
     const clean = String(rawText || '').trim();
     if (!clean) return false;
     const quoted = clean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+    const scopedComposer = sourceHost?.closest?.('[data-side-panel-body], [data-main-content-body]')?.querySelector?.('[data-testid="agent-input-box"]') || null;
     if (window.__agyPromptVault?.insertIntoComposer) {
-      return window.__agyPromptVault.insertIntoComposer(quoted, { append: true });
+      return window.__agyPromptVault.insertIntoComposer(quoted, { append: true, composerBox: scopedComposer });
     }
-    const editor = document.querySelector('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    const editor = (scopedComposer || document).querySelector('[data-testid="agent-input-box"] [data-lexical-editor="true"], [data-lexical-editor="true"]');
     if (!editor) return false;
     const prev = (editor.textContent || '').trim();
     editor.textContent = prev ? `${prev}\n\n${quoted}` : quoted;
@@ -1462,7 +1760,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
     const range = sel.getRangeAt(0);
     const host = (range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
-    if (!host || host.closest?.('input, textarea, [contenteditable="true"], #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-suite-backdrop, #agy-command-palette-backdrop')) {
+    if (!host || host.closest?.('input, textarea, [contenteditable="true"], #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-pinboard-backdrop, #agy-suite-backdrop, #agy-command-palette-backdrop')) {
       removeSelectionPill();
       return;
     }
@@ -1494,7 +1792,18 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       const captured = sel.toString().trim();
       sel.removeAllRanges();
       removeSelectionPill();
-      quoteSelectionIntoComposer(captured);
+      quoteSelectionIntoComposer(captured, host);
+    };
+
+    const pinBtn = document.createElement('button');
+    pinBtn.type = 'button';
+    pinBtn.dataset.selAction = 'pin';
+    pinBtn.textContent = text('📌 暂存', '📌 Pin');
+    pinBtn.onclick = () => {
+      const captured = sel.toString().trim();
+      sel.removeAllRanges();
+      removeSelectionPill();
+      window.__agyPinboard?.addPin?.({ content: captured });
     };
 
     const saveBtn = document.createElement('button');
@@ -1521,7 +1830,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       setTimeout(removeSelectionPill, 450);
     };
 
-    pill.append(quoteBtn, saveBtn, copyBtn);
+    pill.append(quoteBtn, pinBtn, saveBtn, copyBtn);
     const pillWidth = pill.offsetWidth || 220;
     const left = Math.max(8, Math.min(rect.left + rect.width / 2 - pillWidth / 2, innerWidth - pillWidth - 8));
     const top = rect.top > 48 ? rect.top - 40 : Math.min(innerHeight - 44, rect.bottom + 8);
@@ -1548,6 +1857,8 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     downloadBookishHtml,
     tableToDelimited,
     buildPreviewSrcdoc,
+    computeLineDiff,
+    resolveCodeCard,
     copyMarkdown,
     quoteSelectionIntoComposer,
     updateSelectionPill,
@@ -1565,6 +1876,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     document.removeEventListener('selectionchange', onSelectionChange);
     window.removeEventListener('scroll', removeSelectionPill, true);
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('resize', scheduleRender);
     document.removeEventListener('keydown', onKeyDown);
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();

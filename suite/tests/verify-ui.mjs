@@ -9,6 +9,7 @@ try{
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
   let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,prompts:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
   let vaultPrompts=[{id:'tpl-1',title:'Audit Module',category:'Engineering',pinned:true,content:'Audit {{module}} with constraint {{limit:zero-regression}}.'}];
+  let pinItems=[];
   let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[],savedModels=[],activeMode='official',activeModelId=null;
   const account=(email,percent,isCurrent)=>({email,label:email,isCurrent,quotaSummary:{updatedAt:new Date().toISOString(),groups:[{displayName:'Gemini',buckets:[{displayName:'Gemini',remainingPercent:percent}]}]}});
   let accounts=[account('main@example.test',8,true),account('backup@example.test',100,false)];
@@ -22,7 +23,8 @@ try{
   w.fetch=async(url,options={})=>{
     const value=String(url),body=JSON.parse(options.body||'{}');let payload={ok:true};
     if(value.includes('/api/suite/settings')){if(options.method==='POST'){posts++;if(holdSettings)await new Promise(resolve=>{releaseSettings=resolve;});if(failSettings)return new w.Response(JSON.stringify({ok:false,error:'Fixture save failure'}),{status:400,headers:{'Content-Type':'application/json'}});settings={...settings,...body};}else if(holdInitial)await new Promise(resolve=>{releaseInitial=resolve;});payload.settings=settings;}
-    else if(value.includes('/api/suite/prompts')){if(options.method==='POST'){if(body.action==='upsert'){const item={id:body.prompt.id||'tpl-new',...body.prompt};vaultPrompts=[item,...vaultPrompts.filter(p=>p.id!==item.id)];}else if(body.action==='delete')vaultPrompts=vaultPrompts.filter(p=>p.id!==body.id);}payload.prompts=vaultPrompts;}
+    else if(value.includes('/api/suite/prompts')){if(options.method==='POST'){if(body.action==='upsert'){const item={id:body.prompt.id||'tpl-new',...body.prompt};vaultPrompts=[item,...vaultPrompts.filter(p=>p.id!==item.id)];}else if(body.action==='import'){for(const raw of (body.prompts||[])){const item={id:raw.id||'tpl-imp',...raw};vaultPrompts=[item,...vaultPrompts.filter(p=>p.id!==item.id)];}}else if(body.action==='delete')vaultPrompts=vaultPrompts.filter(p=>p.id!==body.id);}payload.prompts=vaultPrompts;}
+    else if(value.includes('/api/suite/pinboard')){if(options.method==='POST'){if(body.action==='upsert'){const p={id:body.pin.id||'pin-1',enabled:true,...body.pin};pinItems=[p,...pinItems.filter(x=>x.id!==p.id)];}else if(body.action==='toggle'){pinItems=pinItems.map(x=>x.id===body.id?{...x,enabled:Boolean(body.enabled)}:x);}else if(body.action==='delete'){pinItems=pinItems.filter(x=>x.id!==body.id);}else if(body.action==='clear'){pinItems=[];}}payload.pins=pinItems;}
     else if(value.includes('/api/models/discover')){discoverCalls++;payload.models=['model-a','model-b','model-c'];payload.endpointUrl='https://fixture.test/v1/models';}
     else if(value.includes('/api/models/import')){imported=body;savedModels=(body.modelIds||[]).map((id,idx)=>({id:'mdl-'+idx,name:idx===0?'Slow Node':'Fast Node',modelId:id,protocol:'openai',baseUrl:'https://fixture.test/v1',apiKeyMasked:'sk-***',lastTestOk:null,lastTestLatencyMs:null}));payload.models=savedModels;payload.state={models:savedModels,activeMode,activeModelId,providers};}
     else if(value.includes('/api/models/test')){const m=savedModels.find(x=>x.id===body.id);const ms=m?.modelId==='model-c'?125:680;if(m){m.lastTestOk=true;m.lastTestLatencyMs=ms;}payload.result={ok:true,latencyMs:ms,resolvedProtocol:'openai',endpointUrl:'https://fixture.test/v1/chat/completions',replyPreview:'OK'};}
@@ -85,7 +87,13 @@ try{
     assert(previewFrame&&previewFrame.getAttribute('sandbox')==='allow-scripts'&&!previewFrame.getAttribute('sandbox').includes('allow-same-origin')&&previewFrame.srcdoc.includes("connect-src 'none'"),'live preview renders inside an opaque sandboxed iframe without allow-same-origin or network exfiltration');
     codeCard.querySelector('[data-preview-act="viewport"]').click();assert(previewFrame.dataset.viewport==='mobile','live preview supports desktop and mobile viewport switching');
     assert(w.__agyConvTools.exportMarkdown().includes('\\x60\\x60\\x60svg\\n<svg viewBox="0 0 20 20">')&&!w.__agyConvTools.exportMarkdown().includes('Preview SVG'),'open live preview panel does not pollute Markdown export');
-    previewBtn.click();codeHeader.firstChild.nodeValue='js';longPre.textContent='const cap = 64;';w.__agyConvTools.refresh();
+    previewBtn.click();codeHeader.firstChild.nodeValue='js';longPre.textContent='const cap = 64;\\nconst ttl = 30;';
+    const v2Pre=d.createElement('pre');v2Pre.className='notranslate';v2Pre.innerHTML='<div class="rounded-xl bg-muted border"><div class="border-b"><div class="text-muted-foreground">js</div><div class="flex"><button>Preview</button><button>Raw</button></div></div><div class="p-3"><code class="whitespace-pre-wrap">const cap = 128;\\nconst ttl = 30;\\nconst maxAge = 500;</code></div></div>';
+    d.querySelectorAll('[data-testid="planner-response-text"]')[1].appendChild(v2Pre);w.__agyConvTools.refresh();
+    const diffBtn=v2Pre.querySelector('.agy-code-diff-btn');assert(diffBtn&&diffBtn.textContent.includes('+2/-1'),'Antigravity v2.22 pre.notranslate code blocks mount turn-to-turn diff badges accurately');
+    diffBtn.click();assert(v2Pre.querySelectorAll('.agy-diff-row[data-diff="add"]').length===2&&v2Pre.querySelectorAll('.agy-diff-row[data-diff="del"]').length===1,'inline code diff viewer renders exact added and removed lines');
+    assert(w.__agyConvTools.exportMarkdown().includes('\\x60\\x60\\x60js\\nconst cap = 128;')&&!w.__agyConvTools.exportMarkdown().includes('PreviewRaw'),'v2.22 pre.notranslate export strips header buttons and diff UI cleanly');
+    v2Pre.remove();longPre.textContent='const cap = 64;';w.__agyConvTools.refresh();
     const fixtureTable=d.querySelector('[data-testid="planner-response-text"] table');
     assert(fixtureTable.querySelector('caption.agy-table-tools [data-table-act="tsv"]')&&w.__agyConvTools.tableToDelimited(fixtureTable,'\\t')==='Metric\\tOps\\nHit\\t1.2M','AI Markdown tables mount Excel TSV/CSV export tools and serialize exact rows');
     const csvProbe=d.createElement('table');csvProbe.innerHTML='<tr><td>A,B</td><td>Say "Hi"</td></tr>';
@@ -105,8 +113,24 @@ try{
     editor.textContent='';
     const importedCount=await w.__agyPromptVault.importPromptsJson(JSON.stringify([{id:'tpl-team',title:'Team Spec',category:'Team',pinned:true,content:'Deliver {{milestone}}'}]));
     assert(importedCount===1&&w.__agyPromptVault.getPrompts().some(p=>p.id==='tpl-team'),'prompt vault imports JSON template packs cleanly');
+    await w.__agyPinboard.addPin({title:'Server Invariant',content:'Never modify app.asar',source:'Arch Chat'});
+    assert(w.__agyPinboard.getPins().length===1&&d.querySelector('#agy-pinboard-trigger')?.textContent.includes('1/1'),'cross-session pinboard stores snippets and mounts composer badge');
+    w.__agyPinboard.open();await pause(30);d.querySelector('#agy-pb-inject').click();
+    assert(!d.querySelector('#agy-pinboard-backdrop')&&editor.textContent.includes('<CONTEXT_PINBOARD>')&&editor.textContent.includes('Never modify app.asar'),'pinboard injects structured cross-session context into composer');
+    await w.__agyPinboard.clearPins();editor.textContent='';
+    w.__agyPromptVault.saveDraftSnapshot('Refactor distributed lock manager with exponential backoff');
+    w.__agyPromptVault.open();await pause(20);
+    assert([...d.querySelectorAll('#agy-prompt-vault .agy-pv-cat')].some(b=>b.textContent.includes('Drafts')),'unsent composer drafts appear inside Prompt Vault');
+    d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',ctrlKey:true,bubbles:true}));
+    assert(!d.querySelector('#agy-prompt-vault-backdrop')&&editor.textContent.length>0,'Ctrl+Enter inside Prompt Vault inserts the active template and closes modal');
+    const liveKey='sk-proj-'+'K9mPqR7vWxYz2468AcEgIkMoQsUwYzAbCdEfGhIj';
+    editor.textContent='Debug key '+liveKey;d.querySelector('[data-testid="send-button"]').click();
+    assert(d.querySelector('#agy-secret-shield-banner'),'secret leak shield intercepts live API keys before submission');
+    d.querySelector('#agy-secret-redact-btn').click();
+    assert(editor.textContent==='Debug key [REDACTED_SECRET]'&&!d.querySelector('#agy-secret-shield-banner'),'one-click secret redaction masks credentials in-place inside composer');
+    editor.textContent='';
     await w.__agySuite.save({prompts:false});await pause(40);
-    assert(!d.querySelector('#agy-prompt-vault-trigger')&&!w.__agyPromptVault,'disabling prompt vault removes its composer trigger immediately');
+    assert(!d.querySelector('#agy-prompt-vault-trigger')&&!w.__agyPromptVault&&!w.__agyPinboard,'disabling prompt vault removes vault and pinboard runtimes immediately');
     await w.__agySuite.save({prompts:true});await pause(40);
     assert(w.getComputedStyle(d.querySelector('.bg-sidebar')).backgroundColor==='rgb(240, 238, 230)','light mode inset sidebar uses warm parchment beige instead of white');
     assert(!d.querySelector('.agy-suite-greeting')&&!d.querySelector('[data-setting="greetingName"]'),'redundant suite greeting and greeting name input are removed');

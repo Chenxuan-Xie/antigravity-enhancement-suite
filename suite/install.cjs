@@ -24,8 +24,10 @@ function migrateData(from,to){
     const input=path.join(from,name,'data'),output=path.join(to,name,'data');
     if(fs.existsSync(input)&&path.resolve(input)!==path.resolve(output))copyTree(input,output,file=>!file.endsWith('.log')&&!/\.tmp/.test(file),false);
   }
-  const srcPrompts=path.join(from,'data','suite-prompts.json'),dstPrompts=path.join(to,'data','suite-prompts.json');
-  if(fs.existsSync(srcPrompts)&&path.resolve(srcPrompts)!==path.resolve(dstPrompts)&&!fs.existsSync(dstPrompts))copyTree(srcPrompts,dstPrompts,()=>true,false);
+  for(const dataFile of ['suite-prompts.json','suite-pinboard.json']){
+    const srcFile=path.join(from,'data',dataFile),dstFile=path.join(to,'data',dataFile);
+    if(fs.existsSync(srcFile)&&path.resolve(srcFile)!==path.resolve(dstFile)&&!fs.existsSync(dstFile))copyTree(srcFile,dstFile,()=>true,false);
+  }
 }
 function config(file){if(!fs.existsSync(file))return {};return JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));}
 function installPlugins(runtime,configDir,settings){

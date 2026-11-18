@@ -171,9 +171,9 @@
       });
     }
 
-    // 3. Prompt Vault
+    // 3. Prompt Vault & Cross-Session Pinboard
     if (window.__agyPromptVault) {
-      const pvGroup = text('提示词灵感库', 'PROMPT VAULT');
+      const pvGroup = text('提示词与跨会话暂存', 'PROMPTS & PINBOARD');
       list.push({
         id: 'pv-open',
         group: pvGroup,
@@ -182,6 +182,39 @@
         keywords: 'prompt template vault variable 提示词 模板 灵感库 参数',
         run: () => window.__agyPromptVault.open()
       });
+      if (window.__agyPinboard) {
+        const pins = window.__agyPinboard.getPins?.() || [];
+        const activePins = pins.filter(p => p.enabled !== false).length;
+        list.push({
+          id: 'pb-open',
+          group: pvGroup,
+          title: text(`📌 打开跨会话上下文暂存匣${pins.length ? `（${pins.length} 条）` : ''}`, `📌 Open Cross-Session Context Pinboard${pins.length ? ` (${pins.length})` : ''}`),
+          badge: 'Alt+B',
+          keywords: 'pinboard context scratchpad memory 暂存 跨会话 记忆 上下文',
+          run: () => window.__agyPinboard.open()
+        });
+        if (activePins > 0) {
+          list.push({
+            id: 'pb-inject',
+            group: pvGroup,
+            title: text(`⚡ 将暂存匣已勾选的 ${activePins} 条上下文注入当前输入框`, `⚡ Inject ${activePins} Active Pinboard Items into Composer`),
+            badge: 'Pinboard',
+            keywords: 'inject pinboard context 注入 暂存 上下文',
+            run: () => window.__agyPinboard.injectActivePins({ append: true })
+          });
+        }
+      }
+      const drafts = window.__agyPromptVault.getDrafts?.() || [];
+      if (drafts.length > 0) {
+        list.push({
+          id: 'pv-restore-draft',
+          group: pvGroup,
+          title: text(`🕒 恢复最近未发送草稿：${drafts[0].title.replace(/^🕒\s*/, '')}`, `🕒 Restore Latest Unsent Draft: ${drafts[0].title.replace(/^🕒\s*/, '')}`),
+          badge: text('草稿', 'Draft'),
+          keywords: 'draft restore unsent 草稿 恢复 找回',
+          run: () => window.__agyPromptVault.insertIntoComposer(drafts[0].content, { append: false })
+        });
+      }
       for (const tpl of (window.__agyPromptVault.getPrompts?.() || []).filter(p => p.pinned).slice(0, 4)) {
         list.push({
           id: 'pv-tpl-' + tpl.id,

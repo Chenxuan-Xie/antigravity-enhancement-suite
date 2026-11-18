@@ -3734,6 +3734,9 @@
         if (isNativeComposerMenuOpen(editorEl)) {
             return;
         }
+        if (window.__agyPromptVault?.checkSecretBeforeSend?.(e, composerBox, () => handleOutgoingComposerSubmit(e, editorEl))) {
+            return;
+        }
 
         handleOutgoingComposerSubmit(e, editorEl);
     }
@@ -3760,6 +3763,9 @@
 
         const editorEl = composerBox.querySelector('div[data-lexical-editor="true"][contenteditable="true"]');
         if (!editorEl) return;
+        if (window.__agyPromptVault?.checkSecretBeforeSend?.(e, composerBox, () => handleOutgoingComposerSubmit(e, editorEl))) {
+            return;
+        }
 
         handleOutgoingComposerSubmit(e, editorEl);
     }

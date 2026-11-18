@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="33d1bf268ecb677c27d65ad34991ddbf3f3c721e7351a7e78bc61e6b9062aea4"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="6075a2f2f96018e43790cbfedf131a48d6b32b05cfa55a1e095d9f9edd4df662"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -4868,7 +4868,7 @@ window.__agySuiteModules.accounts=function(){
     #agy-account-menu .quota-account-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#agy-account-menu .quota-account-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}#agy-account-menu .quota-account-meta{font-size:11px;opacity:.62;font-variant-numeric:tabular-nums}
     #agy-account-menu .quota-meter{height:3px;border-radius:3px;background:#8882;overflow:hidden}#agy-account-menu .quota-meter span{display:block;height:100%;background:#5c8b67;border-radius:3px}#agy-account-menu .quota-meter[data-warn=true] span{background:#c68a35}#agy-account-menu .quota-meter[data-low=true] span{background:#c9563c}
     #agy-account-menu .quota-percent{font-variant-numeric:tabular-nums;font-size:12px;font-weight:600}#agy-account-menu [data-smart-switch]{margin-top:6px;background:rgba(217,119,87,.12);color:#D97757;font-weight:600;font-size:12px;justify-content:center}#agy-account-menu [data-smart-switch]:hover:not(:disabled){background:rgba(217,119,87,.2)}#agy-account-menu [data-quota-refresh]{margin-top:5px;border-top:1px solid #8882;border-radius:0 0 8px 8px;color:inherit}#agy-account-menu [data-quota-refresh]:disabled{opacity:.55}
-    #agy-account-toast{position:fixed;right:20px;bottom:24px;z-index:10001;padding:12px 14px;display:flex;align-items:center;gap:10px;background:var(--agy-bg-primary,var(--background,#fff));color:var(--agy-text-primary,var(--foreground,#222));border:1px solid var(--border,#8883);border-radius:10px;max-width:min(360px,calc(100vw - 40px));box-shadow:0 4px 20px #0002;font:12px system-ui}#agy-account-toast button{background:transparent;color:inherit;border:0;padding:4px;border-radius:5px;cursor:pointer}#agy-account-toast button:hover{background:#8882}
+    #agy-account-toast{position:fixed;right:20px;bottom:24px;z-index:10001;padding:12px 14px;display:flex;align-items:center;gap:10px;background:var(--agy-bg-primary,var(--background,#FAF9F5));color:var(--agy-text-primary,var(--foreground,#141413));border:1px solid var(--border,#8883);border-radius:10px;max-width:min(360px,calc(100vw - 40px));box-shadow:0 8px 28px #0002;font:12px system-ui}body.theme-dark #agy-account-toast,html.dark #agy-account-toast{background:#232220;color:#ECE9E2;border-color:rgba(236,233,226,.15);box-shadow:0 12px 36px rgba(0,0,0,.5)}#agy-account-toast button{background:transparent;color:inherit;border:0;padding:4px;border-radius:5px;cursor:pointer}#agy-account-toast button:hover{background:#8882}
   `;document.head.appendChild(style);
   const friendlyError=message=>/unauthorized|invalid_grant|invalid_client|HTTP 401/i.test(message)?text('账号授权已失效，请在「设置 → 账户」重新授权。','Account authorization expired. Reauthorize in Settings → Account.'):/timeout|timed out/i.test(message)?text('刷新超时，请稍后重试。','Refresh timed out. Try again shortly.'):text('操作失败，请稍后重试。','Operation failed. Please try again.');
   function closeToast(){clearTimeout(toastTimer);toastTimer=null;toast?.remove();toast=null;}
@@ -4927,7 +4927,7 @@ window.__agySuiteModules.accounts=function(){
     document.body.appendChild(popup);popup.querySelector('button:not(:disabled)')?.focus();
   }
   function render(){
-    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();return;}const composer=document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
+    if(disposed)return;if(window.__agySuiteSettings?.showQuota===false){document.getElementById('agy-account-capsule')?.remove();document.getElementById('agy-account-badge')?.remove();closeMenu();return;}const composer=[...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el=>!el.closest('[data-side-panel-body]'))||document.querySelector('[data-testid="agent-input-box"]');if(!composer)return;
     let host=document.getElementById('agy-account-capsule');if(!host){host=document.createElement('div');host.id='agy-account-capsule';}if(host.parentElement!==composer)composer.appendChild(host);
     let button=document.getElementById('agy-account-badge');if(!button){button=document.createElement('button');button.id='agy-account-badge';button.type='button';button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-expanded','false');button.setAttribute('data-ag-localization-skip','true');button.innerHTML='<span class="quota-dot" aria-hidden="true"></span><span class="quota-label"></span><span class="quota-chevron" aria-hidden="true">⌄</span>';button.onclick=()=>{if(popup)closeMenu();else openMenu(button);};}
     if(button.parentElement!==host)host.appendChild(button);
@@ -8697,6 +8697,9 @@ window.__agySuiteModules.api=function(){
         if (isNativeComposerMenuOpen(editorEl)) {
             return;
         }
+        if (window.__agyPromptVault?.checkSecretBeforeSend?.(e, composerBox, () => handleOutgoingComposerSubmit(e, editorEl))) {
+            return;
+        }
 
         handleOutgoingComposerSubmit(e, editorEl);
     }
@@ -8723,6 +8726,9 @@ window.__agySuiteModules.api=function(){
 
         const editorEl = composerBox.querySelector('div[data-lexical-editor="true"][contenteditable="true"]');
         if (!editorEl) return;
+        if (window.__agyPromptVault?.checkSecretBeforeSend?.(e, composerBox, () => handleOutgoingComposerSubmit(e, editorEl))) {
+            return;
+        }
 
         handleOutgoingComposerSubmit(e, editorEl);
     }
@@ -9098,9 +9104,30 @@ window.__agySuiteModules.skin=function(){
     if (el.textContent !== css) el.textContent = css;
   }
 
+  const uiText = (cn, en) => (window.__agySuiteSettings?.i18n === false ? en : cn);
+
+  function syncWidgetLocale(widget) {
+    if (!widget) return;
+    const lbl = widget.querySelector(".agy-ts-label");
+    const seg = widget.querySelector(".agy-ts-seg");
+    const titleStr = uiText("切换皮肤", "Appearance Theme");
+    if (lbl && lbl.textContent !== titleStr) lbl.textContent = titleStr;
+    if (seg && seg.getAttribute("aria-label") !== titleStr) seg.setAttribute("aria-label", titleStr);
+    const map = {
+      light: uiText("白天", "Light"),
+      dark: uiText("黑夜", "Dark"),
+      system: uiText("跟随系统", "System")
+    };
+    widget.querySelectorAll("[data-theme-mode]").forEach((btn) => {
+      const m = btn.getAttribute("data-theme-mode");
+      if (map[m] && btn.textContent !== map[m]) btn.textContent = map[m];
+    });
+  }
+
   function syncWidgetState(mode) {
     const widget = document.getElementById(WIDGET_ID);
     if (!widget) return;
+    syncWidgetLocale(widget);
     const m = mode || getSavedMode();
     widget.querySelectorAll("[data-theme-mode]").forEach((btn) => {
       const btnMode = btn.getAttribute("data-theme-mode");
@@ -9119,13 +9146,14 @@ window.__agySuiteModules.skin=function(){
     root.setAttribute("data-ag-i18n-skip", "true");
     root.setAttribute("data-ag-localization-skip", "true");
     root.innerHTML = `
-      <span class="agy-ts-label">切换皮肤</span>
-      <div class="agy-ts-seg" role="group" aria-label="切换皮肤">
-        <button type="button" class="agy-ts-btn" data-theme-mode="light">白天</button>
-        <button type="button" class="agy-ts-btn" data-theme-mode="dark">黑夜</button>
-        <button type="button" class="agy-ts-btn" data-theme-mode="system">跟随系统</button>
+      <span class="agy-ts-label"></span>
+      <div class="agy-ts-seg" role="group">
+        <button type="button" class="agy-ts-btn" data-theme-mode="light"></button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="dark"></button>
+        <button type="button" class="agy-ts-btn" data-theme-mode="system"></button>
       </div>
     `;
+    syncWidgetLocale(root);
 
     root.querySelectorAll("[data-theme-mode]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -9212,6 +9240,9 @@ window.__agySuiteModules.skin=function(){
     subtree: true
   });
 
+  const onSuiteSettings = () => syncWidgetState();
+  window.addEventListener("agy-suite-settings-updated", onSuiteSettings);
+
   window.__AGY_THEME_SWITCHER = {
     getMode: getSavedMode,
     setMode: setThemeMode,
@@ -9222,6 +9253,7 @@ window.__agySuiteModules.skin=function(){
   window.__agyThemeSwitcherCleanup = () => {
     if (disposed) return;
     disposed = true;
+    window.removeEventListener("agy-suite-settings-updated", onSuiteSettings);
     try {
       observer.disconnect();
     } catch (_) {}
@@ -9449,7 +9481,7 @@ window.__agySuiteModules.outline=function(){
     .agy-code-header-actions {
       margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
-    .agy-code-fold-btn, .agy-code-preview-btn {
+    .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn {
       padding: 1px 8px; border-radius: 6px;
       border: 1px solid var(--border, rgba(128, 128, 128, 0.22));
       background: transparent; color: inherit; cursor: pointer;
@@ -9463,11 +9495,51 @@ window.__agySuiteModules.outline=function(){
       font-weight: 600;
     }
     body.theme-dark .agy-code-preview-btn, html.dark .agy-code-preview-btn { color: #E58B6D; }
-    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover {
+    .agy-code-fold-btn:hover, .agy-code-preview-btn:hover, .agy-code-diff-btn:hover {
       opacity: 1; border-color: #D97757; color: #D97757;
     }
-    .agy-code-preview-btn[data-open="true"] {
+    .agy-code-preview-btn[data-open="true"], .agy-code-diff-btn[data-open="true"] {
       background: #D97757; border-color: #D97757; color: #FFFFFF; opacity: 1;
+    }
+    .agy-code-diff-panel {
+      border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      background: var(--background, #FAF9F5);
+      display: flex; flex-direction: column;
+      font: 12px/1.5 Consolas, "Cascadia Code", Monaco, monospace;
+    }
+    body.theme-dark .agy-code-diff-panel, html.dark .agy-code-diff-panel { background: #1A1918; }
+    .agy-code-diff-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 6px 12px; font: 500 11.5px/1.3 system-ui, sans-serif;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.14));
+      background: rgba(217, 119, 87, 0.055);
+    }
+    .agy-code-diff-select {
+      padding: 2px 7px; border-radius: 6px; font: 11px system-ui, sans-serif;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+      background: var(--card, #FFFFFF); color: inherit;
+    }
+    body.theme-dark .agy-code-diff-select, html.dark .agy-code-diff-select { background: #252422; color: #ECE9E2; }
+    .agy-code-diff-body { max-height: 320px; overflow: auto; padding: 4px 0; }
+    .agy-diff-row {
+      display: grid; grid-template-columns: 36px 36px 18px 1fr;
+      padding: 0 10px; white-space: pre-wrap; word-break: break-all;
+    }
+    .agy-diff-row .agy-diff-no {
+      opacity: 0.42; text-align: right; padding-right: 6px; user-select: none; font-size: 11px;
+    }
+    .agy-diff-row .agy-diff-sig { user-select: none; font-weight: 600; }
+    .agy-diff-row[data-diff="add"] { background: rgba(46, 125, 71, 0.13); color: #1E5E32; }
+    .agy-diff-row[data-diff="del"] { background: rgba(201, 64, 56, 0.12); color: #9E2A24; }
+    body.theme-dark .agy-diff-row[data-diff="add"], html.dark .agy-diff-row[data-diff="add"] {
+      background: rgba(72, 168, 104, 0.16); color: #7CE09B;
+    }
+    body.theme-dark .agy-diff-row[data-diff="del"], html.dark .agy-diff-row[data-diff="del"] {
+      background: rgba(224, 90, 82, 0.16); color: #F5938D;
+    }
+    .agy-diff-skip {
+      padding: 3px 14px; font: 11px system-ui, sans-serif; opacity: 0.52;
+      background: rgba(128, 128, 128, 0.06); text-align: center; user-select: none;
     }
     .agy-live-preview-panel {
       border-top: 1px solid var(--border, rgba(128, 128, 128, 0.18));
@@ -9530,7 +9602,8 @@ window.__agySuiteModules.outline=function(){
     .agy-table-tools-bar button:hover {
       opacity: 1; border-color: #D97757; color: #D97757;
     }
-    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre {
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] pre,
+    .rounded-xl.bg-muted.border[data-agy-code-folded="true"] > div:not(.border-b):not(.agy-live-preview-panel):not(.agy-code-diff-panel) {
       max-height: 156px !important;
       overflow: hidden !important;
       mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
@@ -9676,27 +9749,60 @@ window.__agySuiteModules.outline=function(){
     return inner;
   }
 
-  function extractCodeBlock(preOrCard) {
-    let lang = '';
-    const card = preOrCard.closest?.('.rounded-xl.bg-muted.border') || (preOrCard.matches?.('.rounded-xl.bg-muted.border') ? preOrCard : null);
+  function resolveCodeCard(node) {
+    if (!node) return null;
+    const card = node.matches?.('.rounded-xl.bg-muted.border')
+      ? node
+      : (node.querySelector?.(':scope > .rounded-xl.bg-muted.border, .rounded-xl.bg-muted.border') || node.closest?.('.rounded-xl.bg-muted.border'));
+    const header = card?.querySelector?.(':scope > .border-b') || null;
+    let bodyEl = null;
     if (card) {
-      const header = card.querySelector(':scope > .border-b');
-      if (header) {
+      bodyEl = [...card.children].find(ch =>
+        ch !== header &&
+        !ch.classList.contains('agy-live-preview-panel') &&
+        !ch.classList.contains('agy-code-diff-panel') &&
+        ch.tagName?.toUpperCase() !== 'STYLE'
+      ) || null;
+    } else if (node.tagName?.toUpperCase() === 'PRE') {
+      bodyEl = node;
+    }
+    if (!bodyEl) return null;
+    const codeNode = bodyEl.querySelector?.('pre code, code, .code-block') || bodyEl;
+    let lang = '';
+    if (header) {
+      const dedicated = header.querySelector('.text-muted-foreground');
+      if (dedicated && !dedicated.closest('button, .agy-code-header-actions')) {
+        const tok = (dedicated.textContent || '').trim().split(/\s+/)[0] || '';
+        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(tok) && !/^(copy|复制|preview|raw)$/i.test(tok)) lang = tok.toLowerCase();
+      }
+      if (!lang) {
         const headerText = [...header.childNodes]
-          .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
+          .filter(n => {
+            if (n.nodeType === 3) return true;
+            if (n.nodeType !== 1) return false;
+            if (n.matches?.('button, [role="button"], .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions')) return false;
+            if (n.querySelector?.('button') && !(n.textContent || '').replace(/copy|复制|preview|raw/gi, '').trim()) return false;
+            return true;
+          })
           .map(n => n.textContent || '')
           .join(' ');
-        const token = headerText.trim().split(/\s+/)[0] || '';
-        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) lang = token.toLowerCase();
+        const tok = headerText.trim().split(/\s+/)[0] || '';
+        if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(tok) && !/^(copy|复制|preview|raw)$/i.test(tok)) lang = tok.toLowerCase();
       }
     }
-    const codeEl = preOrCard.querySelector?.('pre code, pre, .code-block') || preOrCard;
     if (!lang) {
-      const cls = codeEl.className || '';
+      const cls = codeNode.className || '';
       const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
-      if (m) lang = m[1];
+      if (m) lang = m[1].toLowerCase();
     }
-    const raw = (codeEl.textContent || '').replace(/\n+$/, '');
+    const rawCode = (codeNode.textContent || '').replace(/\n+$/, '');
+    return { card, header, bodyEl, codeNode, lang, rawCode };
+  }
+
+  function extractCodeBlock(preOrCard) {
+    const info = resolveCodeCard(preOrCard);
+    const lang = info?.lang || '';
+    const raw = info ? info.rawCode : (preOrCard.textContent || '').replace(/\n+$/, '');
     const fence = raw.includes('```') ? '````' : '```';
     return `\n${fence}${lang}\n${raw}\n${fence}\n\n`;
   }
@@ -9742,13 +9848,13 @@ window.__agySuiteModules.outline=function(){
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
     if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'CAPTION') return '';
-    if (node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) {
+    if (tag === 'PRE') return extractCodeBlock(node);
+    if (node.matches?.('.rounded-xl.bg-muted.border') && resolveCodeCard(node)) {
       return extractCodeBlock(node);
     }
-    if (tag === 'PRE') return extractCodeBlock(node);
     if (tag === 'TABLE') return tableToMarkdown(node);
     if (/^H[1-6]$/.test(tag)) {
       const level = Number(tag[1]);
@@ -9874,26 +9980,15 @@ window.__agySuiteModules.outline=function(){
     if (!node) return '';
     if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue || '');
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    if (node.matches?.('.agy-live-preview-panel, .agy-table-tools, .agy-code-header-actions')) return '';
+    if (node.matches?.('.agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools, .agy-code-header-actions')) return '';
     const tag = node.tagName.toUpperCase();
     if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'BUTTON' || tag === 'SVG' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'CAPTION') return '';
     if (tag === 'BR') return '<br>';
     if (tag === 'HR') return '<hr>';
-    if ((node.matches?.('.rounded-xl.bg-muted.border') && node.querySelector('pre, .code-block')) || tag === 'PRE') {
-      const card = node.matches?.('.rounded-xl.bg-muted.border') ? node : node.closest?.('.rounded-xl.bg-muted.border');
-      let lang = 'code';
-      if (card) {
-        const header = card.querySelector(':scope > .border-b');
-        if (header) {
-          const headerText = [...header.childNodes]
-            .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
-            .map(n => n.textContent || '').join(' ');
-          const token = headerText.trim().split(/\s+/)[0] || '';
-          if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token)) lang = token.toLowerCase();
-        }
-      }
-      const codeEl = node.querySelector?.('pre code, pre, .code-block') || node;
-      const raw = (codeEl.textContent || '').replace(/\n+$/, '');
+    if (tag === 'PRE' || (node.matches?.('.rounded-xl.bg-muted.border') && resolveCodeCard(node))) {
+      const info = resolveCodeCard(node);
+      const lang = info?.lang || 'code';
+      const raw = info ? info.rawCode : (node.textContent || '').replace(/\n+$/, '');
       return `<div class="code-card"><div class="code-head"><span>${escapeHtml(lang)}</span><button type="button" class="copy-code">Copy</button></div><pre><code>${escapeHtml(raw)}</code></pre></div>`;
     }
     const children = [...node.childNodes].map(safeNodeToHtml).join('');
@@ -10171,6 +10266,22 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           }
           flashStatus(text(`✓ 已将第 ${turn.index} 轮提问填入输入框`, `✓ Loaded Turn #${turn.index} prompt`));
         };
+        const pinOne = document.createElement('button');
+        pinOne.type = 'button';
+        pinOne.className = 'agy-od-mini-btn';
+        pinOne.dataset.pinTurn = String(turn.index);
+        pinOne.title = text('钉入跨会话上下文暂存匣 (Alt+B)', 'Pin turn to Cross-Session Pinboard (Alt+B)');
+        pinOne.textContent = '📌';
+        pinOne.onclick = async e => {
+          e.stopPropagation();
+          if (window.__agyPinboard?.addPin) {
+            await window.__agyPinboard.addPin({
+              title: `#${turn.index} ${turn.prompt.replace(/\s+/g, ' ').slice(0, 44)}`,
+              content: turnToMarkdown(turn)
+            });
+            flashStatus(text(`✓ 已将第 ${turn.index} 轮钉入暂存匣`, `✓ Pinned Turn #${turn.index} to Pinboard`));
+          }
+        };
         const copyOne = document.createElement('button');
         copyOne.type = 'button';
         copyOne.className = 'agy-od-mini-btn';
@@ -10193,7 +10304,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           e.stopPropagation();
           toggleStar(turn.id);
         };
-        actions.append(reuseBtn, copyOne, starToggle);
+        actions.append(reuseBtn, pinOne, copyOne, starToggle);
         top.append(idx, prompt, actions);
         card.appendChild(top);
 
@@ -10330,25 +10441,165 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     return csv;
   }
 
+  function computeLineDiff(oldText, newText) {
+    const a = String(oldText ?? '').replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n');
+    const b = String(newText ?? '').replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n');
+    let start = 0;
+    while (start < a.length && start < b.length && a[start] === b[start]) start++;
+    let endA = a.length - 1;
+    let endB = b.length - 1;
+    while (endA >= start && endB >= start && a[endA] === b[endB]) { endA--; endB--; }
+
+    const ops = [];
+    for (let i = 0; i < start; i++) ops.push({ type: 'eq', line: a[i] });
+
+    const midA = a.slice(start, endA + 1);
+    const midB = b.slice(start, endB + 1);
+    if (midA.length * midB.length <= 360000) {
+      const m = midA.length, n = midB.length;
+      const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+      for (let i = m - 1; i >= 0; i--) {
+        for (let j = n - 1; j >= 0; j--) {
+          dp[i][j] = midA[i] === midB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+      }
+      let i = 0, j = 0;
+      while (i < m && j < n) {
+        if (midA[i] === midB[j]) { ops.push({ type: 'eq', line: midA[i++] }); j++; }
+        else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push({ type: 'del', line: midA[i++] });
+        else ops.push({ type: 'add', line: midB[j++] });
+      }
+      while (i < m) ops.push({ type: 'del', line: midA[i++] });
+      while (j < n) ops.push({ type: 'add', line: midB[j++] });
+    } else {
+      for (const l of midA) ops.push({ type: 'del', line: l });
+      for (const l of midB) ops.push({ type: 'add', line: l });
+    }
+
+    for (let i = endA + 1; i < a.length; i++) ops.push({ type: 'eq', line: a[i] });
+
+    let oldNo = 1, newNo = 1, added = 0, removed = 0;
+    for (const op of ops) {
+      if (op.type === 'eq') { op.oldNo = oldNo++; op.newNo = newNo++; }
+      else if (op.type === 'del') { op.oldNo = oldNo++; op.newNo = null; removed++; }
+      else { op.oldNo = null; op.newNo = newNo++; added++; }
+    }
+    const patchLines = ['--- a/previous', '+++ b/current'];
+    for (const op of ops) {
+      patchLines.push((op.type === 'add' ? '+' : op.type === 'del' ? '-' : ' ') + op.line);
+    }
+    return { added, removed, ops, unifiedPatch: patchLines.join('\n') };
+  }
+
   function cleanupCodeFolds() {
-    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, caption.agy-table-tools').forEach(el => el.remove());
+    document.querySelectorAll('.agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-code-diff-panel, caption.agy-table-tools').forEach(el => el.remove());
     document.querySelectorAll('[data-agy-code-folded]').forEach(el => el.removeAttribute('data-agy-code-folded'));
   }
 
-  function extractHeaderLang(header, pre) {
-    const headerText = [...header.childNodes]
-      .filter(n => !(n.nodeType === 1 && n.matches?.('button, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions')))
-      .map(n => n.textContent || '')
-      .join(' ');
-    const token = headerText.trim().split(/\s+/)[0] || '';
-    if (/^[a-zA-Z0-9_+#.-]{1,24}$/.test(token) && !/^(copy|复制)$/i.test(token)) return token.toLowerCase();
-    const codeEl = pre.querySelector('code') || pre;
-    const cls = codeEl.className || '';
-    const m = typeof cls === 'string' && cls.match(/language-([a-zA-Z0-9_+-]+)/);
-    return m ? m[1].toLowerCase() : '';
+  function mountCodeDiffPanel(card, getRawCode, candidates, defaultBaseIdx) {
+    let panel = card.querySelector(':scope > .agy-code-diff-panel');
+    if (panel) return panel;
+    let selectedBase = defaultBaseIdx;
+
+    panel = document.createElement('div');
+    panel.className = 'agy-code-diff-panel';
+    panel.setAttribute('data-ag-localization-skip', 'true');
+
+    const head = document.createElement('div');
+    head.className = 'agy-code-diff-head';
+    const leftWrap = document.createElement('div');
+    leftWrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    const badge = document.createElement('span');
+    badge.className = 'agy-live-preview-badge';
+    const select = document.createElement('select');
+    select.className = 'agy-code-diff-select';
+    candidates.forEach((cand, idx) => {
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      opt.textContent = text(`对比代码 #${cand.seq}${cand.lang ? ` (${cand.lang})` : ''} · ${cand.lines} 行`, `vs Code #${cand.seq}${cand.lang ? ` (${cand.lang})` : ''} · ${cand.lines} lines`);
+      if (idx === selectedBase) opt.selected = true;
+      select.appendChild(opt);
+    });
+    leftWrap.append(badge, select);
+
+    const copyPatchBtn = document.createElement('button');
+    copyPatchBtn.type = 'button';
+    copyPatchBtn.className = 'agy-code-fold-btn';
+    copyPatchBtn.textContent = text('📋 复制 .diff', '📋 Copy .diff');
+    head.append(leftWrap, copyPatchBtn);
+
+    const body = document.createElement('div');
+    body.className = 'agy-code-diff-body';
+    panel.append(head, body);
+    card.appendChild(panel);
+
+    const renderDiffRows = () => {
+      const base = candidates[selectedBase] || candidates[0];
+      const diff = computeLineDiff(base?.rawCode || '', getRawCode());
+      badge.textContent = `⇄ +${diff.added} / -${diff.removed}`;
+      copyPatchBtn.onclick = async e => {
+        e.stopPropagation();
+        await writeClipboard(diff.unifiedPatch);
+        copyPatchBtn.textContent = text('✓ 已复制 Patch', '✓ Copied Patch');
+        setTimeout(() => { copyPatchBtn.textContent = text('📋 复制 .diff', '📋 Copy .diff'); }, 1400);
+      };
+
+      body.replaceChildren();
+      const keep = new Uint8Array(diff.ops.length);
+      diff.ops.forEach((op, i) => {
+        if (op.type !== 'eq') {
+          for (let k = Math.max(0, i - 3); k <= Math.min(diff.ops.length - 1, i + 3); k++) keep[k] = 1;
+        }
+      });
+      if (diff.added === 0 && diff.removed === 0) {
+        const same = document.createElement('div');
+        same.className = 'agy-diff-skip';
+        same.textContent = text('两处代码块内容完全一致', 'Both code blocks are identical');
+        body.appendChild(same);
+        return;
+      }
+      let skipped = 0;
+      const flushSkip = () => {
+        if (!skipped) return;
+        const sk = document.createElement('div');
+        sk.className = 'agy-diff-skip';
+        sk.textContent = text(`⋯ 折叠未改动代码 ${skipped} 行 ⋯`, `⋯ ${skipped} unchanged lines hidden ⋯`);
+        body.appendChild(sk);
+        skipped = 0;
+      };
+      diff.ops.forEach((op, idx) => {
+        if (!keep[idx]) { skipped++; return; }
+        flushSkip();
+        const row = document.createElement('div');
+        row.className = 'agy-diff-row';
+        row.dataset.diff = op.type;
+        const n1 = document.createElement('span');
+        n1.className = 'agy-diff-no';
+        n1.textContent = op.oldNo ?? '';
+        const n2 = document.createElement('span');
+        n2.className = 'agy-diff-no';
+        n2.textContent = op.newNo ?? '';
+        const sig = document.createElement('span');
+        sig.className = 'agy-diff-sig';
+        sig.textContent = op.type === 'add' ? '+' : op.type === 'del' ? '-' : ' ';
+        const code = document.createElement('span');
+        code.textContent = op.line;
+        row.append(n1, n2, sig, code);
+        body.appendChild(row);
+      });
+      flushSkip();
+    };
+
+    select.onchange = e => {
+      e.stopPropagation();
+      selectedBase = Number(select.value) || 0;
+      renderDiffRows();
+    };
+    renderDiffRows();
+    return panel;
   }
 
-  function mountLivePreviewPanel(card, pre, kind) {
+  function mountLivePreviewPanel(card, getRawCode, kind) {
     let panel = card.querySelector(':scope > .agy-live-preview-panel');
     if (panel) return panel;
     let darkCanvas = document.body.classList.contains('theme-dark') || document.documentElement.classList.contains('dark');
@@ -10393,7 +10644,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     frame.title = kind === 'svg' ? 'SVG Live Preview' : 'HTML Live Preview';
 
     const syncFrame = () => {
-      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const raw = getRawCode();
       frame.dataset.viewport = viewport;
       frame.style.background = darkCanvas ? '#1A1918' : '#FAF9F5';
       frame.srcdoc = buildPreviewSrcdoc(raw, kind, darkCanvas);
@@ -10407,7 +10658,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     reloadBtn.onclick = e => { e.stopPropagation(); syncFrame(); };
     dlBtn.onclick = e => {
       e.stopPropagation();
-      const raw = (pre.textContent || '').replace(/\n+$/, '');
+      const raw = getRawCode();
       const ext = kind === 'svg' ? 'svg' : 'html';
       const mime = kind === 'svg' ? 'image/svg+xml;charset=utf-8' : 'text/html;charset=utf-8';
       downloadBlobText(raw, `snippet-${Date.now().toString(36)}.${ext}`, mime);
@@ -10425,19 +10676,51 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
   function enhanceLongCodeBlocks() {
     const root = primaryRoot();
     if (!root) return;
+    const historyBlocks = [];
+    let codeSeq = 0;
+
     for (const card of root.querySelectorAll('[data-testid="planner-response-text"] .rounded-xl.bg-muted.border')) {
-      const header = card.querySelector(':scope > .border-b');
-      const pre = card.querySelector('pre');
-      if (!header || !pre) continue;
-      const rawCode = (pre.textContent || '').replace(/\n+$/, '');
-      const lines = rawCode.split('\n').length;
-      const lang = extractHeaderLang(header, pre);
+      if (isExcluded(card)) continue;
+      const info = resolveCodeCard(card);
+      if (!info || !info.header || !info.bodyEl) continue;
+      const { header, lang, rawCode } = info;
+      const getRawCode = () => resolveCodeCard(card)?.rawCode || '';
+      const lines = rawCode ? rawCode.split('\n').length : 0;
       const previewMeta = detectPreviewableCode(lang, rawCode);
+      codeSeq++;
+
+      let diffTargetIdx = -1;
+      let diffSummary = null;
+      const candidates = historyBlocks.slice();
+      if (lines >= 2 && candidates.length > 0) {
+        const curLineSet = new Set(rawCode.split('\n').map(l => l.trim()).filter(l => l.length >= 6));
+        for (let i = candidates.length - 1; i >= 0; i--) {
+          const prev = candidates[i];
+          if (prev.lines < 2 || prev.rawCode.trim() === rawCode.trim()) continue;
+          const sameLang = Boolean(lang && prev.lang && lang === prev.lang);
+          const hasSharedLine = [...curLineSet].some(l => prev.lineSet.has(l));
+          if (sameLang || hasSharedLine) {
+            diffTargetIdx = i;
+            diffSummary = computeLineDiff(prev.rawCode, rawCode);
+            break;
+          }
+        }
+      }
+      if (lines >= 2) {
+        historyBlocks.push({
+          seq: codeSeq,
+          lang,
+          rawCode,
+          lines,
+          lineSet: new Set(rawCode.split('\n').map(l => l.trim()).filter(l => l.length >= 6))
+        });
+      }
 
       let actionsWrap = header.querySelector(':scope > .agy-code-header-actions');
-      if (!previewMeta.previewable && lines < 18) {
+      if (!previewMeta.previewable && lines < 18 && diffTargetIdx < 0) {
         actionsWrap?.remove();
         card.querySelector(':scope > .agy-live-preview-panel')?.remove();
+        card.querySelector(':scope > .agy-code-diff-panel')?.remove();
         card.removeAttribute('data-agy-code-folded');
         continue;
       }
@@ -10479,13 +10762,44 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
           e.stopPropagation();
           const existing = card.querySelector(':scope > .agy-live-preview-panel');
           if (existing) existing.remove();
-          else mountLivePreviewPanel(card, pre, previewMeta.kind);
+          else mountLivePreviewPanel(card, getRawCode, previewMeta.kind);
           updatePreviewBtn();
         };
         updatePreviewBtn();
       }
 
-      // 2) Long Code Block Fold button (18+ lines)
+      // 2) Turn-to-Turn Code Diff button
+      let diffBtn = actionsWrap.querySelector('.agy-code-diff-btn');
+      if (diffTargetIdx < 0 || !diffSummary) {
+        diffBtn?.remove();
+        card.querySelector(':scope > .agy-code-diff-panel')?.remove();
+      } else {
+        if (!diffBtn) {
+          diffBtn = document.createElement('button');
+          diffBtn.type = 'button';
+          diffBtn.className = 'agy-code-diff-btn';
+          diffBtn.setAttribute('data-ag-localization-skip', 'true');
+          actionsWrap.appendChild(diffBtn);
+        }
+        const updateDiffBtn = () => {
+          const isOpen = Boolean(card.querySelector(':scope > .agy-code-diff-panel'));
+          diffBtn.dataset.open = String(isOpen);
+          const lbl = isOpen
+            ? text('✕ 收起对比', '✕ Close Diff')
+            : text(`⇄ 对比 (+${diffSummary.added}/-${diffSummary.removed})`, `⇄ Diff (+${diffSummary.added}/-${diffSummary.removed})`);
+          if (diffBtn.textContent !== lbl) diffBtn.textContent = lbl;
+        };
+        diffBtn.onclick = e => {
+          e.stopPropagation();
+          const existing = card.querySelector(':scope > .agy-code-diff-panel');
+          if (existing) existing.remove();
+          else mountCodeDiffPanel(card, getRawCode, candidates, diffTargetIdx);
+          updateDiffBtn();
+        };
+        updateDiffBtn();
+      }
+
+      // 3) Long Code Block Fold button (18+ lines)
       let foldBtn = actionsWrap.querySelector('.agy-code-fold-btn');
       if (lines < 18) {
         foldBtn?.remove();
@@ -10567,6 +10881,19 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
   }
 
+  function syncMainEdgeOffset(pill, drawer) {
+    const mainEl = document.querySelector('[data-main-content-body]');
+    let extraRight = 0;
+    if (mainEl) {
+      const r = mainEl.getBoundingClientRect();
+      if (r.width > 180 && window.innerWidth - r.right > 80) {
+        extraRight = Math.max(0, Math.round(window.innerWidth - r.right));
+      }
+    }
+    if (pill) pill.style.right = extraRight ? `${extraRight + 12}px` : '';
+    if (drawer) drawer.style.right = extraRight ? `${extraRight + 16}px` : '';
+  }
+
   function render() {
     if (disposed) return;
     const enabled = window.__agySuiteSettings?.outline !== false;
@@ -10601,6 +10928,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
     if (openState) renderDrawer(turns, stars);
     else document.getElementById('agy-outline-drawer')?.remove();
+    syncMainEdgeOffset(pill, document.getElementById('agy-outline-drawer'));
   }
 
   function open() {
@@ -10655,7 +10983,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-table-tools')) continue;
+      if (m.target?.closest?.('#agy-outline-drawer, #agy-outline-pill, #agy-selection-pill, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-code-header-actions, .agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools')) continue;
       scheduleRender();
       break;
     }
@@ -10663,19 +10991,21 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  window.addEventListener('resize', scheduleRender);
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('pointerdown', onPointerDown);
   scheduleRender();
 
   let selTimer = null;
-  function quoteSelectionIntoComposer(rawText) {
+  function quoteSelectionIntoComposer(rawText, sourceHost = null) {
     const clean = String(rawText || '').trim();
     if (!clean) return false;
     const quoted = clean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+    const scopedComposer = sourceHost?.closest?.('[data-side-panel-body], [data-main-content-body]')?.querySelector?.('[data-testid="agent-input-box"]') || null;
     if (window.__agyPromptVault?.insertIntoComposer) {
-      return window.__agyPromptVault.insertIntoComposer(quoted, { append: true });
+      return window.__agyPromptVault.insertIntoComposer(quoted, { append: true, composerBox: scopedComposer });
     }
-    const editor = document.querySelector('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    const editor = (scopedComposer || document).querySelector('[data-testid="agent-input-box"] [data-lexical-editor="true"], [data-lexical-editor="true"]');
     if (!editor) return false;
     const prev = (editor.textContent || '').trim();
     editor.textContent = prev ? `${prev}\n\n${quoted}` : quoted;
@@ -10704,7 +11034,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     }
     const range = sel.getRangeAt(0);
     const host = (range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
-    if (!host || host.closest?.('input, textarea, [contenteditable="true"], #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-suite-backdrop, #agy-command-palette-backdrop')) {
+    if (!host || host.closest?.('input, textarea, [contenteditable="true"], #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-pinboard-backdrop, #agy-suite-backdrop, #agy-command-palette-backdrop')) {
       removeSelectionPill();
       return;
     }
@@ -10736,7 +11066,18 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       const captured = sel.toString().trim();
       sel.removeAllRanges();
       removeSelectionPill();
-      quoteSelectionIntoComposer(captured);
+      quoteSelectionIntoComposer(captured, host);
+    };
+
+    const pinBtn = document.createElement('button');
+    pinBtn.type = 'button';
+    pinBtn.dataset.selAction = 'pin';
+    pinBtn.textContent = text('📌 暂存', '📌 Pin');
+    pinBtn.onclick = () => {
+      const captured = sel.toString().trim();
+      sel.removeAllRanges();
+      removeSelectionPill();
+      window.__agyPinboard?.addPin?.({ content: captured });
     };
 
     const saveBtn = document.createElement('button');
@@ -10763,7 +11104,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
       setTimeout(removeSelectionPill, 450);
     };
 
-    pill.append(quoteBtn, saveBtn, copyBtn);
+    pill.append(quoteBtn, pinBtn, saveBtn, copyBtn);
     const pillWidth = pill.offsetWidth || 220;
     const left = Math.max(8, Math.min(rect.left + rect.width / 2 - pillWidth / 2, innerWidth - pillWidth - 8));
     const top = rect.top > 48 ? rect.top - 40 : Math.min(innerHeight - 44, rect.bottom + 8);
@@ -10790,6 +11131,8 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     downloadBookishHtml,
     tableToDelimited,
     buildPreviewSrcdoc,
+    computeLineDiff,
+    resolveCodeCard,
     copyMarkdown,
     quoteSelectionIntoComposer,
     updateSelectionPill,
@@ -10807,6 +11150,7 @@ document.querySelectorAll('.copy-code').forEach(b=>b.onclick=()=>{navigator.clip
     document.removeEventListener('selectionchange', onSelectionChange);
     window.removeEventListener('scroll', removeSelectionPill, true);
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    window.removeEventListener('resize', scheduleRender);
     document.removeEventListener('keydown', onKeyDown);
     document.removeEventListener('pointerdown', onPointerDown);
     document.getElementById('agy-outline-pill')?.remove();
@@ -10836,6 +11180,78 @@ window.__agySuiteModules.prompts=function(){
   let statusError = false;
   let returnFocus = null;
   let scheduled = false;
+  let lastFocusedComposer = null;
+  let bypassedSecretSignature = '';
+  let draftSaveTimer = null;
+  const DRAFTS_KEY = '__agy_composer_drafts__';
+
+  const SECRET_RULES = [
+    { label: 'Anthropic API Key', re: /\bsk-ant-api\d{2}-[A-Za-z0-9_-]{24,}\b/g },
+    { label: 'OpenAI / Relay Secret Key', re: /\bsk-(?:proj-|svcacct-|live-)?[A-Za-z0-9_-]{32,}\b/g },
+    { label: 'GitHub Token', re: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{35,}\b/g },
+    { label: 'Google API Key', re: /\bAIzaSy[A-Za-z0-9_-]{33}\b/g },
+    { label: 'AWS Access Key', re: /\bAKIA[0-9A-Z]{16}\b/g },
+    { label: 'Google OAuth Refresh Token', re: /\b1\/\/0[A-Za-z0-9_-]{40,}\b/g },
+    { label: 'PEM Private Key', re: /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|$)/g }
+  ];
+
+  function isDummyToken(tok) {
+    return /example|fixture|dummy|placeholder|sample/i.test(tok) || /(.)\1{9,}/.test(tok);
+  }
+
+  function detectSecrets(rawText) {
+    const src = String(rawText || '');
+    if (src.length < 16) return [];
+    const found = [];
+    for (const rule of SECRET_RULES) {
+      rule.re.lastIndex = 0;
+      let m;
+      while ((m = rule.re.exec(src))) {
+        if (!isDummyToken(m[0])) {
+          found.push({ label: rule.label, match: m[0] });
+          break;
+        }
+      }
+    }
+    return found;
+  }
+
+  function redactSecrets(rawText) {
+    let out = String(rawText || '');
+    for (const rule of SECRET_RULES) {
+      rule.re.lastIndex = 0;
+      out = out.replace(rule.re, tok => isDummyToken(tok) ? tok : '[REDACTED_SECRET]');
+    }
+    return out;
+  }
+
+  function getDrafts() {
+    try {
+      const arr = JSON.parse(sessionStorage.getItem(DRAFTS_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveDraftSnapshot(rawText) {
+    const clean = String(rawText || '').trim();
+    if (clean.length < 12 || detectSecrets(clean).length > 0) return;
+    const convId = location.pathname.match(/\/c\/([^/?#]+)/)?.[1] || 'home';
+    const title = clean.replace(/\s+/g, ' ').slice(0, 44);
+    const list = getDrafts().filter(d => d.convId !== convId && d.content !== clean);
+    list.unshift({
+      id: 'draft-' + convId,
+      convId,
+      title: `🕒 ${title}`,
+      category: '__drafts__',
+      content: clean,
+      updatedAt: Date.now()
+    });
+    try {
+      sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(list.slice(0, 8)));
+    } catch {}
+  }
 
   const FALLBACK_PROMPTS = [
     {
@@ -10993,6 +11409,26 @@ window.__agySuiteModules.prompts=function(){
     .agy-pv-status { font-size: 11.5px; opacity: 0.75; min-height: 16px; }
     .agy-pv-status[data-error="true"] { color: #C94038; opacity: 1; }
     .agy-pv-foot-btns { display: flex; gap: 8px; align-items: center; }
+    #agy-secret-shield-banner {
+      margin: 0 0 8px; padding: 10px 13px; border-radius: 12px;
+      border: 1px solid rgba(201, 64, 56, 0.42);
+      background: var(--background, #FAF9F5); color: var(--foreground, #141413);
+      box-shadow: 0 8px 26px rgba(201, 64, 56, 0.14);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      font: 500 12px/1.45 system-ui, sans-serif;
+    }
+    body.theme-dark #agy-secret-shield-banner, html.dark #agy-secret-shield-banner {
+      background: #282322; color: #ECE9E2; border-color: rgba(224, 90, 82, 0.48);
+    }
+    .agy-ss-actions { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .agy-ss-actions button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.28));
+      background: transparent; color: inherit; border-radius: 7px; padding: 4px 10px;
+      font: 500 11.5px system-ui, sans-serif; cursor: pointer;
+    }
+    .agy-ss-actions button.primary {
+      background: #D97757; border-color: #D97757; color: #FFFFFF; font-weight: 600;
+    }
     @media (max-width: 700px) {
       #agy-prompt-vault { grid-template-columns: 1fr; height: calc(100vh - 24px); }
       .agy-pv-left { max-height: 200px; border-right: 0; border-bottom: 1px solid var(--border, #8883); }
@@ -11050,6 +11486,7 @@ window.__agySuiteModules.prompts=function(){
   }
 
   async function refresh() {
+    const prevSig = JSON.stringify(prompts);
     try {
       prompts = await apiCall();
       saveCachedPrompts(prompts);
@@ -11059,13 +11496,22 @@ window.__agySuiteModules.prompts=function(){
     if (!selectedId || !prompts.some(p => p.id === selectedId)) {
       selectedId = prompts[0]?.id || null;
     }
-    if (document.getElementById('agy-prompt-vault-backdrop')) renderModal();
+    const modal = document.getElementById('agy-prompt-vault');
+    if (modal && !editingItem && !modal.querySelector('input:focus, textarea:focus') && JSON.stringify(prompts) !== prevSig) {
+      renderModal();
+    }
     return prompts;
   }
 
-  function insertIntoComposer(value, { append = false } = {}) {
-    const box = [...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el => !el.closest('[data-side-panel-body]')) ||
+  function resolveComposerBox(explicitBox = null) {
+    if (explicitBox && explicitBox.isConnected) return explicitBox;
+    if (lastFocusedComposer && lastFocusedComposer.isConnected) return lastFocusedComposer;
+    return [...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el => !el.closest('[data-side-panel-body]')) ||
       document.querySelector('[data-testid="agent-input-box"]');
+  }
+
+  function insertIntoComposer(value, { append = false, composerBox = null } = {}) {
+    const box = resolveComposerBox(composerBox);
     const editor = box?.querySelector('[data-lexical-editor="true"]');
     if (!editor || !value) return false;
 
@@ -11079,14 +11525,21 @@ window.__agySuiteModules.prompts=function(){
         lex.update(() => {
           const st = lex._pendingEditorState || lex.getEditorState?.();
           if (!st?._nodeMap) return;
-          let textNode = null;
+          const textNodes = [];
           for (const [, node] of st._nodeMap.entries()) {
             if (node && node.__type === 'text' && typeof node.setTextContent === 'function') {
-              textNode = node;
+              textNodes.push(node);
             }
           }
-          if (textNode) {
-            textNode.setTextContent(targetText);
+          if (textNodes.length === 1) {
+            textNodes[0].setTextContent(targetText);
+            updatedViaLex = true;
+          } else if (textNodes.length > 1) {
+            for (let i = 1; i < textNodes.length; i++) {
+              if (typeof textNodes[i].remove === 'function') textNodes[i].remove();
+              else textNodes[i].setTextContent('');
+            }
+            textNodes[0].setTextContent(targetText);
             updatedViaLex = true;
           } else if (!append) {
             const root = st._nodeMap.get('root');
@@ -11215,7 +11668,8 @@ window.__agySuiteModules.prompts=function(){
       nextSearch?.setSelectionRange(searchQuery.length, searchQuery.length);
     };
 
-    const categories = ['all', 'pinned', ...new Set(prompts.map(p => p.category).filter(Boolean))];
+    const savedDrafts = getDrafts();
+    const categories = ['all', 'pinned', ...(savedDrafts.length ? ['__drafts__'] : []), ...new Set(prompts.map(p => p.category).filter(Boolean))];
     const catsRow = document.createElement('div');
     catsRow.className = 'agy-pv-cats';
     for (const cat of categories) {
@@ -11223,9 +11677,17 @@ window.__agySuiteModules.prompts=function(){
       chip.type = 'button';
       chip.className = 'agy-pv-cat';
       chip.dataset.active = String(activeCategory === cat);
-      chip.textContent = cat === 'all' ? text('全部', 'All') : cat === 'pinned' ? text('★ 置顶', '★ Pinned') : cat;
+      chip.textContent = cat === 'all'
+        ? text('全部', 'All')
+        : cat === 'pinned'
+          ? text('★ 置顶', '★ Pinned')
+          : cat === '__drafts__'
+            ? text(`🕒 草稿 (${savedDrafts.length})`, `🕒 Drafts (${savedDrafts.length})`)
+            : cat;
       chip.onclick = () => {
         activeCategory = cat;
+        if (cat === '__drafts__' && savedDrafts[0]) selectedId = savedDrafts[0].id;
+        else if (cat !== '__drafts__' && String(selectedId || '').startsWith('draft-')) selectedId = prompts[0]?.id || null;
         renderModal();
       };
       catsRow.appendChild(chip);
@@ -11233,9 +11695,10 @@ window.__agySuiteModules.prompts=function(){
     leftHead.append(brand, search, catsRow);
 
     const q = searchQuery.trim().toLowerCase();
-    const filtered = prompts.filter(p => {
+    const sourcePool = activeCategory === '__drafts__' ? savedDrafts : prompts;
+    const filtered = sourcePool.filter(p => {
       if (activeCategory === 'pinned' && !p.pinned) return false;
-      if (activeCategory !== 'all' && activeCategory !== 'pinned' && p.category !== activeCategory) return false;
+      if (activeCategory !== 'all' && activeCategory !== 'pinned' && activeCategory !== '__drafts__' && p.category !== activeCategory) return false;
       if (!q) return true;
       return p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
     });
@@ -11248,13 +11711,16 @@ window.__agySuiteModules.prompts=function(){
       btn.className = 'agy-pv-card';
       btn.dataset.promptId = item.id;
       btn.dataset.selected = String(!editingItem && item.id === selectedId);
-      const varsCount = parseVariables(item.content).length;
+      const isDraft = item.category === '__drafts__';
+      const varsCount = isDraft ? 0 : parseVariables(item.content).length;
       const t = document.createElement('div');
       t.className = 'agy-pv-card-title';
       t.textContent = (item.pinned ? '★ ' : '') + item.title;
       const meta = document.createElement('div');
       meta.className = 'agy-pv-card-meta';
-      meta.textContent = `${item.category || text('通用', 'General')}${varsCount ? ` · ${varsCount} ${text('个参数', 'vars')}` : ''}`;
+      meta.textContent = isDraft
+        ? text('未发送草稿快照', 'Unsent composer draft')
+        : `${item.category || text('通用', 'General')}${varsCount ? ` · ${varsCount} ${text('个参数', 'vars')}` : ''}`;
       btn.append(t, meta);
       btn.onclick = () => {
         editingItem = null;
@@ -11339,18 +11805,21 @@ window.__agySuiteModules.prompts=function(){
       titleInput.maxLength = 80;
       titleInput.placeholder = text('模板标题（例如：🚀 接口契约审查）', 'Template title');
       titleInput.value = editingItem.title;
+      titleInput.oninput = () => { editingItem.title = titleInput.value; };
       const catInput = document.createElement('input');
       catInput.id = 'agy-pv-edit-category';
       catInput.className = 'agy-pv-input';
       catInput.maxLength = 24;
       catInput.placeholder = text('分类', 'Category');
       catInput.value = editingItem.category;
+      catInput.oninput = () => { editingItem.category = catInput.value; };
       const pinWrap = document.createElement('label');
       pinWrap.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap';
       const pinCheck = document.createElement('input');
       pinCheck.type = 'checkbox';
       pinCheck.id = 'agy-pv-edit-pinned';
       pinCheck.checked = Boolean(editingItem.pinned);
+      pinCheck.onchange = () => { editingItem.pinned = pinCheck.checked; };
       pinWrap.append(pinCheck, document.createTextNode(text('置顶', 'Pin')));
       row1.append(titleInput, catInput, pinWrap);
 
@@ -11372,10 +11841,12 @@ window.__agySuiteModules.prompts=function(){
       contentArea.style.cssText = 'flex:1;resize:none;min-height:180px';
       contentArea.placeholder = text('输入提示词模板内容，例如：\n请针对 {{目标模块}} 进行审查，重点关注 {{关注维度:并发安全与边界条件}}。', 'Enter prompt template content…');
       contentArea.value = editingItem.content;
+      contentArea.oninput = () => { editingItem.content = contentArea.value; };
       insertTokenBtn.onclick = () => {
         const token = '{{参数名:默认值}}';
         const start = contentArea.selectionStart ?? contentArea.value.length;
         contentArea.value = contentArea.value.slice(0, start) + token + contentArea.value.slice(contentArea.selectionEnd ?? start);
+        editingItem.content = contentArea.value;
         contentArea.focus();
       };
       form.append(row1, helperRow, contentArea);
@@ -11431,13 +11902,14 @@ window.__agySuiteModules.prompts=function(){
       foot.append(status, btns);
       right.append(head, form, foot);
     } else {
-      const active = prompts.find(p => p.id === selectedId) || filtered[0];
+      const active = sourcePool.find(p => p.id === selectedId) || filtered[0];
       if (!active) {
         const empty = document.createElement('div');
         empty.style.cssText = 'margin:auto;opacity:0.55;text-align:center';
         empty.textContent = text('选择左侧模板或点击「+ 新建模板」', 'Select or create a prompt template');
         right.appendChild(empty);
       } else {
+        const isDraftItem = active.category === '__drafts__';
         selectedId = active.id;
         const head = document.createElement('div');
         head.className = 'agy-pv-right-head';
@@ -11446,49 +11918,51 @@ window.__agySuiteModules.prompts=function(){
         h3.textContent = active.title;
         const actions = document.createElement('div');
         actions.className = 'agy-pv-head-actions';
-        const pinBtn = document.createElement('button');
-        pinBtn.type = 'button';
-        pinBtn.className = 'agy-pv-btn';
-        pinBtn.textContent = active.pinned ? text('★ 已置顶', '★ Pinned') : text('☆ 置顶', '☆ Pin');
-        pinBtn.onclick = async () => {
-          try {
-            prompts = await apiCall({ action: 'upsert', prompt: { ...active, pinned: !active.pinned } });
-            saveCachedPrompts(prompts);
+        if (!isDraftItem) {
+          const pinBtn = document.createElement('button');
+          pinBtn.type = 'button';
+          pinBtn.className = 'agy-pv-btn';
+          pinBtn.textContent = active.pinned ? text('★ 已置顶', '★ Pinned') : text('☆ 置顶', '☆ Pin');
+          pinBtn.onclick = async () => {
+            try {
+              prompts = await apiCall({ action: 'upsert', prompt: { ...active, pinned: !active.pinned } });
+              saveCachedPrompts(prompts);
+              renderModal();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          };
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'agy-pv-btn';
+          editBtn.textContent = text('✎ 编辑', '✎ Edit');
+          editBtn.onclick = () => {
+            editingItem = { ...active };
             renderModal();
-          } catch (err) {
-            setStatus(err.message, true);
-          }
-        };
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'agy-pv-btn';
-        editBtn.textContent = text('✎ 编辑', '✎ Edit');
-        editBtn.onclick = () => {
-          editingItem = { ...active };
-          renderModal();
-        };
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.id = 'agy-pv-delete-btn';
-        delBtn.className = 'agy-pv-btn';
-        delBtn.textContent = text('🗑 删除', '🗑 Delete');
-        delBtn.onclick = async () => {
-          try {
-            prompts = await apiCall({ action: 'delete', id: active.id });
-            saveCachedPrompts(prompts);
-            selectedId = prompts[0]?.id || null;
-            varValues = {};
-            setStatus(text('已删除模板', 'Template deleted'));
-            renderModal();
-          } catch (err) {
-            setStatus(err.message, true);
-          }
-        };
-        actions.append(pinBtn, editBtn, delBtn);
+          };
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.id = 'agy-pv-delete-btn';
+          delBtn.className = 'agy-pv-btn';
+          delBtn.textContent = text('🗑 删除', '🗑 Delete');
+          delBtn.onclick = async () => {
+            try {
+              prompts = await apiCall({ action: 'delete', id: active.id });
+              saveCachedPrompts(prompts);
+              selectedId = prompts[0]?.id || null;
+              varValues = {};
+              setStatus(text('已删除模板', 'Template deleted'));
+              renderModal();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          };
+          actions.append(pinBtn, editBtn, delBtn);
+        }
         head.append(h3, actions);
         right.appendChild(head);
 
-        const vars = parseVariables(active.content);
+        const vars = isDraftItem ? [] : parseVariables(active.content);
         if (vars.length > 0) {
           const varsBox = document.createElement('div');
           varsBox.className = 'agy-pv-vars';
@@ -11626,27 +12100,135 @@ window.__agySuiteModules.prompts=function(){
     });
   }
 
+  function showSecretShieldBanner(composerBox, rawText, hits, resumeSend) {
+    document.getElementById('agy-secret-shield-banner')?.remove();
+    const banner = document.createElement('div');
+    banner.id = 'agy-secret-shield-banner';
+    banner.setAttribute('role', 'alert');
+    banner.setAttribute('data-ag-localization-skip', 'true');
+
+    const msg = document.createElement('span');
+    const labels = [...new Set(hits.map(h => h.label))].join(', ');
+    msg.textContent = text(
+      `🛡️ 检测到疑似真实密钥 (${labels})，已暂停发送以防泄露`,
+      `🛡️ Detected potential live secret (${labels}) — paused before sending`
+    );
+
+    const acts = document.createElement('div');
+    acts.className = 'agy-ss-actions';
+
+    const redactBtn = document.createElement('button');
+    redactBtn.type = 'button';
+    redactBtn.id = 'agy-secret-redact-btn';
+    redactBtn.className = 'primary';
+    redactBtn.textContent = text('✂️ 一键脱敏替换', '✂️ Redact Secrets');
+    redactBtn.onclick = () => {
+      banner.remove();
+      insertIntoComposer(redactSecrets(rawText), { append: false, composerBox });
+    };
+
+    const allowBtn = document.createElement('button');
+    allowBtn.type = 'button';
+    allowBtn.id = 'agy-secret-allow-btn';
+    allowBtn.textContent = text('仍然发送', 'Send Anyway');
+    allowBtn.onclick = () => {
+      banner.remove();
+      bypassedSecretSignature = rawText;
+      resumeSend?.();
+    };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.id = 'agy-secret-cancel-btn';
+    cancelBtn.textContent = text('取消', 'Cancel');
+    cancelBtn.onclick = () => banner.remove();
+
+    acts.append(redactBtn, allowBtn, cancelBtn);
+    banner.append(msg, acts);
+    composerBox.insertBefore(banner, composerBox.firstChild);
+  }
+
+  function onFocusIn(e) {
+    const box = e.target?.closest?.('[data-testid="agent-input-box"]');
+    if (box) lastFocusedComposer = box;
+  }
+
+  function onComposerInput(e) {
+    const editor = e.target?.closest?.('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    if (!editor) return;
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(() => {
+      if (!disposed) saveDraftSnapshot(editor.textContent || '');
+    }, 650);
+  }
+
+  function checkSecretBeforeSend(e, composerBox, triggerSubmit) {
+    if (disposed || window.__agySuiteSettings?.prompts === false || !composerBox) return false;
+    const editor = composerBox.querySelector('[data-lexical-editor="true"]');
+    if (!editor) return false;
+    const rawText = (editor.textContent || '').trim();
+    if (!rawText) return false;
+    if (bypassedSecretSignature === rawText) {
+      bypassedSecretSignature = '';
+      return false;
+    }
+    const hits = detectSecrets(rawText);
+    if (!hits.length) return false;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showSecretShieldBanner(composerBox, rawText, hits, triggerSubmit);
+    return true;
+  }
+
+  function onCaptureClick(e) {
+    const sendBtn = e.target?.closest?.('[data-testid="send-button"]');
+    if (!sendBtn) return;
+    const box = sendBtn.closest('[data-testid="agent-input-box"]');
+    checkSecretBeforeSend(e, box, () => sendBtn.click());
+  }
+
+  function onCaptureKeyDown(e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.isComposing) return;
+    const editor = e.target?.closest?.('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    if (!editor) return;
+    if (document.querySelector('[role="listbox"], .lexical-typeahead-menu')) return;
+    const box = editor.closest('[data-testid="agent-input-box"]');
+    checkSecretBeforeSend(e, box, () => {
+      box?.querySelector('[data-testid="send-button"]')?.click();
+    });
+  }
+
   function onKeyDown(e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'p') {
       if (window.__agySuiteSettings?.prompts === false) return;
       e.preventDefault();
       if (document.getElementById('agy-prompt-vault-backdrop')) close();
       else open();
-    } else if (e.key === 'Escape' && document.getElementById('agy-prompt-vault-backdrop')) {
-      e.preventDefault();
-      close();
+    } else if (document.getElementById('agy-prompt-vault-backdrop')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (editingItem) document.getElementById('agy-pv-save-btn')?.click();
+        else document.getElementById('agy-pv-insert')?.click();
+      }
     }
   }
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-prompt-vault-backdrop')) continue;
+      if (m.target?.closest?.('#agy-prompt-vault-backdrop, #agy-secret-shield-banner')) continue;
       scheduleRender();
       break;
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  document.addEventListener('focusin', onFocusIn);
+  document.addEventListener('input', onComposerInput, true);
+  window.addEventListener('click', onCaptureClick, true);
+  window.addEventListener('keydown', onCaptureKeyDown, true);
   document.addEventListener('keydown', onKeyDown);
   scheduleRender();
 
@@ -11660,23 +12242,25 @@ window.__agySuiteModules.prompts=function(){
     const items = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.prompts) ? parsed.prompts : []);
     const valid = items.filter(it => it && typeof it.title === 'string' && it.title.trim() && typeof it.content === 'string' && it.content.trim());
     if (!valid.length) throw new Error(text('未找到有效的模板条目', 'No valid templates found'));
+    const normalized = valid.slice(0, 50).map(it => ({
+      id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
+      title: it.title.trim().slice(0, 80),
+      category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
+      pinned: Boolean(it.pinned),
+      content: it.content.trim()
+    }));
     let latest = prompts;
-    for (const it of valid.slice(0, 50)) {
-      latest = await apiCall({
-        action: 'upsert',
-        prompt: {
-          id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
-          title: it.title.trim().slice(0, 80),
-          category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
-          pinned: Boolean(it.pinned),
-          content: it.content.trim()
-        }
-      });
+    try {
+      latest = await apiCall({ action: 'import', prompts: normalized });
+    } catch {
+      for (const item of normalized) {
+        latest = await apiCall({ action: 'upsert', prompt: item });
+      }
     }
     prompts = latest;
     saveCachedPrompts(prompts);
     if (!selectedId && prompts[0]) selectedId = prompts[0].id;
-    return Math.min(valid.length, 50);
+    return normalized.length;
   }
 
   window.__agyPromptVault = {
@@ -11685,6 +12269,11 @@ window.__agySuiteModules.prompts=function(){
     close,
     refresh,
     importPromptsJson,
+    detectSecrets,
+    redactSecrets,
+    checkSecretBeforeSend,
+    saveDraftSnapshot,
+    getDrafts,
     getPrompts: () => prompts.length ? prompts : loadCachedPrompts(),
     parseVariables,
     composePrompt,
@@ -11693,14 +12282,613 @@ window.__agySuiteModules.prompts=function(){
 
   window.__agyPromptVaultCleanup = () => {
     disposed = true;
+    clearTimeout(draftSaveTimer);
     observer.disconnect();
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    document.removeEventListener('focusin', onFocusIn);
+    document.removeEventListener('input', onComposerInput, true);
+    window.removeEventListener('click', onCaptureClick, true);
+    window.removeEventListener('keydown', onCaptureKeyDown, true);
     document.removeEventListener('keydown', onKeyDown);
     document.getElementById('agy-prompt-vault-trigger')?.remove();
     document.getElementById('agy-prompt-capsule')?.remove();
     document.getElementById('agy-prompt-vault-backdrop')?.remove();
+    document.getElementById('agy-secret-shield-banner')?.remove();
+    window.__agyPinboardCleanup?.();
     style.remove();
     delete window.__agyPromptVault;
+  };
+})();
+
+(() => {
+  window.__agyPinboardCleanup?.();
+  const API = 'http://127.0.0.1:19823/api/suite/pinboard';
+  const CACHE_KEY = '__agy_suite_pinboard_cache__';
+  let disposed = false;
+  let pins = [];
+  let searchQuery = '';
+  let addingOpen = false;
+  let draftTitle = '';
+  let draftContent = '';
+  let statusNotice = '';
+  let returnFocus = null;
+  let toastTimer = null;
+  let scheduled = false;
+
+  const text = (cn, en) => window.__agySuiteSettings?.i18n === false ? en : cn;
+
+  const style = document.createElement('style');
+  style.id = 'agy-pinboard-style';
+  style.textContent = `
+    #agy-pinboard-trigger {
+      display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; width: auto !important;
+      border: 1px solid rgba(217, 119, 87, 0.36); border-radius: 999px; padding: 5px 10px; margin: 0;
+      background: rgba(217, 119, 87, 0.07); color: inherit; font: 500 12px system-ui, sans-serif;
+      cursor: pointer; transition: all 0.15s; user-select: none; font-variant-numeric: tabular-nums;
+    }
+    #agy-pinboard-trigger:hover, #agy-pinboard-trigger:focus-visible {
+      background: rgba(217, 119, 87, 0.15); border-color: #D97757; outline: none;
+    }
+    #agy-pinboard-backdrop {
+      position: fixed; inset: 0; z-index: 10025;
+      background: var(--scrim, rgba(15, 14, 13, 0.44));
+      backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    #agy-pinboard {
+      width: min(680px, 100%); max-height: min(620px, calc(100vh - 40px));
+      display: flex; flex-direction: column;
+      border-radius: 20px; border: 1px solid var(--border, rgba(20, 20, 19, 0.12));
+      background: var(--background, #FAF9F5); color: var(--foreground, #141413);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.25); overflow: hidden;
+      font: 13px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      animation: agyPbPop 0.17s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    body.theme-dark #agy-pinboard, html.dark #agy-pinboard {
+      background: #22211F; border-color: rgba(236, 233, 226, 0.12);
+      box-shadow: 0 32px 100px rgba(0, 0, 0, 0.62);
+    }
+    @keyframes agyPbPop {
+      from { opacity: 0; transform: translateY(6px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .agy-pb-head {
+      padding: 16px 20px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.15));
+    }
+    .agy-pb-title { margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .agy-pb-sub { margin: 3px 0 0; font-size: 11.5px; opacity: 0.6; }
+    .agy-pb-bar {
+      padding: 10px 20px; display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.12));
+      background: var(--sidebar, rgba(240, 238, 230, 0.55));
+    }
+    body.theme-dark .agy-pb-bar, html.dark .agy-pb-bar { background: rgba(25, 24, 23, 0.65); }
+    .agy-pb-input, .agy-pb-textarea {
+      box-sizing: border-box; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.24));
+      background: var(--card, #FFFFFF); color: inherit; font: 12.5px/1.45 system-ui, sans-serif; outline: none;
+    }
+    body.theme-dark .agy-pb-input, body.theme-dark .agy-pb-textarea, html.dark .agy-pb-input, html.dark .agy-pb-textarea {
+      background: #1B1A18;
+    }
+    .agy-pb-input:focus, .agy-pb-textarea:focus { border-color: #D97757; }
+    .agy-pb-btn {
+      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+      background: transparent; color: inherit; font: 500 12px system-ui, sans-serif; cursor: pointer;
+      transition: all 0.14s; white-space: nowrap;
+    }
+    .agy-pb-btn:hover { border-color: #D97757; color: #D97757; }
+    .agy-pb-btn.primary { background: #D97757; border-color: #D97757; color: #FFFFFF; font-weight: 600; }
+    .agy-pb-btn.primary:hover { background: #C46344; border-color: #C46344; color: #FFFFFF; }
+    .agy-pb-add-box {
+      padding: 12px 20px; display: flex; flex-direction: column; gap: 8px;
+      border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.15));
+      background: rgba(217, 119, 87, 0.04);
+    }
+    .agy-pb-list {
+      flex: 1; overflow-y: auto; padding: 12px 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .agy-pb-empty {
+      padding: 36px 18px; text-align: center; opacity: 0.58; font-size: 12.5px; line-height: 1.65;
+    }
+    .agy-pb-card {
+      border-radius: 12px; padding: 10px 12px;
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+      background: var(--card, #FFFFFF); display: flex; flex-direction: column; gap: 6px;
+      transition: border-color 0.14s, opacity 0.14s;
+    }
+    body.theme-dark .agy-pb-card, html.dark .agy-pb-card { background: #282725; }
+    .agy-pb-card[data-enabled="false"] { opacity: 0.56; }
+    .agy-pb-card[data-enabled="true"] { border-color: rgba(217, 119, 87, 0.38); }
+    .agy-pb-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .agy-pb-check-wrap { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; cursor: pointer; font-weight: 600; font-size: 12.5px; }
+    .agy-pb-source {
+      font-size: 10.5px; padding: 1px 7px; border-radius: 99px;
+      background: var(--muted, rgba(128, 128, 128, 0.12)); opacity: 0.75; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .agy-pb-snippet {
+      margin: 0; font: 12px/1.55 var(--claude-font-sans, system-ui, sans-serif); opacity: 0.85;
+      white-space: pre-wrap; word-break: break-word; max-height: 84px; overflow-y: auto;
+      padding: 6px 8px; border-radius: 7px; background: var(--muted, rgba(128, 128, 128, 0.07));
+    }
+    .agy-pb-foot {
+      padding: 11px 20px; border-top: 1px solid var(--border, rgba(128, 128, 128, 0.15));
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    #agy-pinboard-toast {
+      position: fixed; right: 20px; bottom: 26px; z-index: 10035;
+      padding: 9px 14px; border-radius: 999px;
+      background: #232220; color: #ECE9E2; border: 1px solid rgba(217, 119, 87, 0.45);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); font: 500 12px system-ui, sans-serif;
+    }
+  `;
+  document.head.appendChild(style);
+
+  function loadCache() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCache(list) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+    } catch {}
+  }
+
+  pins = loadCache();
+
+  async function apiCall(body) {
+    const res = await fetch(API, {
+      method: body ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(8000)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw Error(data.error || 'Pinboard service unavailable');
+    return data.pins;
+  }
+
+  function showToast(msg) {
+    document.getElementById('agy-pinboard-toast')?.remove();
+    clearTimeout(toastTimer);
+    const el = document.createElement('div');
+    el.id = 'agy-pinboard-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('data-ag-localization-skip', 'true');
+    el.textContent = msg;
+    document.body.appendChild(el);
+    toastTimer = setTimeout(() => el.remove(), 2400);
+  }
+
+  async function refresh() {
+    try {
+      const next = await apiCall();
+      if (Array.isArray(next)) {
+        pins = next;
+        saveCache(pins);
+      }
+    } catch {}
+    renderTrigger();
+    const modal = document.getElementById('agy-pinboard');
+    if (modal && !modal.contains(document.activeElement)) renderModal();
+    return pins;
+  }
+
+  function defaultSourceName() {
+    const t = (document.title || '').replace(/\s*[-|]\s*Antigravity.*$/i, '').trim();
+    return t && t !== 'Antigravity' ? t.slice(0, 48) : text('当前会话', 'Current Chat');
+  }
+
+  async function addPin({ title = '', content = '', source = '' } = {}) {
+    const clean = String(content || '').trim();
+    if (!clean) return null;
+    const derivedTitle = String(title || clean.split('\n')[0].replace(/^[#>*\-\s]+/, '')).trim().slice(0, 60) || text('上下文片段', 'Pinned Snippet');
+    const item = {
+      id: 'pin_' + Math.random().toString(36).slice(2, 10),
+      title: derivedTitle,
+      content: clean.slice(0, 16000),
+      source: String(source || defaultSourceName()).trim().slice(0, 60),
+      enabled: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    pins = [item, ...pins].slice(0, 100);
+    saveCache(pins);
+    renderTrigger();
+    try {
+      pins = await apiCall({ action: 'upsert', pin: item });
+      saveCache(pins);
+    } catch {}
+    renderTrigger();
+    if (document.getElementById('agy-pinboard-backdrop')) renderModal();
+    showToast(text(`📌 已钉入跨会话暂存匣（共 ${pins.length} 条 · Alt+B）`, `📌 Pinned to Context Pinboard (${pins.length} total · Alt+B)`));
+    return item;
+  }
+
+  async function togglePin(id, enabled) {
+    pins = pins.map(p => p.id === id ? { ...p, enabled: enabled === undefined ? !p.enabled : Boolean(enabled) } : p);
+    saveCache(pins);
+    try {
+      pins = await apiCall({ action: 'toggle', id, enabled });
+      saveCache(pins);
+    } catch {}
+    if (document.getElementById('agy-pinboard-backdrop')) renderModal();
+    renderTrigger();
+  }
+
+  async function deletePin(id) {
+    pins = pins.filter(p => p.id !== id);
+    saveCache(pins);
+    try {
+      pins = await apiCall({ action: 'delete', id });
+      saveCache(pins);
+    } catch {}
+    renderTrigger();
+    if (document.getElementById('agy-pinboard-backdrop')) renderModal();
+  }
+
+  async function clearPins() {
+    pins = [];
+    saveCache(pins);
+    try {
+      pins = await apiCall({ action: 'clear' });
+      saveCache(pins);
+    } catch {}
+    renderTrigger();
+    if (document.getElementById('agy-pinboard-backdrop')) renderModal();
+  }
+
+  function formatActiveContext(customList = null) {
+    const active = (customList || pins).filter(p => p.enabled !== false);
+    if (!active.length) return '';
+    const blocks = active.map((p, idx) => {
+      const src = p.source ? ` (${p.source})` : '';
+      return `### ${idx + 1}. ${p.title}${src}\n${p.content.trim()}`;
+    }).join('\n\n');
+    return `<CONTEXT_PINBOARD>\n${blocks}\n</CONTEXT_PINBOARD>\n\n`;
+  }
+
+  function injectActivePins({ append = true, composerBox = null } = {}) {
+    const block = formatActiveContext();
+    if (!block) return false;
+    if (window.__agyPromptVault?.insertIntoComposer) {
+      return window.__agyPromptVault.insertIntoComposer(block, { append, composerBox });
+    }
+    return false;
+  }
+
+  function close() {
+    document.getElementById('agy-pinboard-backdrop')?.remove();
+    returnFocus?.focus?.();
+    returnFocus = null;
+  }
+
+  function open({ withAddForm = false } = {}) {
+    if (disposed || window.__agySuiteSettings?.prompts === false) return;
+    if (withAddForm) addingOpen = true;
+    if (!document.getElementById('agy-pinboard-backdrop')) {
+      returnFocus = document.activeElement;
+      const backdrop = document.createElement('div');
+      backdrop.id = 'agy-pinboard-backdrop';
+      backdrop.setAttribute('data-ag-localization-skip', 'true');
+      backdrop.onclick = e => { if (e.target === backdrop) close(); };
+      document.body.appendChild(backdrop);
+    }
+    renderModal();
+    if (addingOpen) document.getElementById('agy-pb-draft-title')?.focus();
+    else document.querySelector('#agy-pinboard .agy-pb-search')?.focus();
+    refresh();
+  }
+
+  function renderModal() {
+    const backdrop = document.getElementById('agy-pinboard-backdrop');
+    if (!backdrop) return;
+    let modal = document.getElementById('agy-pinboard');
+    if (!modal) {
+      modal = document.createElement('section');
+      modal.id = 'agy-pinboard';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-label', text('跨会话上下文暂存匣', 'Cross-Session Context Pinboard'));
+      backdrop.appendChild(modal);
+    }
+    modal.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'agy-pb-head';
+    const titleWrap = document.createElement('div');
+    const h3 = document.createElement('h3');
+    h3.className = 'agy-pb-title';
+    h3.innerHTML = `<span style="color:#D97757">📌</span><span>${text('跨会话上下文暂存匣', 'Context Pinboard')}</span>`;
+    const sub = document.createElement('p');
+    sub.className = 'agy-pb-sub';
+    sub.textContent = text('在不同对话间收集关键公式、架构约束与结论，一键打包注入任意新会话（Alt+B）', 'Collect key decisions, formulas & constraints across chats and inject into any session (Alt+B)');
+    titleWrap.append(h3, sub);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'agy-pb-btn';
+    closeBtn.style.padding = '3px 9px';
+    closeBtn.textContent = '×';
+    closeBtn.onclick = close;
+    head.append(titleWrap, closeBtn);
+
+    const bar = document.createElement('div');
+    bar.className = 'agy-pb-bar';
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'agy-pb-input agy-pb-search';
+    search.style.flex = '1';
+    search.placeholder = text('搜索已暂存的片段、标题或来源会话…', 'Filter pinned snippets…');
+    search.value = searchQuery;
+    search.oninput = () => {
+      searchQuery = search.value;
+      renderModal();
+      const s = modal.querySelector('.agy-pb-search');
+      s?.focus();
+      s?.setSelectionRange(searchQuery.length, searchQuery.length);
+    };
+    const toggleAddBtn = document.createElement('button');
+    toggleAddBtn.type = 'button';
+    toggleAddBtn.id = 'agy-pb-toggle-add';
+    toggleAddBtn.className = addingOpen ? 'agy-pb-btn' : 'agy-pb-btn primary';
+    toggleAddBtn.textContent = addingOpen ? text('收起新建', 'Hide Form') : text('+ 手动添加备忘', '+ New Note');
+    toggleAddBtn.onclick = () => {
+      addingOpen = !addingOpen;
+      renderModal();
+      if (addingOpen) document.getElementById('agy-pb-draft-title')?.focus();
+    };
+    bar.append(search, toggleAddBtn);
+    modal.append(head, bar);
+
+    if (addingOpen) {
+      const addBox = document.createElement('div');
+      addBox.className = 'agy-pb-add-box';
+      const tInput = document.createElement('input');
+      tInput.id = 'agy-pb-draft-title';
+      tInput.className = 'agy-pb-input';
+      tInput.placeholder = text('备忘标题（选填，如：核心架构不变量 / 服务器环境）', 'Note title (optional)');
+      tInput.value = draftTitle;
+      tInput.oninput = () => { draftTitle = tInput.value; };
+      const cArea = document.createElement('textarea');
+      cArea.id = 'agy-pb-draft-content';
+      cArea.className = 'agy-pb-textarea';
+      cArea.rows = 3;
+      cArea.placeholder = text('输入希望跨对话复用的关键上下文、路径、接口契约或实验结论…', 'Enter context snippet, constraints, or findings…');
+      cArea.value = draftContent;
+      cArea.oninput = () => { draftContent = cArea.value; };
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:flex-end;gap:8px';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.id = 'agy-pb-save-note';
+      saveBtn.className = 'agy-pb-btn primary';
+      saveBtn.textContent = text('📌 存入暂存匣', '📌 Save Pin');
+      saveBtn.onclick = async () => {
+        if (!cArea.value.trim()) return;
+        const t = tInput.value;
+        const c = cArea.value;
+        draftTitle = '';
+        draftContent = '';
+        addingOpen = false;
+        await addPin({ title: t, content: c, source: text('手动备忘', 'Manual Note') });
+      };
+      row.appendChild(saveBtn);
+      addBox.append(tInput, cArea, row);
+      modal.appendChild(addBox);
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = pins.filter(p => !q || p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.source || '').toLowerCase().includes(q));
+
+    const list = document.createElement('div');
+    list.className = 'agy-pb-list';
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'agy-pb-empty';
+      empty.textContent = pins.length === 0
+        ? text('暂存匣为空。在任意对话中划选文字点击「📌 暂存」，或在上方点击「+ 手动添加备忘」，即可跨会话随时注入复用！', 'Pinboard is empty. Select any text in chat and click "📌 Pin", or click "+ New Note" above to collect cross-session context.')
+        : text('没有匹配的暂存片段', 'No matching pins');
+      list.appendChild(empty);
+    } else {
+      for (const item of filtered) {
+        const card = document.createElement('div');
+        card.className = 'agy-pb-card';
+        card.dataset.pinId = item.id;
+        card.dataset.enabled = String(item.enabled !== false);
+
+        const top = document.createElement('div');
+        top.className = 'agy-pb-card-top';
+        const checkWrap = document.createElement('label');
+        checkWrap.className = 'agy-pb-check-wrap';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = item.enabled !== false;
+        cb.onchange = () => togglePin(item.id, cb.checked);
+        const titleSpan = document.createElement('span');
+        titleSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        titleSpan.textContent = item.title;
+        checkWrap.append(cb, titleSpan);
+
+        const rightActs = document.createElement('div');
+        rightActs.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0';
+        if (item.source) {
+          const src = document.createElement('span');
+          src.className = 'agy-pb-source';
+          src.textContent = item.source;
+          rightActs.appendChild(src);
+        }
+        const oneBtn = document.createElement('button');
+        oneBtn.type = 'button';
+        oneBtn.className = 'agy-pb-btn';
+        oneBtn.style.padding = '2px 7px';
+        oneBtn.style.fontSize = '11px';
+        oneBtn.textContent = text('↵ 填入', '↵ Insert');
+        oneBtn.onclick = () => {
+          const block = formatActiveContext([{ ...item, enabled: true }]);
+          if (window.__agyPromptVault?.insertIntoComposer?.(block, { append: true })) close();
+        };
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'agy-pb-btn';
+        delBtn.style.padding = '2px 7px';
+        delBtn.style.fontSize = '11px';
+        delBtn.textContent = '×';
+        delBtn.title = text('移除此片段', 'Remove pin');
+        delBtn.onclick = () => deletePin(item.id);
+        rightActs.append(oneBtn, delBtn);
+
+        top.append(checkWrap, rightActs);
+        const pre = document.createElement('pre');
+        pre.className = 'agy-pb-snippet';
+        pre.textContent = item.content;
+        card.append(top, pre);
+        list.appendChild(card);
+      }
+    }
+    modal.appendChild(list);
+
+    const activeCount = pins.filter(p => p.enabled !== false).length;
+    const foot = document.createElement('div');
+    foot.className = 'agy-pb-foot';
+    const meta = document.createElement('span');
+    meta.style.cssText = 'font-size:11.5px;opacity:0.72';
+    meta.textContent = statusNotice || text(`已勾选 ${activeCount} / ${pins.length} 条片段参与注入`, `${activeCount} / ${pins.length} pins enabled for injection`);
+
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;align-items:center;gap:7px;flex-wrap:wrap';
+    if (pins.length > 0) {
+      const clrBtn = document.createElement('button');
+      clrBtn.type = 'button';
+      clrBtn.id = 'agy-pb-clear';
+      clrBtn.className = 'agy-pb-btn';
+      clrBtn.textContent = text('清空', 'Clear All');
+      clrBtn.onclick = () => clearPins();
+      btns.appendChild(clrBtn);
+    }
+    const copyAll = document.createElement('button');
+    copyAll.type = 'button';
+    copyAll.id = 'agy-pb-copy';
+    copyAll.className = 'agy-pb-btn';
+    copyAll.disabled = activeCount === 0;
+    copyAll.textContent = text('📋 复制上下文', '📋 Copy Context');
+    copyAll.onclick = async () => {
+      const block = formatActiveContext();
+      if (!block) return;
+      await navigator.clipboard?.writeText?.(block);
+      statusNotice = text('✓ 已复制结构化上下文到剪贴板', '✓ Copied context block');
+      renderModal();
+      setTimeout(() => { statusNotice = ''; }, 2000);
+    };
+    const injectBtn = document.createElement('button');
+    injectBtn.type = 'button';
+    injectBtn.id = 'agy-pb-inject';
+    injectBtn.className = 'agy-pb-btn primary';
+    injectBtn.disabled = activeCount === 0;
+    injectBtn.textContent = text(`⚡ 一键注入输入框 (${activeCount})`, `⚡ Inject Context (${activeCount})`);
+    injectBtn.onclick = () => {
+      if (injectActivePins({ append: true })) close();
+    };
+    btns.append(copyAll, injectBtn);
+    foot.append(meta, btns);
+    modal.appendChild(foot);
+  }
+
+  function renderTrigger() {
+    if (disposed || window.__agySuiteSettings?.prompts === false || pins.length === 0) {
+      document.getElementById('agy-pinboard-trigger')?.remove();
+      return;
+    }
+    const host = document.getElementById('agy-account-capsule') || document.getElementById('agy-prompt-capsule');
+    if (!host) return;
+    let btn = document.getElementById('agy-pinboard-trigger');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'agy-pinboard-trigger';
+      btn.type = 'button';
+      btn.setAttribute('data-ag-localization-skip', 'true');
+      btn.onclick = () => open();
+    }
+    const activeCount = pins.filter(p => p.enabled !== false).length;
+    const label = `📌 ${activeCount}/${pins.length}`;
+    if (btn.textContent !== label) btn.textContent = label;
+    btn.title = text(`跨会话上下文暂存匣：${activeCount} 条启用 / 共 ${pins.length} 条（Alt+B）`, `Context Pinboard: ${activeCount} enabled / ${pins.length} total (Alt+B)`);
+    if (btn.parentElement !== host) host.insertBefore(btn, host.firstChild);
+  }
+
+  function scheduleRender() {
+    if (disposed || scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      renderTrigger();
+    });
+  }
+
+  function onKeyDown(e) {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'b') {
+      if (window.__agySuiteSettings?.prompts === false) return;
+      e.preventDefault();
+      if (document.getElementById('agy-pinboard-backdrop')) close();
+      else open();
+    } else if (document.getElementById('agy-pinboard-backdrop')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (addingOpen && document.getElementById('agy-pb-draft-content')?.value.trim()) {
+          e.preventDefault();
+          document.getElementById('agy-pb-save-note')?.click();
+        } else if (pins.some(p => p.enabled !== false)) {
+          e.preventDefault();
+          if (injectActivePins({ append: true })) close();
+        }
+      }
+    }
+  }
+
+  const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.target?.closest?.('#agy-pinboard-backdrop, #agy-pinboard-toast')) continue;
+      scheduleRender();
+      break;
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  document.addEventListener('keydown', onKeyDown);
+  refresh();
+
+  window.__agyPinboard = {
+    open,
+    close,
+    refresh,
+    addPin,
+    togglePin,
+    deletePin,
+    clearPins,
+    getPins: () => pins,
+    formatActiveContext,
+    injectActivePins
+  };
+
+  window.__agyPinboardCleanup = () => {
+    disposed = true;
+    observer.disconnect();
+    clearTimeout(toastTimer);
+    window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    document.removeEventListener('keydown', onKeyDown);
+    document.getElementById('agy-pinboard-trigger')?.remove();
+    document.getElementById('agy-pinboard-backdrop')?.remove();
+    document.getElementById('agy-pinboard-toast')?.remove();
+    style.remove();
+    delete window.__agyPinboard;
   };
 })();
 
@@ -11796,7 +12984,7 @@ window.__agySuiteModules.prompts=function(){
     center.replaceChildren();const heading=document.createElement('h2');heading.id='agy-suite-heading';heading.textContent=text('增强套件控制中心','Enhancement Suite');center.appendChild(heading);
     const subtitle=document.createElement('p');subtitle.className='suite-subtitle';subtitle.textContent=text('按需启用，让工作空间更顺手','Make this workspace yours, one feature at a time');center.appendChild(subtitle);
     const quickbar=document.createElement('div');quickbar.className='suite-quickbar';
-    for(const [id,zh,en,kbd,fn] of [['agy-suite-open-palette','⌘ 全能命令面板','⌘ Command Palette','Alt+K',()=>{closeCenter();window.__agyCommandPalette?.open();}],['agy-suite-open-prompts','✦ 提示词灵感库','✦ Prompt Vault','Alt+P',()=>{closeCenter();window.__agyPromptVault?.open();}],['agy-suite-open-outline','📑 对话目录与导出','📑 Conversation Outline','Alt+O',()=>{closeCenter();window.__agyConvTools?.open();}]] ){
+    for(const [id,zh,en,kbd,fn] of [['agy-suite-open-palette','⌘ 全能命令面板','⌘ Command Palette','Alt+K',()=>{closeCenter();window.__agyCommandPalette?.open();}],['agy-suite-open-prompts','✦ 提示词灵感库','✦ Prompt Vault','Alt+P',()=>{closeCenter();window.__agyPromptVault?.open();}],['agy-suite-open-pinboard','📌 跨会话暂存匣','📌 Context Pinboard','Alt+B',()=>{closeCenter();window.__agyPinboard?.open();}],['agy-suite-open-outline','📑 对话目录与导出','📑 Conversation Outline','Alt+O',()=>{closeCenter();window.__agyConvTools?.open();}]] ){
       const pill=document.createElement('button');pill.type='button';pill.id=id;pill.className='suite-quick-pill';pill.onclick=fn;
       const lbl=document.createElement('span');lbl.textContent=text(zh,en);const keyEl=document.createElement('span');keyEl.className='suite-quick-kbd';keyEl.textContent=kbd;
       pill.append(lbl,keyEl);quickbar.appendChild(pill);
@@ -11827,7 +13015,7 @@ window.__agySuiteModules.prompts=function(){
   poll=setInterval(refresh,5000);refresh();
   document.addEventListener('keydown',onKey);
   window.__agySuite={apply,save,getSettings:()=>settings,refresh,openCenter,closeCenter,isSaving:()=>saving};
-  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();window.__agyCommandPaletteCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
+  window.__agySuiteCleanup=()=>{disposed=true;observer.disconnect();clearInterval(poll);document.removeEventListener('keydown',onKey);window.__agyConvToolsCleanup?.();window.__agyPromptVaultCleanup?.();window.__agyPinboardCleanup?.();window.__agyCommandPaletteCleanup?.();style.remove();document.getElementById('agy-suite-center')?.remove();document.getElementById('agy-suite-backdrop')?.remove();document.getElementById('agy-suite-sidebar-button')?.remove();};
 })();
 
 (() => {
@@ -12003,9 +13191,9 @@ window.__agySuiteModules.prompts=function(){
       });
     }
 
-    // 3. Prompt Vault
+    // 3. Prompt Vault & Cross-Session Pinboard
     if (window.__agyPromptVault) {
-      const pvGroup = text('提示词灵感库', 'PROMPT VAULT');
+      const pvGroup = text('提示词与跨会话暂存', 'PROMPTS & PINBOARD');
       list.push({
         id: 'pv-open',
         group: pvGroup,
@@ -12014,6 +13202,39 @@ window.__agySuiteModules.prompts=function(){
         keywords: 'prompt template vault variable 提示词 模板 灵感库 参数',
         run: () => window.__agyPromptVault.open()
       });
+      if (window.__agyPinboard) {
+        const pins = window.__agyPinboard.getPins?.() || [];
+        const activePins = pins.filter(p => p.enabled !== false).length;
+        list.push({
+          id: 'pb-open',
+          group: pvGroup,
+          title: text(`📌 打开跨会话上下文暂存匣${pins.length ? `（${pins.length} 条）` : ''}`, `📌 Open Cross-Session Context Pinboard${pins.length ? ` (${pins.length})` : ''}`),
+          badge: 'Alt+B',
+          keywords: 'pinboard context scratchpad memory 暂存 跨会话 记忆 上下文',
+          run: () => window.__agyPinboard.open()
+        });
+        if (activePins > 0) {
+          list.push({
+            id: 'pb-inject',
+            group: pvGroup,
+            title: text(`⚡ 将暂存匣已勾选的 ${activePins} 条上下文注入当前输入框`, `⚡ Inject ${activePins} Active Pinboard Items into Composer`),
+            badge: 'Pinboard',
+            keywords: 'inject pinboard context 注入 暂存 上下文',
+            run: () => window.__agyPinboard.injectActivePins({ append: true })
+          });
+        }
+      }
+      const drafts = window.__agyPromptVault.getDrafts?.() || [];
+      if (drafts.length > 0) {
+        list.push({
+          id: 'pv-restore-draft',
+          group: pvGroup,
+          title: text(`🕒 恢复最近未发送草稿：${drafts[0].title.replace(/^🕒\s*/, '')}`, `🕒 Restore Latest Unsent Draft: ${drafts[0].title.replace(/^🕒\s*/, '')}`),
+          badge: text('草稿', 'Draft'),
+          keywords: 'draft restore unsent 草稿 恢复 找回',
+          run: () => window.__agyPromptVault.insertIntoComposer(drafts[0].content, { append: false })
+        });
+      }
       for (const tpl of (window.__agyPromptVault.getPrompts?.() || []).filter(p => p.pinned).slice(0, 4)) {
         list.push({
           id: 'pv-tpl-' + tpl.id,
@@ -12308,4 +13529,4 @@ window.__agySuiteModules.prompts=function(){
   };
 })();
 
-window.__agyRendererBundleId="33d1bf268ecb677c27d65ad34991ddbf3f3c721e7351a7e78bc61e6b9062aea4";})();
+window.__agyRendererBundleId="6075a2f2f96018e43790cbfedf131a48d6b32b05cfa55a1e095d9f9edd4df662";})();

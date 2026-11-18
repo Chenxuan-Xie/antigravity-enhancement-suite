@@ -265,8 +265,9 @@ function buildI18nBundle() {
     js += '\nwindow.__agySuiteModules.outline=function(){\n' + fs.readFileSync(convToolsPath, 'utf8') + '\n};';
   }
   const promptVaultPath = path.join(skinRoot, '..', 'suite', 'prompt-vault.js');
+  const pinboardPath = path.join(skinRoot, '..', 'suite', 'pinboard.js');
   if (fs.existsSync(promptVaultPath)) {
-    js += '\nwindow.__agySuiteModules.prompts=function(){\n' + fs.readFileSync(promptVaultPath, 'utf8') + '\n};';
+    js += '\nwindow.__agySuiteModules.prompts=function(){\n' + fs.readFileSync(promptVaultPath, 'utf8') + (fs.existsSync(pinboardPath) ? '\n' + fs.readFileSync(pinboardPath, 'utf8') : '') + '\n};';
   }
   js += fs.readFileSync(path.join(skinRoot,'..','suite','control-center.js'),'utf8');
   const commandPalettePath = path.join(skinRoot, '..', 'suite', 'command-palette.js');

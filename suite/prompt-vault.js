@@ -13,6 +13,78 @@
   let statusError = false;
   let returnFocus = null;
   let scheduled = false;
+  let lastFocusedComposer = null;
+  let bypassedSecretSignature = '';
+  let draftSaveTimer = null;
+  const DRAFTS_KEY = '__agy_composer_drafts__';
+
+  const SECRET_RULES = [
+    { label: 'Anthropic API Key', re: /\bsk-ant-api\d{2}-[A-Za-z0-9_-]{24,}\b/g },
+    { label: 'OpenAI / Relay Secret Key', re: /\bsk-(?:proj-|svcacct-|live-)?[A-Za-z0-9_-]{32,}\b/g },
+    { label: 'GitHub Token', re: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{35,}\b/g },
+    { label: 'Google API Key', re: /\bAIzaSy[A-Za-z0-9_-]{33}\b/g },
+    { label: 'AWS Access Key', re: /\bAKIA[0-9A-Z]{16}\b/g },
+    { label: 'Google OAuth Refresh Token', re: /\b1\/\/0[A-Za-z0-9_-]{40,}\b/g },
+    { label: 'PEM Private Key', re: /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[\s\S]*?(?:-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|$)/g }
+  ];
+
+  function isDummyToken(tok) {
+    return /example|fixture|dummy|placeholder|sample/i.test(tok) || /(.)\1{9,}/.test(tok);
+  }
+
+  function detectSecrets(rawText) {
+    const src = String(rawText || '');
+    if (src.length < 16) return [];
+    const found = [];
+    for (const rule of SECRET_RULES) {
+      rule.re.lastIndex = 0;
+      let m;
+      while ((m = rule.re.exec(src))) {
+        if (!isDummyToken(m[0])) {
+          found.push({ label: rule.label, match: m[0] });
+          break;
+        }
+      }
+    }
+    return found;
+  }
+
+  function redactSecrets(rawText) {
+    let out = String(rawText || '');
+    for (const rule of SECRET_RULES) {
+      rule.re.lastIndex = 0;
+      out = out.replace(rule.re, tok => isDummyToken(tok) ? tok : '[REDACTED_SECRET]');
+    }
+    return out;
+  }
+
+  function getDrafts() {
+    try {
+      const arr = JSON.parse(sessionStorage.getItem(DRAFTS_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveDraftSnapshot(rawText) {
+    const clean = String(rawText || '').trim();
+    if (clean.length < 12 || detectSecrets(clean).length > 0) return;
+    const convId = location.pathname.match(/\/c\/([^/?#]+)/)?.[1] || 'home';
+    const title = clean.replace(/\s+/g, ' ').slice(0, 44);
+    const list = getDrafts().filter(d => d.convId !== convId && d.content !== clean);
+    list.unshift({
+      id: 'draft-' + convId,
+      convId,
+      title: `🕒 ${title}`,
+      category: '__drafts__',
+      content: clean,
+      updatedAt: Date.now()
+    });
+    try {
+      sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(list.slice(0, 8)));
+    } catch {}
+  }
 
   const FALLBACK_PROMPTS = [
     {
@@ -170,6 +242,26 @@
     .agy-pv-status { font-size: 11.5px; opacity: 0.75; min-height: 16px; }
     .agy-pv-status[data-error="true"] { color: #C94038; opacity: 1; }
     .agy-pv-foot-btns { display: flex; gap: 8px; align-items: center; }
+    #agy-secret-shield-banner {
+      margin: 0 0 8px; padding: 10px 13px; border-radius: 12px;
+      border: 1px solid rgba(201, 64, 56, 0.42);
+      background: var(--background, #FAF9F5); color: var(--foreground, #141413);
+      box-shadow: 0 8px 26px rgba(201, 64, 56, 0.14);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      font: 500 12px/1.45 system-ui, sans-serif;
+    }
+    body.theme-dark #agy-secret-shield-banner, html.dark #agy-secret-shield-banner {
+      background: #282322; color: #ECE9E2; border-color: rgba(224, 90, 82, 0.48);
+    }
+    .agy-ss-actions { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .agy-ss-actions button {
+      border: 1px solid var(--border, rgba(128, 128, 128, 0.28));
+      background: transparent; color: inherit; border-radius: 7px; padding: 4px 10px;
+      font: 500 11.5px system-ui, sans-serif; cursor: pointer;
+    }
+    .agy-ss-actions button.primary {
+      background: #D97757; border-color: #D97757; color: #FFFFFF; font-weight: 600;
+    }
     @media (max-width: 700px) {
       #agy-prompt-vault { grid-template-columns: 1fr; height: calc(100vh - 24px); }
       .agy-pv-left { max-height: 200px; border-right: 0; border-bottom: 1px solid var(--border, #8883); }
@@ -227,6 +319,7 @@
   }
 
   async function refresh() {
+    const prevSig = JSON.stringify(prompts);
     try {
       prompts = await apiCall();
       saveCachedPrompts(prompts);
@@ -236,13 +329,22 @@
     if (!selectedId || !prompts.some(p => p.id === selectedId)) {
       selectedId = prompts[0]?.id || null;
     }
-    if (document.getElementById('agy-prompt-vault-backdrop')) renderModal();
+    const modal = document.getElementById('agy-prompt-vault');
+    if (modal && !editingItem && !modal.querySelector('input:focus, textarea:focus') && JSON.stringify(prompts) !== prevSig) {
+      renderModal();
+    }
     return prompts;
   }
 
-  function insertIntoComposer(value, { append = false } = {}) {
-    const box = [...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el => !el.closest('[data-side-panel-body]')) ||
+  function resolveComposerBox(explicitBox = null) {
+    if (explicitBox && explicitBox.isConnected) return explicitBox;
+    if (lastFocusedComposer && lastFocusedComposer.isConnected) return lastFocusedComposer;
+    return [...document.querySelectorAll('[data-testid="agent-input-box"]')].find(el => !el.closest('[data-side-panel-body]')) ||
       document.querySelector('[data-testid="agent-input-box"]');
+  }
+
+  function insertIntoComposer(value, { append = false, composerBox = null } = {}) {
+    const box = resolveComposerBox(composerBox);
     const editor = box?.querySelector('[data-lexical-editor="true"]');
     if (!editor || !value) return false;
 
@@ -256,14 +358,21 @@
         lex.update(() => {
           const st = lex._pendingEditorState || lex.getEditorState?.();
           if (!st?._nodeMap) return;
-          let textNode = null;
+          const textNodes = [];
           for (const [, node] of st._nodeMap.entries()) {
             if (node && node.__type === 'text' && typeof node.setTextContent === 'function') {
-              textNode = node;
+              textNodes.push(node);
             }
           }
-          if (textNode) {
-            textNode.setTextContent(targetText);
+          if (textNodes.length === 1) {
+            textNodes[0].setTextContent(targetText);
+            updatedViaLex = true;
+          } else if (textNodes.length > 1) {
+            for (let i = 1; i < textNodes.length; i++) {
+              if (typeof textNodes[i].remove === 'function') textNodes[i].remove();
+              else textNodes[i].setTextContent('');
+            }
+            textNodes[0].setTextContent(targetText);
             updatedViaLex = true;
           } else if (!append) {
             const root = st._nodeMap.get('root');
@@ -392,7 +501,8 @@
       nextSearch?.setSelectionRange(searchQuery.length, searchQuery.length);
     };
 
-    const categories = ['all', 'pinned', ...new Set(prompts.map(p => p.category).filter(Boolean))];
+    const savedDrafts = getDrafts();
+    const categories = ['all', 'pinned', ...(savedDrafts.length ? ['__drafts__'] : []), ...new Set(prompts.map(p => p.category).filter(Boolean))];
     const catsRow = document.createElement('div');
     catsRow.className = 'agy-pv-cats';
     for (const cat of categories) {
@@ -400,9 +510,17 @@
       chip.type = 'button';
       chip.className = 'agy-pv-cat';
       chip.dataset.active = String(activeCategory === cat);
-      chip.textContent = cat === 'all' ? text('全部', 'All') : cat === 'pinned' ? text('★ 置顶', '★ Pinned') : cat;
+      chip.textContent = cat === 'all'
+        ? text('全部', 'All')
+        : cat === 'pinned'
+          ? text('★ 置顶', '★ Pinned')
+          : cat === '__drafts__'
+            ? text(`🕒 草稿 (${savedDrafts.length})`, `🕒 Drafts (${savedDrafts.length})`)
+            : cat;
       chip.onclick = () => {
         activeCategory = cat;
+        if (cat === '__drafts__' && savedDrafts[0]) selectedId = savedDrafts[0].id;
+        else if (cat !== '__drafts__' && String(selectedId || '').startsWith('draft-')) selectedId = prompts[0]?.id || null;
         renderModal();
       };
       catsRow.appendChild(chip);
@@ -410,9 +528,10 @@
     leftHead.append(brand, search, catsRow);
 
     const q = searchQuery.trim().toLowerCase();
-    const filtered = prompts.filter(p => {
+    const sourcePool = activeCategory === '__drafts__' ? savedDrafts : prompts;
+    const filtered = sourcePool.filter(p => {
       if (activeCategory === 'pinned' && !p.pinned) return false;
-      if (activeCategory !== 'all' && activeCategory !== 'pinned' && p.category !== activeCategory) return false;
+      if (activeCategory !== 'all' && activeCategory !== 'pinned' && activeCategory !== '__drafts__' && p.category !== activeCategory) return false;
       if (!q) return true;
       return p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
     });
@@ -425,13 +544,16 @@
       btn.className = 'agy-pv-card';
       btn.dataset.promptId = item.id;
       btn.dataset.selected = String(!editingItem && item.id === selectedId);
-      const varsCount = parseVariables(item.content).length;
+      const isDraft = item.category === '__drafts__';
+      const varsCount = isDraft ? 0 : parseVariables(item.content).length;
       const t = document.createElement('div');
       t.className = 'agy-pv-card-title';
       t.textContent = (item.pinned ? '★ ' : '') + item.title;
       const meta = document.createElement('div');
       meta.className = 'agy-pv-card-meta';
-      meta.textContent = `${item.category || text('通用', 'General')}${varsCount ? ` · ${varsCount} ${text('个参数', 'vars')}` : ''}`;
+      meta.textContent = isDraft
+        ? text('未发送草稿快照', 'Unsent composer draft')
+        : `${item.category || text('通用', 'General')}${varsCount ? ` · ${varsCount} ${text('个参数', 'vars')}` : ''}`;
       btn.append(t, meta);
       btn.onclick = () => {
         editingItem = null;
@@ -516,18 +638,21 @@
       titleInput.maxLength = 80;
       titleInput.placeholder = text('模板标题（例如：🚀 接口契约审查）', 'Template title');
       titleInput.value = editingItem.title;
+      titleInput.oninput = () => { editingItem.title = titleInput.value; };
       const catInput = document.createElement('input');
       catInput.id = 'agy-pv-edit-category';
       catInput.className = 'agy-pv-input';
       catInput.maxLength = 24;
       catInput.placeholder = text('分类', 'Category');
       catInput.value = editingItem.category;
+      catInput.oninput = () => { editingItem.category = catInput.value; };
       const pinWrap = document.createElement('label');
       pinWrap.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap';
       const pinCheck = document.createElement('input');
       pinCheck.type = 'checkbox';
       pinCheck.id = 'agy-pv-edit-pinned';
       pinCheck.checked = Boolean(editingItem.pinned);
+      pinCheck.onchange = () => { editingItem.pinned = pinCheck.checked; };
       pinWrap.append(pinCheck, document.createTextNode(text('置顶', 'Pin')));
       row1.append(titleInput, catInput, pinWrap);
 
@@ -549,10 +674,12 @@
       contentArea.style.cssText = 'flex:1;resize:none;min-height:180px';
       contentArea.placeholder = text('输入提示词模板内容，例如：\n请针对 {{目标模块}} 进行审查，重点关注 {{关注维度:并发安全与边界条件}}。', 'Enter prompt template content…');
       contentArea.value = editingItem.content;
+      contentArea.oninput = () => { editingItem.content = contentArea.value; };
       insertTokenBtn.onclick = () => {
         const token = '{{参数名:默认值}}';
         const start = contentArea.selectionStart ?? contentArea.value.length;
         contentArea.value = contentArea.value.slice(0, start) + token + contentArea.value.slice(contentArea.selectionEnd ?? start);
+        editingItem.content = contentArea.value;
         contentArea.focus();
       };
       form.append(row1, helperRow, contentArea);
@@ -608,13 +735,14 @@
       foot.append(status, btns);
       right.append(head, form, foot);
     } else {
-      const active = prompts.find(p => p.id === selectedId) || filtered[0];
+      const active = sourcePool.find(p => p.id === selectedId) || filtered[0];
       if (!active) {
         const empty = document.createElement('div');
         empty.style.cssText = 'margin:auto;opacity:0.55;text-align:center';
         empty.textContent = text('选择左侧模板或点击「+ 新建模板」', 'Select or create a prompt template');
         right.appendChild(empty);
       } else {
+        const isDraftItem = active.category === '__drafts__';
         selectedId = active.id;
         const head = document.createElement('div');
         head.className = 'agy-pv-right-head';
@@ -623,49 +751,51 @@
         h3.textContent = active.title;
         const actions = document.createElement('div');
         actions.className = 'agy-pv-head-actions';
-        const pinBtn = document.createElement('button');
-        pinBtn.type = 'button';
-        pinBtn.className = 'agy-pv-btn';
-        pinBtn.textContent = active.pinned ? text('★ 已置顶', '★ Pinned') : text('☆ 置顶', '☆ Pin');
-        pinBtn.onclick = async () => {
-          try {
-            prompts = await apiCall({ action: 'upsert', prompt: { ...active, pinned: !active.pinned } });
-            saveCachedPrompts(prompts);
+        if (!isDraftItem) {
+          const pinBtn = document.createElement('button');
+          pinBtn.type = 'button';
+          pinBtn.className = 'agy-pv-btn';
+          pinBtn.textContent = active.pinned ? text('★ 已置顶', '★ Pinned') : text('☆ 置顶', '☆ Pin');
+          pinBtn.onclick = async () => {
+            try {
+              prompts = await apiCall({ action: 'upsert', prompt: { ...active, pinned: !active.pinned } });
+              saveCachedPrompts(prompts);
+              renderModal();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          };
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'agy-pv-btn';
+          editBtn.textContent = text('✎ 编辑', '✎ Edit');
+          editBtn.onclick = () => {
+            editingItem = { ...active };
             renderModal();
-          } catch (err) {
-            setStatus(err.message, true);
-          }
-        };
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'agy-pv-btn';
-        editBtn.textContent = text('✎ 编辑', '✎ Edit');
-        editBtn.onclick = () => {
-          editingItem = { ...active };
-          renderModal();
-        };
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.id = 'agy-pv-delete-btn';
-        delBtn.className = 'agy-pv-btn';
-        delBtn.textContent = text('🗑 删除', '🗑 Delete');
-        delBtn.onclick = async () => {
-          try {
-            prompts = await apiCall({ action: 'delete', id: active.id });
-            saveCachedPrompts(prompts);
-            selectedId = prompts[0]?.id || null;
-            varValues = {};
-            setStatus(text('已删除模板', 'Template deleted'));
-            renderModal();
-          } catch (err) {
-            setStatus(err.message, true);
-          }
-        };
-        actions.append(pinBtn, editBtn, delBtn);
+          };
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.id = 'agy-pv-delete-btn';
+          delBtn.className = 'agy-pv-btn';
+          delBtn.textContent = text('🗑 删除', '🗑 Delete');
+          delBtn.onclick = async () => {
+            try {
+              prompts = await apiCall({ action: 'delete', id: active.id });
+              saveCachedPrompts(prompts);
+              selectedId = prompts[0]?.id || null;
+              varValues = {};
+              setStatus(text('已删除模板', 'Template deleted'));
+              renderModal();
+            } catch (err) {
+              setStatus(err.message, true);
+            }
+          };
+          actions.append(pinBtn, editBtn, delBtn);
+        }
         head.append(h3, actions);
         right.appendChild(head);
 
-        const vars = parseVariables(active.content);
+        const vars = isDraftItem ? [] : parseVariables(active.content);
         if (vars.length > 0) {
           const varsBox = document.createElement('div');
           varsBox.className = 'agy-pv-vars';
@@ -803,27 +933,135 @@
     });
   }
 
+  function showSecretShieldBanner(composerBox, rawText, hits, resumeSend) {
+    document.getElementById('agy-secret-shield-banner')?.remove();
+    const banner = document.createElement('div');
+    banner.id = 'agy-secret-shield-banner';
+    banner.setAttribute('role', 'alert');
+    banner.setAttribute('data-ag-localization-skip', 'true');
+
+    const msg = document.createElement('span');
+    const labels = [...new Set(hits.map(h => h.label))].join(', ');
+    msg.textContent = text(
+      `🛡️ 检测到疑似真实密钥 (${labels})，已暂停发送以防泄露`,
+      `🛡️ Detected potential live secret (${labels}) — paused before sending`
+    );
+
+    const acts = document.createElement('div');
+    acts.className = 'agy-ss-actions';
+
+    const redactBtn = document.createElement('button');
+    redactBtn.type = 'button';
+    redactBtn.id = 'agy-secret-redact-btn';
+    redactBtn.className = 'primary';
+    redactBtn.textContent = text('✂️ 一键脱敏替换', '✂️ Redact Secrets');
+    redactBtn.onclick = () => {
+      banner.remove();
+      insertIntoComposer(redactSecrets(rawText), { append: false, composerBox });
+    };
+
+    const allowBtn = document.createElement('button');
+    allowBtn.type = 'button';
+    allowBtn.id = 'agy-secret-allow-btn';
+    allowBtn.textContent = text('仍然发送', 'Send Anyway');
+    allowBtn.onclick = () => {
+      banner.remove();
+      bypassedSecretSignature = rawText;
+      resumeSend?.();
+    };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.id = 'agy-secret-cancel-btn';
+    cancelBtn.textContent = text('取消', 'Cancel');
+    cancelBtn.onclick = () => banner.remove();
+
+    acts.append(redactBtn, allowBtn, cancelBtn);
+    banner.append(msg, acts);
+    composerBox.insertBefore(banner, composerBox.firstChild);
+  }
+
+  function onFocusIn(e) {
+    const box = e.target?.closest?.('[data-testid="agent-input-box"]');
+    if (box) lastFocusedComposer = box;
+  }
+
+  function onComposerInput(e) {
+    const editor = e.target?.closest?.('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    if (!editor) return;
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(() => {
+      if (!disposed) saveDraftSnapshot(editor.textContent || '');
+    }, 650);
+  }
+
+  function checkSecretBeforeSend(e, composerBox, triggerSubmit) {
+    if (disposed || window.__agySuiteSettings?.prompts === false || !composerBox) return false;
+    const editor = composerBox.querySelector('[data-lexical-editor="true"]');
+    if (!editor) return false;
+    const rawText = (editor.textContent || '').trim();
+    if (!rawText) return false;
+    if (bypassedSecretSignature === rawText) {
+      bypassedSecretSignature = '';
+      return false;
+    }
+    const hits = detectSecrets(rawText);
+    if (!hits.length) return false;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showSecretShieldBanner(composerBox, rawText, hits, triggerSubmit);
+    return true;
+  }
+
+  function onCaptureClick(e) {
+    const sendBtn = e.target?.closest?.('[data-testid="send-button"]');
+    if (!sendBtn) return;
+    const box = sendBtn.closest('[data-testid="agent-input-box"]');
+    checkSecretBeforeSend(e, box, () => sendBtn.click());
+  }
+
+  function onCaptureKeyDown(e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.isComposing) return;
+    const editor = e.target?.closest?.('[data-testid="agent-input-box"] [data-lexical-editor="true"]');
+    if (!editor) return;
+    if (document.querySelector('[role="listbox"], .lexical-typeahead-menu')) return;
+    const box = editor.closest('[data-testid="agent-input-box"]');
+    checkSecretBeforeSend(e, box, () => {
+      box?.querySelector('[data-testid="send-button"]')?.click();
+    });
+  }
+
   function onKeyDown(e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'p') {
       if (window.__agySuiteSettings?.prompts === false) return;
       e.preventDefault();
       if (document.getElementById('agy-prompt-vault-backdrop')) close();
       else open();
-    } else if (e.key === 'Escape' && document.getElementById('agy-prompt-vault-backdrop')) {
-      e.preventDefault();
-      close();
+    } else if (document.getElementById('agy-prompt-vault-backdrop')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (editingItem) document.getElementById('agy-pv-save-btn')?.click();
+        else document.getElementById('agy-pv-insert')?.click();
+      }
     }
   }
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-prompt-vault-backdrop')) continue;
+      if (m.target?.closest?.('#agy-prompt-vault-backdrop, #agy-secret-shield-banner')) continue;
       scheduleRender();
       break;
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
+  document.addEventListener('focusin', onFocusIn);
+  document.addEventListener('input', onComposerInput, true);
+  window.addEventListener('click', onCaptureClick, true);
+  window.addEventListener('keydown', onCaptureKeyDown, true);
   document.addEventListener('keydown', onKeyDown);
   scheduleRender();
 
@@ -837,23 +1075,25 @@
     const items = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.prompts) ? parsed.prompts : []);
     const valid = items.filter(it => it && typeof it.title === 'string' && it.title.trim() && typeof it.content === 'string' && it.content.trim());
     if (!valid.length) throw new Error(text('未找到有效的模板条目', 'No valid templates found'));
+    const normalized = valid.slice(0, 50).map(it => ({
+      id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
+      title: it.title.trim().slice(0, 80),
+      category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
+      pinned: Boolean(it.pinned),
+      content: it.content.trim()
+    }));
     let latest = prompts;
-    for (const it of valid.slice(0, 50)) {
-      latest = await apiCall({
-        action: 'upsert',
-        prompt: {
-          id: typeof it.id === 'string' && it.id.trim() ? it.id.trim() : undefined,
-          title: it.title.trim().slice(0, 80),
-          category: typeof it.category === 'string' && it.category.trim() ? it.category.trim().slice(0, 24) : text('导入', 'Imported'),
-          pinned: Boolean(it.pinned),
-          content: it.content.trim()
-        }
-      });
+    try {
+      latest = await apiCall({ action: 'import', prompts: normalized });
+    } catch {
+      for (const item of normalized) {
+        latest = await apiCall({ action: 'upsert', prompt: item });
+      }
     }
     prompts = latest;
     saveCachedPrompts(prompts);
     if (!selectedId && prompts[0]) selectedId = prompts[0].id;
-    return Math.min(valid.length, 50);
+    return normalized.length;
   }
 
   window.__agyPromptVault = {
@@ -862,6 +1102,11 @@
     close,
     refresh,
     importPromptsJson,
+    detectSecrets,
+    redactSecrets,
+    checkSecretBeforeSend,
+    saveDraftSnapshot,
+    getDrafts,
     getPrompts: () => prompts.length ? prompts : loadCachedPrompts(),
     parseVariables,
     composePrompt,
@@ -870,12 +1115,19 @@
 
   window.__agyPromptVaultCleanup = () => {
     disposed = true;
+    clearTimeout(draftSaveTimer);
     observer.disconnect();
     window.removeEventListener('agy-suite-settings-updated', scheduleRender);
+    document.removeEventListener('focusin', onFocusIn);
+    document.removeEventListener('input', onComposerInput, true);
+    window.removeEventListener('click', onCaptureClick, true);
+    window.removeEventListener('keydown', onCaptureKeyDown, true);
     document.removeEventListener('keydown', onKeyDown);
     document.getElementById('agy-prompt-vault-trigger')?.remove();
     document.getElementById('agy-prompt-capsule')?.remove();
     document.getElementById('agy-prompt-vault-backdrop')?.remove();
+    document.getElementById('agy-secret-shield-banner')?.remove();
+    window.__agyPinboardCleanup?.();
     style.remove();
     delete window.__agyPromptVault;
   };
