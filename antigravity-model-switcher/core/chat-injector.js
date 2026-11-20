@@ -3187,6 +3187,7 @@
         };
         resetIdleTimeout();
         try {
+            window.dispatchEvent(new CustomEvent('agy-token-stream', { detail: { phase: 'start', conversationId: cid, modelName: activeModel.name } }));
             const res = await fetch(`${API_BASE}/chat/stream`, {
                 method: 'POST',
                 signal: chatController.signal,
@@ -3266,6 +3267,7 @@
                 } else if (evtName === 'thinking_delta') {
                     const delta = data.delta || '';
                     if (delta) {
+                        window.dispatchEvent(new CustomEvent('agy-token-stream', { detail: { phase: 'delta', conversationId: cid, modelName: activeModel.name, kind: 'thinking', delta } }));
                         progress.phase = 'thinking';
                         progress.lastContentAt = Date.now();
                         accumulatedThinking += delta;
@@ -3286,6 +3288,7 @@
                 } else if (evtName === 'text_delta') {
                     const delta = data.delta || '';
                     if (delta) {
+                        window.dispatchEvent(new CustomEvent('agy-token-stream', { detail: { phase: 'delta', conversationId: cid, modelName: activeModel.name, kind: 'text', delta } }));
                         progress.phase = 'streaming';
                         progress.lastContentAt = Date.now();
                         if (accumulatedReply.length === 0 && accumulatedThinking.length > 0 && uiTurn?.thinkingDetailsEl) {
@@ -3317,6 +3320,7 @@
                     if (typeof data.reasoning === 'string') {
                         accumulatedThinking = data.reasoning;
                     }
+                    window.dispatchEvent(new CustomEvent('agy-token-stream', { detail: { phase: 'done', conversationId: cid, modelName: activeModel.name, usage: data.usage || data.exchange?.usage || null, totalText: accumulatedReply, totalThinking: accumulatedThinking } }));
                     const context = nativeContext();
                     const summary = context.summaries?.getState()?.summaries?.[cid];
                     if (summary) {
@@ -3388,6 +3392,7 @@
 
             if (!handledFinal) throw new Error('连接中断，回复尚未完成，请重试');
         } catch (err) {
+            window.dispatchEvent(new CustomEvent('agy-token-stream', { detail: { phase: 'abort', conversationId: cid } }));
             if (uiTurn) {
                 if (uiTurn.statusWrapEl) uiTurn.statusWrapEl.style.display = 'none';
                 const message = chatController.signal.aborted ? (chatController.signal.reason?.message || '已停止生成') : (err.message || String(err));

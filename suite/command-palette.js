@@ -200,6 +200,27 @@
         run: () => window.__agyConvTools?.toggleZenMode?.()
       });
     }
+    if (window.__agyTokenSpeed) {
+      const rec = window.__agyTokenSpeed.getConversationRecord?.();
+      list.push({
+        id: 'token-speed-details',
+        group: appearanceGroup,
+        title: text('⚡ 查看本对话各轮 Token 输出速度明细', '⚡ Inspect Per-Turn Output Speed Breakdown'),
+        badge: rec?.lastTurn ? `${rec.lastTurn.tokPerSec.toFixed(1)} tok/s` : 'tok/s',
+        keywords: 'token speed rate tps ttft 速度 测速 速率 首字',
+        run: () => window.__agyTokenSpeed?.openPopover?.()
+      });
+    }
+    list.push({
+      id: 'token-speed-toggle',
+      group: appearanceGroup,
+      title: s.tokenSpeed === false
+        ? text('⚡ 显示模型选择旁对话输出测速胶囊 (tok/s)', '⚡ Show Token Output Speed Pill Beside Model Selector')
+        : text('⊘ 隐藏模型选择旁对话输出测速胶囊', '⊘ Hide Token Output Speed Pill'),
+      badge: s.tokenSpeed === false ? text('已隐藏', 'Hidden') : text('已开启', 'On'),
+      keywords: 'token speed hide show pill 速度 测速 隐藏 显示',
+      run: () => window.__agySuite?.save({ tokenSpeed: s.tokenSpeed === false })
+    });
 
     // 3. Prompt Vault & Cross-Session Pinboard
     if (window.__agyPromptVault) {

@@ -7,7 +7,7 @@ try{
   const storage=()=>{const values=new Map();return {getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),clear:()=>values.clear(),key:index=>[...values.keys()][index]||null,get length(){return values.size;}};};
   Object.defineProperty(w,'localStorage',{value:storage()});Object.defineProperty(w,'sessionStorage',{value:storage()});
   const results=[],assert=(value,message)=>{if(!value)throw Error(message);results.push(message);},pause=ms=>new Promise(r=>setTimeout(r,ms));
-  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,showOutlinePill:false,prompts:true,sidePreview:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
+  let settings={version:1,skin:false,i18n:true,accounts:false,api:false,guardian:false,outline:true,showOutlinePill:false,prompts:true,sidePreview:true,tokenSpeed:true,replyFont:'serif',replySize:'standard',readingWidth:'standard',showUsage:false,showQuota:true,quotaReminder:true};
   let vaultPrompts=[{id:'tpl-1',title:'Audit Module',category:'Engineering',pinned:true,content:'Audit {{module}} with constraint {{limit:zero-regression}}.'}];
   let pinItems=[];
   let posts=0,quotaCalls=0,switches=0,imported,discoverCalls=0,quotaFailure=false,holdSettings=false,releaseSettings=null,failSettings=false,holdInitial=true,releaseInitial,usageExchanges=[],savedModels=[],activeMode='official',activeModelId=null;
@@ -42,7 +42,7 @@ try{
     assert(d.querySelector('#agy-suite-sidebar-button')&&!d.querySelector('#agy-suite-center'),'suite is accessible from the sidebar without adding content to native settings');
     d.querySelector('#agy-suite-sidebar-button').focus();d.querySelector('#agy-suite-sidebar-button').click();await pause(30);
     assert(d.querySelector('#agy-suite-center[role=dialog][aria-modal=true]'),'sidebar opens the independent suite dialog');
-    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===12,'four modules and independent outline, outline pill, prompt vault, side preview, quota, usage, reminders and recovery switches are accessible');
+    assert(d.querySelectorAll('#agy-suite-center [role=switch]').length===13,'four modules and independent outline, outline pill, prompt vault, side preview, token speed, quota, usage, reminders and recovery switches are accessible');
     assert(d.querySelectorAll('.suite-feature').length===4&&d.querySelectorAll('#agy-suite-center h3').length===3,'control center groups feature cards, appearance and background preferences');
     d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     assert(!d.querySelector('#agy-suite-center')&&d.activeElement.id==='agy-suite-sidebar-button','Escape closes the dialog and restores focus to the sidebar');
@@ -158,6 +158,38 @@ try{
     assert(spScope.querySelector('.agy-sp-host .agy-sp-table')?.textContent.includes('210')&&spScope.querySelector('.agy-sp-badge')?.textContent.includes('UTF-16LE'),'clicking rich preview pill renders interactive table with encoding badge');
     spScope.querySelector('[data-sp-act="nativeView"]').click();await pause(30);
     assert(!spScope.querySelector('.agy-sp-host')&&spScope.querySelector('.agy-sp-float-pill'),'clicking Native button returns cleanly to raw source view');
+    const modelBtn=d.querySelector('button[data-testid="model-selector-trigger"]');
+    const tsPill=modelBtn?.nextElementSibling;
+    assert(tsPill&&tsPill.classList.contains('agy-ts-pill')&&w.__agyTokenSpeed,'token output speed pill mounts directly beside model-selector-trigger');
+    const mainPane=d.querySelector('main');mainPane.setAttribute('data-cascade-id','conv-speed-a');
+    w.dispatchEvent(new w.CustomEvent('agy-token-stream',{detail:{phase:'start',conversationId:'conv-speed-a',modelName:'Gemini 4 Hydrogen Extra'}}));
+    await pause(80);
+    w.dispatchEvent(new w.CustomEvent('agy-token-stream',{detail:{phase:'delta',conversationId:'conv-speed-a',modelName:'Gemini 4 Hydrogen Extra',kind:'text',delta:'Streaming output speed test response chunk one '}}));
+    await pause(220);
+    w.dispatchEvent(new w.CustomEvent('agy-token-stream',{detail:{phase:'done',conversationId:'conv-speed-a',modelName:'Gemini 4 Hydrogen Extra',usage:{outputTokens:40},totalText:'Streaming output speed test response chunk one done'}}));
+    await pause(40);
+    assert(tsPill.textContent.includes('tok/s')&&!/--/.test(tsPill.textContent)&&w.__agyTokenSpeed.getConversationRecord('conv-speed-a')?.lastTurn?.calibrated===true,'token speed pill measures streaming tok/s and calibrates with reported usage');
+    tsPill.click();await pause(20);
+    assert(d.querySelector('#agy-token-speed-popover')?.textContent.includes('40 tok')&&d.querySelector('#agy-token-speed-popover')?.textContent.includes('Verified Usage'),'clicking speed pill opens breakdown popover with TTFT, tokens and turn history');
+    mainPane.setAttribute('data-cascade-id','conv-speed-b');w.__agyTokenSpeed.refresh();await pause(20);
+    assert(tsPill.textContent.includes('-- tok/s'),'switching conversations isolates token speed metrics per conversation');
+    mainPane.setAttribute('data-cascade-id','conv-speed-a');w.__agyTokenSpeed.refresh();
+    await w.__agySuite.save({tokenSpeed:false});await pause(40);
+    assert(!d.querySelector('.agy-ts-pill')&&!w.__agyTokenSpeed,'disabling tokenSpeed removes pill and runtime cleanly');
+    await w.__agySuite.save({tokenSpeed:true});await pause(40);
+    assert(modelBtn.nextElementSibling?.classList.contains('agy-ts-pill'),'re-enabling tokenSpeed restores speed pill beside model selector');
+    mainPane.setAttribute('data-cascade-id','conv-official-dom');w.__agyTokenSpeed.refresh();
+    const composerEl=d.querySelector('[data-testid="agent-input-box"]');
+    const cancelBtn=d.createElement('button');cancelBtn.setAttribute('data-tooltip-id','input-send-button-cancel-tooltip');composerEl.appendChild(cancelBtn);
+    const officialUser=d.createElement('div');officialUser.setAttribute('data-testid','user-input-step');officialUser.innerHTML='<div data-quotable="true">Test official speed</div>';mainPane.appendChild(officialUser);
+    const officialReply=d.createElement('div');officialReply.setAttribute('data-testid','planner-response-text');officialReply.textContent='First chunk of official streaming reply ';mainPane.appendChild(officialReply);
+    w.__agyTokenSpeed.refresh();await pause(140);
+    officialReply.textContent+='with a second longer paragraph of tokens arriving sequentially.';
+    w.__agyTokenSpeed.refresh();await pause(120);
+    cancelBtn.remove();w.__agyTokenSpeed.refresh();await pause(320);
+    const domRec=w.__agyTokenSpeed.getConversationRecord('conv-official-dom');
+    assert(domRec?.lastTurn?.source==='dom'&&domRec.lastTurn.calibrated===false&&domRec.lastTurn.tokPerSec>0,'official DOM streaming measures non-zero tok/s automatically after generation completes');
+    officialUser.remove();officialReply.remove();mainPane.removeAttribute('data-cascade-id');
     await w.__agySuite.save({sidePreview:false});await pause(40);
     assert(!spScope.querySelector('.agy-sp-float-pill')&&!w.__agySidePreview,'disabling sidePreview immediately removes preview overlays and runtime');
     await w.__agySuite.save({sidePreview:true});await pause(40);spScope.innerHTML='';w.__agySidePreview.inspectSidePanels();
@@ -254,7 +286,7 @@ try{
     w.eval(${JSON.stringify(bundle)});await pause(40);
     assert(!w.__AGY_MODEL_SWITCHER&&d.querySelectorAll('#agy-suite-center').length===1,'identical bundle reinjection respects disabled modules and stays idempotent');
     return results;
-  }finally{w.__agySuiteCleanup?.();w.__agyAccountSwitcherCleanup?.();w.__AGY_MODEL_SWITCHER_CLEANUP?.();w.__agyThemeSwitcherCleanup?.();w.__agyCnRestore?.();frame.remove();}
+  }finally{w.__agySuiteCleanup?.();w.__agyAccountSwitcherCleanup?.();w.__AGY_MODEL_SWITCHER_CLEANUP?.();w.__agyThemeSwitcherCleanup?.();w.__agyTokenSpeedCleanup?.();w.__agyCnRestore?.();frame.remove();}
  })()`,30000);
  for(const result of results)console.log('PASS '+result);console.log(results.length+' suite browser checks passed.');
 }finally{cdp.close();}

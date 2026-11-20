@@ -273,6 +273,10 @@ function buildI18nBundle() {
   if (fs.existsSync(sidePreviewPath)) {
     js += '\nwindow.__agySuiteModules.sidePreview=function(){\n' + fs.readFileSync(sidePreviewPath, 'utf8') + '\n};';
   }
+  const tokenSpeedPath = path.join(skinRoot, '..', 'suite', 'token-speed.js');
+  if (fs.existsSync(tokenSpeedPath)) {
+    js += '\nwindow.__agySuiteModules.tokenSpeed=function(){\n' + fs.readFileSync(tokenSpeedPath, 'utf8') + '\n};';
+  }
   js += fs.readFileSync(path.join(skinRoot,'..','suite','control-center.js'),'utf8');
   const commandPalettePath = path.join(skinRoot, '..', 'suite', 'command-palette.js');
   if (fs.existsSync(commandPalettePath)) {

@@ -28,8 +28,12 @@ try{
   check((await call('/api/suite/settings',{i18n:false},'https://evil.example')).status===403,'unrelated websites cannot change module settings');
   check((await call('/api/suite/settings',{guardian:'false'})).status===400,'invalid toggle values do not overwrite preferences');
   check((await call('/api/suite/settings',{unknown:true})).status===400,'unknown settings are rejected');
-  await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large',readingWidth:'wide',outline:false});
-  check(settings.readSettings().replySize==='large'&&settings.readSettings().readingWidth==='wide'&&settings.readSettings().outline===false,'appearance, reading width and outline settings persist');
+  await call('/api/suite/settings',{api:true,replyFont:'sans',replySize:'large',readingWidth:'wide',outline:false,tokenSpeed:false});
+  check(settings.readSettings().replySize==='large'&&settings.readSettings().readingWidth==='wide'&&settings.readSettings().outline===false&&settings.readSettings().tokenSpeed===false,'appearance, reading width, outline and tokenSpeed settings persist');
+  await call('/api/suite/settings',{tokenSpeed:true});
+  const builtBundle=fs.readFileSync(path.join(root,'antigravity-claude-skin','i18n','claude-cn-i18n.js'),'utf8');
+  check(builtBundle.includes('window.__agySuiteModules.tokenSpeed')&&builtBundle.includes('agy-token-stream')&&builtBundle.includes('.agy-ts-pill'),'built renderer bundle mounts tokenSpeed module and relay speed events');
+  check((await call('/api/suite/settings',{tokenSpeed:'yes'})).status===400,'invalid tokenSpeed toggle is rejected');
   check((await call('/api/suite/settings',{readingWidth:'invalid'})).status===400,'invalid reading width is rejected');
   check((await call('/api/suite/prompts',null,'https://evil.example')).status===403,'unrelated websites cannot read or mutate prompt vault');
   const initialPrompts=(await call('/api/suite/prompts')).data.prompts;
