@@ -1,4 +1,4 @@
-(()=>{if(window.__agyRendererBundleId==="42c1d25dc691d8958457637f89ae42c56a12e51f528435d58d718889d4b48fd2"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
+(()=>{if(window.__agyRendererBundleId==="307eb66268c4e81bd45cce6f999d9af951efb9b55b926a849b3e50a29dadafa7"&&window.__agySuite)return;if(window.__AGY_MODEL_SWITCHER?.getState().isSendingCustomChat)return;
 window.__agySuiteModules={i18n:function(){
 '__ANTIGRAVITY_CHINESE_LOCALIZATION_START__';
 (() => {
@@ -14476,12 +14476,12 @@ window.__agySuiteModules.tokenSpeed=function(){
       align-items: center !important;
       gap: 5px !important;
       flex: 0 0 auto !important;
-      height: 22px !important;
-      min-height: 22px !important;
+      height: 24px !important;
+      min-height: 24px !important;
       width: auto !important;
-      max-width: 168px !important;
-      margin: 0 2px 0 4px !important;
-      padding: 0 8px !important;
+      max-width: 156px !important;
+      margin: 0 2px !important;
+      padding: 0 9px !important;
       border-radius: 999px !important;
       border: 1px solid var(--border, rgba(128, 128, 128, 0.22)) !important;
       background: rgba(128, 128, 128, 0.06) !important;
@@ -14683,55 +14683,106 @@ window.__agySuiteModules.tokenSpeed=function(){
     return match ? match[1] : 'home';
   }
 
-  function extractCleanAssistantText(node) {
-    if (!node) return '';
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
-      acceptNode(textNode) {
-        const el = textNode.parentElement;
-        if (!el) return NodeFilter.FILTER_REJECT;
-        if (el.closest('button, style, script, .agy-code-fold-btn, .agy-code-preview-btn, .agy-code-diff-btn, .agy-live-preview-panel, .agy-code-diff-panel, .agy-table-tools, .agy-code-header-actions, .agy-ms-live-status')) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return NodeFilter.FILTER_ACCEPT;
+  const SKIP_TAGS = new Set(['BUTTON', 'STYLE', 'SCRIPT', 'SVG', 'CAPTION']);
+  const SKIP_TESTIDS = new Set(['worked-for-collapsible', 'turn-cards-container', 'tool-group-collapsible']);
+  const SKIP_CLASSES = ['sr-only', 'katex-mathml', 'agy-code-fold-btn', 'agy-code-preview-btn', 'agy-code-diff-btn', 'agy-live-preview-panel', 'agy-code-diff-panel', 'agy-table-tools', 'agy-code-header-actions', 'agy-ms-live-status'];
+
+  function shouldSkipElement(el) {
+    if (SKIP_TAGS.has(el.tagName)) return true;
+    const tid = el.getAttribute?.('data-testid');
+    if (tid && SKIP_TESTIDS.has(tid)) return true;
+    if (el.getAttribute?.('data-find-ignore') === 'true') return true;
+    const cls = el.classList;
+    if (cls) {
+      for (let i = 0; i < SKIP_CLASSES.length; i++) {
+        if (cls.contains(SKIP_CLASSES[i])) return true;
       }
-    });
-    let out = '';
-    let cur;
-    while ((cur = walker.nextNode())) out += cur.nodeValue || '';
-    return out;
+    }
+    return false;
   }
 
-  function snapshotPaneTurns(paneRoot) {
+  function fastCollectText(node, chunks) {
+    if (!node) return;
+    if (node.nodeType === 3) {
+      if (node.nodeValue) chunks.push(node.nodeValue);
+      return;
+    }
+    if (node.nodeType !== 1 || shouldSkipElement(node)) return;
+    for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
+      fastCollectText(ch, chunks);
+    }
+  }
+
+  function extractCleanAssistantText(node) {
+    if (!node) return '';
+    // Antigravity v2.33+ 将正文流放入 [data-testid="agent-response"] 内的 [data-markdown-root]，
+    // 排除步骤状态栏（含秒表计时器）、思考折叠标题及 KaTeX 隐藏 MathML。
+    let roots = [node];
+    if (node.getAttribute?.('data-testid') === 'agent-response') {
+      const mdRoots = node.querySelectorAll('[data-markdown-root]');
+      if (!mdRoots.length) return '';
+      roots = [...mdRoots];
+    }
+    const chunks = [];
+    for (const rootNode of roots) {
+      fastCollectText(rootNode, chunks);
+      chunks.push('\n');
+    }
+    return chunks.join('');
+  }
+
+  function snapshotPaneTurns(paneRoot, textNeeded = true) {
     if (!paneRoot) return { userCount: 0, lastUserEl: null, replyText: '' };
-    const nodes = [...paneRoot.querySelectorAll('[data-testid="user-input-step"], [data-testid="user-message-bubble"], [data-testid="planner-response-text"], .agy-ms-chat-body')];
-    const filtered = nodes.filter(el => !el.closest('[data-side-panel-body], #agy-suite-backdrop, #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-command-palette-backdrop, #agy-pinboard-backdrop, #agy-token-speed-popover'));
+    const nodes = [...paneRoot.querySelectorAll('[data-testid="user-input-step"], [data-testid="user-message"], [data-testid="user-message-bubble"], [data-testid="planner-response-text"], [data-testid="agent-response"], .agy-ms-chat-body')];
     let userCount = 0;
     let lastUserEl = null;
-    let replyParts = [];
-    for (const el of filtered) {
+    let trailingReplies = [];
+    for (const el of nodes) {
+      if (el.closest('[data-side-panel-body], #agy-suite-backdrop, #agy-outline-drawer, #agy-prompt-vault-backdrop, #agy-command-palette-backdrop, #agy-pinboard-backdrop, #agy-token-speed-popover')) continue;
       const tid = el.getAttribute('data-testid');
-      if (tid === 'user-message-bubble' && el.closest('[data-testid="user-input-step"]')) continue;
-      if (tid === 'user-input-step' || tid === 'user-message-bubble') {
+      if ((tid === 'user-message-bubble' || tid === 'user-message') && el.closest('[data-testid="user-input-step"]')) continue;
+      if (tid === 'user-input-step' || tid === 'user-message' || tid === 'user-message-bubble') {
         userCount++;
         lastUserEl = el;
-        replyParts = [];
-      } else {
-        if (tid === 'planner-response-text' && el.querySelector('.agy-ms-chat-body')) continue;
-        replyParts.push(extractCleanAssistantText(el));
+        trailingReplies = [];
+      } else if (textNeeded) {
+        if ((tid === 'planner-response-text' || tid === 'agent-response') && el.querySelector('.agy-ms-chat-body')) continue;
+        if (tid === 'planner-response-text' && el.closest('[data-testid="agent-response"]')) continue;
+        trailingReplies.push(el);
       }
+    }
+    if (!textNeeded || !trailingReplies.length) return { userCount, lastUserEl, replyText: '' };
+    const replyParts = [];
+    for (const el of trailingReplies) {
+      const txt = extractCleanAssistantText(el).trim();
+      if (txt) replyParts.push(txt);
     }
     return { userCount, lastUserEl, replyText: replyParts.join('\n') };
   }
 
   function isPaneGenerating(composer, paneRoot) {
-    if (composer?.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]')) return true;
-    if (paneRoot?.querySelector('button[data-tooltip-id="input-send-button-cancel-tooltip"]')) return true;
+    const cancelSel = 'button[data-tooltip-id="input-send-button-cancel-tooltip"], button[data-testid="input-cancel-button"]';
+    if (composer?.querySelector(cancelSel)) return true;
+    if (paneRoot?.querySelector(cancelSel)) return true;
     const msState = window.__AGY_MODEL_SWITCHER?.getState?.();
     if (msState?.isSendingCustomChat) {
       const cid = resolveConversationId(composer, paneRoot);
       if (!msState.activeConversationId || msState.activeConversationId === cid) return true;
     }
     return false;
+  }
+
+  function resolvePillAnchor(triggerBtn, composer) {
+    let cur = triggerBtn;
+    while (cur && cur.parentElement && composer.contains(cur.parentElement)) {
+      const parent = cur.parentElement;
+      const cs = getComputedStyle(parent);
+      if (cs.display && cs.display.includes('flex') && cs.flexDirection.startsWith('row') && !cs.flexDirection.includes('reverse')) {
+        return cur;
+      }
+      cur = parent;
+    }
+    return triggerBtn;
   }
 
   function speedTier(tokPerSec) {
@@ -14930,12 +14981,23 @@ window.__agySuiteModules.tokenSpeed=function(){
         session.paused = true;
       }
 
+      const sinceLast = session.firstTokenAt
+        ? (performance.now() - (session.lastSampleAt || session.firstTokenAt))
+        : 0;
       const idleEnough = session.firstTokenAt
-        ? (performance.now() - (session.lastSampleAt || session.firstTokenAt) > 250)
+        ? (sinceLast >= 200)
         : (performance.now() - session.submittedAt > 12000);
-      if (!generating && ((session.tokens > 0 && idleEnough) || (!session.firstTokenAt && performance.now() - session.submittedAt > 4000))) {
-        if (session.tokens > 0) commitSession(session);
-        else session.finished = true;
+      if (!generating) {
+        if ((session.tokens > 0 && idleEnough) || (!session.firstTokenAt && performance.now() - session.submittedAt > 4000)) {
+          if (session.tokens > 0) commitSession(session);
+          else session.finished = true;
+        } else if (session.tokens > 0 && !session._commitScheduled) {
+          session._commitScheduled = true;
+          setTimeout(() => {
+            session._commitScheduled = false;
+            if (!disposed) renderAll();
+          }, Math.max(20, 210 - sinceLast));
+        }
       }
     }
 
@@ -14947,9 +15009,10 @@ window.__agySuiteModules.tokenSpeed=function(){
     const { convId, session, generating } = updateDomSessionForComposer(composer, triggerBtn);
     const convRecord = store.conversations?.[convId];
 
-    let pill = triggerBtn.nextElementSibling;
-    if (!pill || !pill.classList?.contains('agy-ts-pill')) {
-      const existing = triggerBtn.parentElement?.querySelector('.agy-ts-pill[data-agy-token-speed="true"]');
+    const anchor = resolvePillAnchor(triggerBtn, composer);
+    let pill = anchor.nextElementSibling?.classList?.contains('agy-ts-pill') ? anchor.nextElementSibling : null;
+    if (!pill) {
+      const existing = composer.querySelector('.agy-ts-pill[data-agy-token-speed="true"]');
       if (existing) pill = existing;
       else {
         pill = document.createElement('button');
@@ -14961,9 +15024,9 @@ window.__agySuiteModules.tokenSpeed=function(){
         pill.setAttribute('aria-expanded', 'false');
         pill.innerHTML = '<span class="agy-ts-dot" aria-hidden="true"></span><span class="agy-ts-value"></span>';
       }
-      if (triggerBtn.nextElementSibling !== pill) {
-        triggerBtn.after(pill);
-      }
+    }
+    if (anchor.nextElementSibling !== pill) {
+      anchor.after(pill);
     }
 
     pill.dataset.convId = convId;
@@ -15209,13 +15272,20 @@ window.__agySuiteModules.tokenSpeed=function(){
     }
   }
 
+  let lastRenderAt = 0;
+  let renderTimer = null;
   function scheduleRender() {
     if (disposed || scheduled) return;
     scheduled = true;
-    requestAnimationFrame(() => {
+    const wait = Math.max(0, 120 - (performance.now() - lastRenderAt));
+    renderTimer = setTimeout(() => {
       scheduled = false;
-      renderAll();
-    });
+      renderTimer = null;
+      if (!disposed) {
+        lastRenderAt = performance.now();
+        renderAll();
+      }
+    }, wait);
   }
 
   function startTurnForComposer(composerBox, source = 'dom') {
@@ -15307,26 +15377,30 @@ window.__agySuiteModules.tokenSpeed=function(){
 
   const observer = new MutationObserver(mutations => {
     for (const m of mutations) {
-      if (m.target?.closest?.('#agy-token-speed-popover, .agy-ts-pill, #agy-suite-backdrop, #agy-command-palette-backdrop, #agy-prompt-vault-backdrop')) continue;
+      if (m.target?.closest?.('#agy-token-speed-popover, .agy-ts-pill, #agy-suite-backdrop, #agy-command-palette-backdrop, #agy-prompt-vault-backdrop, [data-testid="tool-group-collapsible"], [data-testid="worked-for-collapsible"]')) continue;
       scheduleRender();
       break;
     }
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 
   const liveTicker = setInterval(() => {
     if (disposed) return;
     const hasActive = [...relayConvSessions.values()].some(s => !s.finished)
       || [...knownComposers].some(c => c.isConnected && paneSessions.get(c) && !paneSessions.get(c).finished);
-    if (hasActive) renderAll();
-  }, 180);
+    if (hasActive) {
+      lastRenderAt = performance.now();
+      renderAll();
+    }
+  }, 220);
 
   window.addEventListener('keydown', onDocumentKeyDown, true);
   window.addEventListener('click', onDocumentClick, true);
   window.addEventListener('resize', onResize);
   window.addEventListener('agy-token-stream', onRelayStream);
   window.addEventListener('agy-suite-settings-updated', scheduleRender);
-  scheduleRender();
+  lastRenderAt = performance.now();
+  renderAll();
 
   window.__agyTokenSpeed = {
     refresh: renderAll,
@@ -15350,6 +15424,7 @@ window.__agySuiteModules.tokenSpeed=function(){
   window.__agyTokenSpeedCleanup = () => {
     disposed = true;
     clearInterval(liveTicker);
+    clearTimeout(renderTimer);
     observer.disconnect();
     window.removeEventListener('keydown', onDocumentKeyDown, true);
     window.removeEventListener('click', onDocumentClick, true);
@@ -16055,4 +16130,4 @@ window.__agySuiteModules.tokenSpeed=function(){
   };
 })();
 
-window.__agyRendererBundleId="42c1d25dc691d8958457637f89ae42c56a12e51f528435d58d718889d4b48fd2";})();
+window.__agyRendererBundleId="307eb66268c4e81bd45cce6f999d9af951efb9b55b926a849b3e50a29dadafa7";})();

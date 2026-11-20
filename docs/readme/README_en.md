@@ -7,7 +7,7 @@
 # Antigravity Enhancement Suite
 
 <p align="center">
-  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Relay latency benchmark · Universal side-panel preview · Cross-session Pinboard · Command Palette</strong>
+  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Relay latency benchmark · Universal side-panel preview · Output speed monitor (tok/s) · Command Palette</strong>
 </p>
 
 <p align="center">
@@ -45,7 +45,8 @@
    - Supports **OpenAI-compatible** and **Anthropic Messages** endpoints, with provider presets, shared base URLs and keys, and **instant keyword filtering + batch selection** after fetching `/v1/models`.
    - **🏁 Parallel Relay Latency Race**: benchmark all saved relay nodes concurrently, inspect visual response-time bars and `🏆 Fastest` badges, and click **⚡ Pick Fastest** (or run from `Alt+K`) to switch straight to the lowest-latency healthy node.
    - **Mix models in one conversation**: pick relay models and reasoning effort directly from the native composer menu, bridge local history and context, and keep agent tools such as file read/write, code search, and command execution.
-5. 📑 **Exclusive Workflow Power Tools (Universal Side-Panel Preview · Code Evolution Diff · Cross-Session Pinboard · Sandboxed Preview · Secret Leak Shield · Bookish HTML Export · Prompt Vault · Command Palette)**
+5. 📑 **Exclusive Workflow Power Tools (Output Speed Monitor · Universal Side-Panel Preview · Code Evolution Diff · Cross-Session Pinboard · Sandboxed Preview · Secret Leak Shield · Bookish HTML Export · Command Palette)**
+   - **⚡ Per-Conversation Output Speed Monitor (`suite/token-speed.js`)**: mounts a compact speed pill (`84.6 tok/s`) inline directly to the right of the composer model selector on the same horizontal row, tracking live **output throughput (`tok/s`), first-token latency (`TTFT`), and total generated tokens** across both Antigravity v2.33+ official streams and relay SSE (auto-calibrated with server `usage.outputTokens`), excluding multi-second tool pauses and saving turn history per conversation.
    - **📂 Universal Side-Panel File Preview Enhancer (`suite/side-preview.js`)**: upgrades Antigravity's native side-panel viewer in-place without touching `app.asar` — zero-dependency previews for **PDFs** (HTTP 206 byte-range streaming inside Chromium's PDF viewer), **Office files (`.docx` headings/paragraphs/tables, `.xlsx` multi-sheet tables & live filter, `.pptx` slide cards)**, **UTF-16LE / UTF-16BE / GB18030 text & logs** (solving NUL-byte binary misclassification), **Jupyter `.ipynb` notebooks**, **`.zip` / `.whl` / `.vsix` archive trees with inline entry viewing**, **SQLite3 (`.sqlite` / `.db`) DDL schemas**, and head+tail sampling for >20MB logs, plus a **👁️ Rich Preview** toggle pill for `.csv` / `.tsv` / `.jsonl` / `.svg` / `.html` and a right-docked preview fallback when `file://` links outside the workspace are dropped by Antigravity.
    - **⇄ Turn-to-Turn Code Evolution Diff Inspector**: when AI iterates on a code block across turns, a **⇄ Diff (+X/-Y)** badge mounts automatically in the code header to inspect inline line-level additions/deletions, switch baseline versions, or copy a standard `.diff` patch.
    - **📌 Cross-Session Context Pinboard (`Alt+B`)**: pin key formulas, architectural invariants, or findings from any chat via the selection pill (`📌 Pin`) or outline drawer, then press `Alt+B` in any new conversation to inject curated `<CONTEXT_PINBOARD>` blocks in one click.
@@ -347,8 +348,8 @@ Relay progress distinguishes reasoning received, output in progress, tool execut
    - **Code Evolution Diff (`⇄ Diff`)**: automatically matches prior code blocks in the conversation to inspect inline line-by-line additions/deletions and copy unified `.diff` patches.
    - **Zero-Trust HTML/SVG Sandbox (`▶ Preview HTML / SVG`)**: renders generated web snippets inside an opaque `sandbox="allow-scripts"` iframe (`connect-src 'none'`), with `100%` / `390px` viewport presets, light/dark backdrop switch, and standalone file download.
    - **Excel TSV Copy & UTF-8 BOM CSV Download**: Markdown tables mount one-click actions for instant Excel pasting or garble-free CSV export.
-3. **Context Pinboard (`Alt+B`) · Output Speed Monitor (`tok/s`) · Selection Pill · Secret Leak Shield**
-   - **Per-Conversation Output Speed Monitor (`suite/token-speed.js`)**: mounts a compact speed badge (e.g., `84.6 tok/s`) directly beside the composer model selector across both official Antigravity streams and relay SSE streams (automatically calibrated with `usage.outputTokens` when returned). Filters out multi-second tool waits, tracks sliding-window `tok/s`, and opens a per-conversation breakdown popover with **TTFT, char/s, average/peak speed, and per-turn history**.
+3. **Context Pinboard (`Alt+B`) · Inline Output Speed Monitor (`tok/s`) · Selection Pill · Secret Leak Shield**
+   - **Per-Conversation Output Speed Monitor (`suite/token-speed.js`)**: mounts a compact speed pill (e.g., `84.6 tok/s`) inline horizontally right beside the composer model selector across both Antigravity v2.33+ official streams (`agent-response` streaming markdown) and relay SSE streams (automatically calibrated with `usage.outputTokens` when returned). Filters out multi-second tool waits, tracks sliding-window `tok/s`, and opens a per-conversation breakdown popover with **TTFT, char/s, average/peak speed, and per-turn history** (independently toggleable in Control Center or `Alt+K`).
    - **Selection Pill**: highlight text anywhere to surface **`❝ Quote & Ask · 📌 Pin · ✦ Save Template · 📋 Copy`**, routed to the active split-pane composer.
    - **Secret Leak Shield & Unsent Draft Time Machine**: detects probable live API keys, tokens, and PEM private keys before submission with one-click **`✂️ Redact Secrets`**, while snapshotting long unsent drafts into `Alt+P` (`🕒 Drafts`) / `Alt+K`.
    - **Context Telemetry & Session Handoff (`Alt+O`)**: track live estimated token distribution, compile **`🚀 Session Handoff`** briefs straight into Pinboard for fresh chats, or download standalone dual-theme Bookish HTML archives.
@@ -380,7 +381,7 @@ antigravity-enhancement-suite/
 ├── live-reload.ps1                     # Live reload for styles, dictionaries, and frontend scripts
 ├── 双击一键安装.cmd / 双击一键卸载.cmd # Visual install / uninstall entry points
 ├── install-online.ps1                  # One-line download and install entry
-├── suite/                              # Control center, command palette, prompt vault, pinboard, outline/export, side-panel preview, launcher (`launch.cjs`), and regression tests
+├── suite/                              # Control center, command palette, per-conversation output speed (`token-speed.js`), prompt vault, pinboard, outline/export, side-panel preview, launcher (`launch.cjs`), and regression tests
 ├── antigravity-claude-skin/            # [Module 1] Claude parchment/charcoal theme + 2,155+ i18n entries + `boot-on-launch.cjs` & guardian
 ├── antigravity-account-switcher/       # [Module 2] Google multi-account hot switching & Gemini/Claude quota panel
 └── antigravity-model-switcher/         # [Module 3] Third-party API relay, latency race benchmark & conversation bridge

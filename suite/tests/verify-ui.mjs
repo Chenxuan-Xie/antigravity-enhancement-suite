@@ -189,7 +189,27 @@ try{
     cancelBtn.remove();w.__agyTokenSpeed.refresh();await pause(320);
     const domRec=w.__agyTokenSpeed.getConversationRecord('conv-official-dom');
     assert(domRec?.lastTurn?.source==='dom'&&domRec.lastTurn.calibrated===false&&domRec.lastTurn.tokPerSec>0,'official DOM streaming measures non-zero tok/s automatically after generation completes');
-    officialUser.remove();officialReply.remove();mainPane.removeAttribute('data-cascade-id');
+    officialUser.remove();officialReply.remove();
+    // Simulate Antigravity v2.33+ block-wrapped model trigger inside a flex-row container & [data-testid="agent-response"] [data-markdown-root]
+    const flexRow=d.createElement('div');flexRow.style.cssText='display:flex;flex-direction:row;align-items:center;gap:4px;';
+    const blockWrap=d.createElement('div');blockWrap.style.display='block';
+    modelBtn.replaceWith(flexRow);blockWrap.appendChild(modelBtn);flexRow.appendChild(blockWrap);
+    w.__agyTokenSpeed.refresh();await pause(30);
+    const rowPill=blockWrap.nextElementSibling;
+    const btnRect=modelBtn.getBoundingClientRect(),pillRect=rowPill?.getBoundingClientRect();
+    assert(rowPill?.classList.contains('agy-ts-pill')&&flexRow.contains(rowPill)&&Math.abs(pillRect.top-btnRect.top)<10&&pillRect.left>=btnRect.right-1,'token speed pill mounts on the horizontal flex-row right beside block-wrapped model selector instead of wrapping below');
+    mainPane.setAttribute('data-cascade-id','conv-v233-dom');w.__agyTokenSpeed.refresh();
+    const cancel233=d.createElement('button');cancel233.setAttribute('data-testid','input-cancel-button');composerEl.appendChild(cancel233);
+    const user233=d.createElement('div');user233.setAttribute('data-testid','user-message');user233.textContent='Measure v2.33 speed';mainPane.appendChild(user233);
+    const agentResp=d.createElement('div');agentResp.setAttribute('data-testid','agent-response');
+    agentResp.innerHTML='<h6 class="sr-only">Agent said</h6><button data-testid="worked-for-collapsible">Running 1m 20s</button><div data-markdown-root=""><p>First streaming v2.33 prose segment </p></div>';
+    mainPane.appendChild(agentResp);w.__agyTokenSpeed.refresh();await pause(130);
+    agentResp.querySelector('[data-markdown-root] p').textContent+='followed by additional generated markdown words for steady speed measurement.';
+    w.__agyTokenSpeed.refresh();await pause(130);
+    cancel233.remove();w.__agyTokenSpeed.refresh();await pause(320);
+    const rec233=w.__agyTokenSpeed.getConversationRecord('conv-v233-dom');
+    assert(rec233?.lastTurn?.tokPerSec>0&&!agentResp.querySelector('[data-testid="worked-for-collapsible"]').textContent.includes('undefined'),'Antigravity v2.33 agent-response markdown stream is measured accurately without counting collapsible timers');
+    flexRow.replaceWith(modelBtn);composerEl.appendChild(rowPill);user233.remove();agentResp.remove();mainPane.removeAttribute('data-cascade-id');w.__agyTokenSpeed.refresh();
     await w.__agySuite.save({sidePreview:false});await pause(40);
     assert(!spScope.querySelector('.agy-sp-float-pill')&&!w.__agySidePreview,'disabling sidePreview immediately removes preview overlays and runtime');
     await w.__agySuite.save({sidePreview:true});await pause(40);spScope.innerHTML='';w.__agySidePreview.inspectSidePanels();
