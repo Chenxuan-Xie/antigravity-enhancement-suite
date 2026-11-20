@@ -7,7 +7,9 @@ const root = path.resolve(__dirname, '..');
 let resourcesDir = resolveResourcesDir();
 const logFile = path.join(root, 'backup', 'auto-heal.log');
 const healthFile = path.join(root, 'backup', 'guardian-health.json');
-let busy = false, stableArchive, failure = '', stopped = false;
+let busy = false, stableArchive, failure = '', stopped = false, lastCdpMissAt = 0, lastPortFileMtime = 0;
+const appDataDir = process.env?.APPDATA ? path.join(process.env.APPDATA, 'Antigravity') : '';
+const devToolsPortFile = appDataDir ? path.join(appDataDir, 'DevToolsActivePort') : '';
 const watchers = new Map();
 const status = { pid: process.pid, revision: 'external-bootstrap-v2', startedAt: new Date().toISOString() };
 
@@ -33,10 +35,11 @@ function acquireLease() {
 }
 
 function ensureWatchers() {
-    for (const dir of [resourcesDir, path.dirname(resourcesDir)]) {
-        if (watchers.has(dir) || !fs.existsSync(dir)) continue;
+    for (const dir of [resourcesDir, path.dirname(resourcesDir), appDataDir]) {
+        if (!dir || watchers.has(dir) || !fs.existsSync(dir)) continue;
         try {
-            const watcher = fs.watch(dir, () => { clearTimeout(watcher.debounce); watcher.debounce = setTimeout(tick, 2000); });
+            const delay = dir === appDataDir ? 250 : 2000;
+            const watcher = fs.watch(dir, () => { clearTimeout(watcher.debounce); watcher.debounce = setTimeout(tick, delay); });
             watcher.on('error', () => { watcher.close(); watchers.delete(dir); });
             watcher.on('close', () => { clearTimeout(watcher.debounce); watchers.delete(dir); });
             watchers.set(dir, watcher);
@@ -70,7 +73,7 @@ async function tick() {
                 status.hook = hook;
                 const launcherFile = path.resolve(root, '..', 'suite', 'launch.cjs');
                 if (fs.existsSync(launcherFile)) {
-                    status.launcher = require(launcherFile).installDesktopLauncher(resourcesDir);
+                    status.launcher = require(launcherFile).installDesktopLauncher(resourcesDir, { force: Boolean(hook.changed) });
                 }
                 const manifestFile = path.resolve(root, '..', 'data', 'install-manifest.json');
                 if (fs.existsSync(manifestFile)) {
@@ -82,11 +85,19 @@ async function tick() {
                 if (hook.changed) log(`Restored external bootstrap for ${hook.version}; official ASAR unchanged`);
             } else if (stableArchive?.stamp !== stamp) stableArchive = { stamp, since: Date.now() };
         }
+        let portFileMtime = 0;
+        try { if (devToolsPortFile && fs.existsSync(devToolsPortFile)) portFileMtime = fs.statSync(devToolsPortFile).mtimeMs; } catch {}
+        const throttledNoScan = lastCdpMissAt > 0 && Date.now() - lastCdpMissAt < 60000 && portFileMtime === lastPortFileMtime;
         try {
-            status.cdp = await injectLiveViaCdp({ onlyIfMissing: true });
+            status.cdp = await injectLiveViaCdp({ onlyIfMissing: true, noScan: throttledNoScan });
             status.cdpError = null;
+            lastCdpMissAt = 0;
+            lastPortFileMtime = portFileMtime;
             if (status.cdp.injected) log(`Restored ${status.cdp.injected} renderer(s), CDP ${status.cdp.port}`);
-        } catch (error) { status.cdpError = error.message; }
+        } catch (error) {
+            if (!throttledNoScan) { lastCdpMissAt = Date.now(); lastPortFileMtime = portFileMtime; }
+            status.cdpError = `${error.message}（若刚自动更新，通过桌面或开始菜单快捷方式重启应用即可恢复注入）`;
+        }
         status.lastError = null;
         if (failure) { log('Health checks recovered'); failure = ''; }
     } catch (error) {

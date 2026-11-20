@@ -28,6 +28,7 @@ async function main() {
   check(launches[0][2].env.HTTPS_PROXY === 'http://127.0.0.1:8800/', 'HTTPS requests use the HTTP proxy tunnel rather than TLS to the local proxy port');
   check(launches[0][1][0].includes('localhost;127.0.0.1;[::1]'), 'local app pages bypass the external proxy');
   check(launches[0][1].includes('--proxy-server=http=http://127.0.0.1:8800;https=http://127.0.0.1:8800'), 'Chromium receives the current proxy together with its loopback bypass rules');
+  check(launches[0][1].includes('--remote-debugging-port=0') && launches[0][1].includes('--remote-debugging-address=127.0.0.1'), 'launcher supplies loopback remote debugging flags directly for Antigravity 2.33+');
   check(launches[0][2].env.KEEP_SETTING === 'preserved' && child.detached, 'unrelated environment and independent app lifetime are preserved');
   check(launches[0][2].windowsHide === false, 'the interactive app window is allowed to show while its launcher stays hidden');
   registry = registry.replace('8800', '9900'); api.launch();
@@ -35,17 +36,21 @@ async function main() {
   env.HTTPS_PROXY = 'http://custom-proxy:1234'; api.launch();
   check(launches[2][2].env.HTTPS_PROXY === new URL(env.HTTPS_PROXY).href, 'explicit user proxy settings take precedence');
   check(!env.HTTP_PROXY && !env.NO_PROXY, 'launcher does not write global proxy settings');
+  files.set('D:\\runtime\\antigravity-claude-skin\\tools\\boot-on-launch.cjs', '// boot');
+  api.launch({ args: ['D:\\workspace'] });
+  check(launches.at(-2)[1].at(-1) === 'D:\\workspace' && launches.at(-1)[0] === 'D:\\node\\node.exe' && launches.at(-1)[1][0].endsWith('boot-on-launch.cjs') && launches.at(-1)[2].windowsHide === true, 'launcher forwards CLI args and starts the hidden CDP boot helper on launch');
   const result = api.installDesktopLauncher('C:\\updated-app\\resources');
-  check(result.changed && scripts[0][2].env.AGY_APP_EXE === exe, 'desktop launcher points to the updated official executable');
-  const [vbsFile, bytes] = [...files.entries()][0];
+  check(result.changed && scripts[0][2].env.AGY_APP_EXE === exe && scripts[0][2].env.AGY_STARTMENU_BACKUP.endsWith('startmenu-shortcut.before.lnk'), 'desktop and Start Menu launchers point to the updated official executable');
+  const [vbsFile, bytes] = [...files.entries()].find(([k]) => k.endsWith('.vbs'));
   check(vbsFile.startsWith('D:\\runtime\\data\\') && bytes.subarray(0, 2).equals(Buffer.from([255, 254])), 'launcher stays in the fixed runtime and uses Unicode-safe VBScript encoding');
   const vbs = bytes.subarray(2).toString('utf16le');
   check(vbs.includes('"""D:\\node\\node.exe"" ""D:\\runtime\\suite\\launch.cjs"""') && vbs.includes(', 0, False'), 'paths are quoted correctly and the background helper stays hidden');
   api.installDesktopLauncher('C:\\updated-app\\resources');
   check(scripts.length === 1, 'stable desktop shortcut repairs are throttled');
   files.set(scripts[0][2].env.AGY_SHORTCUT_BACKUP, Buffer.from('shortcut'));
+  files.set(scripts[0][2].env.AGY_STARTMENU_BACKUP, Buffer.from('startmenu'));
   api.restoreDesktopLauncher();
-  check(scripts.length === 2 && scripts[1][1].at(-1).includes('Arguments.Contains'), 'uninstall restores the backup only while the shortcut still belongs to this suite');
+  check(scripts.length === 2 && scripts[1][1].at(-1).includes('Arguments.Contains') && scripts[1][1].at(-1).includes('AGY_STARTMENU_BACKUP'), 'uninstall restores Desktop and Start Menu backups only while shortcuts belong to this suite');
   console.log(`${checks} desktop launch checks passed; no real shortcuts or app files changed.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

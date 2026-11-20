@@ -96,7 +96,21 @@ async function main() {
             const stale = path.join(fixtureRoot, 'DevToolsActivePort'); fs.writeFileSync(stale, '1\nstale-browser-path');
             const result = await discoverCdp({ portFiles: [stale], cache: false, ignoreCache: true, scan: async () => [server.address().port] });
             check(result.port === server.address().port && result.browserWebSocketUrl.endsWith('/mock'), 'stale port file falls back to verified discovery and current browser WebSocket path');
+            let scanned = false;
+            await assert.rejects(() => discoverCdp({ portFiles: [stale], cache: false, ignoreCache: true, noScan: true, scan: async () => { scanned = true; return [server.address().port]; } }), /未发现可用的/);
+            check(!scanned, 'throttled noScan probe skips PowerShell port scanning when DevToolsActivePort is missing');
         } finally { await new Promise(resolve => server.close(resolve)); }
+        const { bootOnLaunch } = require('./boot-on-launch.cjs');
+        let daemonBooted = 0, guardianBooted = 0, injectCalls = 0;
+        const bootResult = await bootOnLaunch({
+            maxAttempts: 4, intervalMs: 0, settleMs: 0,
+            portFile: path.join(fixtureRoot, 'missing-port-file'),
+            sleep: async () => {},
+            ensureSwitcherDaemon: async () => { daemonBooted++; },
+            ensureGuardian: () => { guardianBooted++; },
+            injectLiveViaCdp: async () => { injectCalls++; return injectCalls === 2 ? { injected: 1, present: 1 } : (() => { throw Error('waiting'); })(); }
+        });
+        check(bootResult.attached && daemonBooted === 1 && guardianBooted === 1 && injectCalls === 2, 'boot-on-launch ensures daemon/guardian and retries until CDP renderer injection succeeds');
         console.log(`${checks} resilience checks passed; no real archive or model was modified.`);
     } finally {
         // This exact, owned fixture is inside the project backup directory.

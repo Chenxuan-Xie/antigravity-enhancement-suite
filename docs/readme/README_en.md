@@ -7,11 +7,11 @@
 # Antigravity Enhancement Suite
 
 <p align="center">
-  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Relay API bridge · Conversation outline & Markdown export · Parameterized Prompt Vault · Command Palette</strong>
+  <strong>Claude-inspired parchment theme · Simplified Chinese localization · Google multi-account hot switching · Relay latency benchmark · Universal side-panel preview · Cross-session Pinboard · Command Palette</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Antigravity-v2.22%2B-D97757?style=flat-square" alt="Antigravity v2.22+" />
+  <img src="https://img.shields.io/badge/Antigravity-v2.22--v2.33%2B-D97757?style=flat-square" alt="Antigravity v2.22-v2.33+" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=flat-square" alt="Windows 10/11" />
   <img src="https://img.shields.io/badge/Translations-2%2C155%2B-2E7D47?style=flat-square" alt="2,155+ translations" />
   <a href="../../LICENSE"><img src="https://img.shields.io/badge/License-MIT-5C5A55?style=flat-square" alt="License MIT" /></a>
@@ -29,7 +29,7 @@
 
 **Antigravity Enhancement Suite** is an all-in-one open-source enhancement toolkit for the **Google Antigravity 2.0 desktop app on Windows**. Without modifying or damaging the official `app.asar`, it uses an external, non-destructive bootstrap and a local background service to add four practical capabilities:
 
-**All four modules can now be enabled independently.** Choose the modules you need during installation, then use **Enhancement Suite Control Center** on the left (above **Connect Relay API**) to toggle the Claude skin, Chinese localization, multi-account switching, and API relay separately. You can keep the official colors with Chinese-only localization, or keep the English UI and use only the account or API modules. The update self-healing scheduled task is optional and disabled by default.
+**Every module and sub-toggle can be controlled independently.** Select the core modules during installation, then click **Enhancement Suite Control Center** on the left (above **Connect Relay API**) to configure **12 independent feature/display switches** (Claude skin, Chinese localization, Account switcher, API model switcher, Conversation outline & export, Show floating outline pill [hidden by default], Prompt vault, Universal side-panel preview, Account quota display, Relay API token usage, Low quota reminders, Update recovery task) plus **4 appearance & typography settings** (Theme mode, Reply font, Size, Reading width). On Antigravity v2.33.0+, managed Desktop and Start Menu shortcuts supply loopback `--remote-debugging-port=0` with instant `boot-on-launch.cjs` CDP injection—so the full suite loads cleanly in ~1–2s without modifying `app.asar`.
 
 1. 🎨 **Claude-inspired parchment theme (`antigravity-claude-skin`)**
    - Recreates Claude's signature **warm parchment white (`#FAF9F5` / sidebar `#F0EEE6`)** and **warm charcoal dark (`#1F1E1D` / sidebar `#161514`)** palettes across the new inset shell and glass surfaces, replacing harsh cool-white light.
@@ -222,13 +222,15 @@ powershell -ExecutionPolicy Bypass -File .\install-all.ps1 -Modules accounts,api
 **The installer performs these steps automatically**:
 1. Detects the local Antigravity installation directory;
 2. Copies the core into the fixed runtime directory and points plugins, launchers, MCP, and the optional guardian at it; reinstalling preserves accounts, models, and chat data;
-3. Enables the selected plugins and UI modules and writes the external launcher while leaving the official ASAR untouched;
-4. Loads the UI when the app is idle and CDP is available, without refreshing the chat; native menu and window-launch hook upgrades take full effect on the next app start; installation and re-injection wait while you are generating;
-5. Registers a scheduled task and startup entry only when update self-healing is selected; otherwise the local backend starts with the app and exits when the app closes. If self-healing is off and an official update removes the launcher, run the installer again.
+3. Enables the selected plugins and UI modules, writes the external bootstrap, and wraps both **Desktop** and **Start Menu** `Antigravity` shortcuts (backing up originals for clean restoration on uninstall) while keeping `app.asar` byte-identical;
+4. `launch.cjs` reads your live Windows proxy settings and launches Antigravity with loopback-only `--remote-debugging-port=0 --remote-debugging-address=127.0.0.1`, paired with `boot-on-launch.cjs` to ensure the `19823` daemon and inject the frontend via CDP on startup—keeping **Antigravity v2.33.0+ (where `app.asar` takes priority over `resources/app`)** working out of the box; installation and re-injection wait if you are generating;
+5. Registers a scheduled task and startup entry only when update self-healing is enabled; otherwise `launch.cjs` starts the local backend when opening the app.
 
-With update self-healing enabled, the guardian re-detects the running Antigravity installation or the location targeted by the desktop shortcut. Even if the directory changes after an update and the old version directory still exists, it restores the external launcher at the new location and keeps the uninstall manifest in sync. Official sign-in and the ASAR file remain unchanged.
+> 💡 **Recovering after an Antigravity v2.33.0+ in-app auto-update**:
+> - When Antigravity restarts itself immediately after installing an in-app update, the updater may launch `Antigravity.exe` directly without the loopback debugging switch, temporarily showing the vanilla official UI.
+> - **No reinstall needed**: with self-healing enabled, shortcuts are repaired automatically; simply **close Antigravity completely and reopen it from the Desktop or Start Menu shortcut**, and `boot-on-launch` will re-inject the entire suite within ~1–2 seconds.
 
-The Windows desktop entry reads the current system proxy each time it opens so the local chat UI can bypass the proxy. It does not store proxy node IPs or change system proxy settings. If an official update replaces the shortcut, the enabled guardian restores the entry; uninstalling restores the original shortcut.
+The Windows Desktop and Start Menu launchers read the active system proxy on every start so the local UI bypasses external proxies without persisting exit IPs or changing global Windows proxy settings. If an official update overwrites shortcuts, the enabled guardian restores them; uninstalling restores the backed-up original shortcuts.
 
 ---
 
@@ -243,10 +245,12 @@ The Windows desktop entry reads the current system proxy each time it opens so t
      - **💻 Follow system**: listens to the Windows 10/11 light/dark setting and switches in real time, including the native window controls.
 2. **Customize fonts, sizes, and reading width**:
    - The control center offers **Follow theme / Book serif / Modern sans-serif**, **Small / Standard / Large** sizes, and **Standard (`51rem`) / Wide (`68rem`) / Full width (`92%`)** conversation reading modes without editing CSS. Turning the skin off restores the official colors, fonts, and layout; appearance settings are retained and restored when re-enabled.
-3. **Keyboard shortcuts (independently toggleable in the control center)**:
-   - `Alt+K`: open the **Unified Command Palette** (fuzzy-search themes, reading widths, accounts, relay models, Markdown export, and prompt templates);
-   - `Alt+P`: open the **Prompt Vault** (interactive `{{variable:default}}` fill-in forms with persistent local storage);
-   - `Alt+O`: toggle the **Conversation Outline & Export** drawer (jump to turns & AI sub-headings, filter `★` starred turns, copy or download `.md`).
+3. **Keyboard shortcuts & Control Center quick bar (independently toggleable)**:
+   - `Alt+K`: open the **Unified Command Palette** (fuzzy-search themes, reading widths, accounts, parallel relay latency benchmark, pinboard context injection, draft recovery, floating outline pill visibility, and Zen Focus mode);
+   - `Alt+P`: open the **Prompt Vault** (interactive `{{variable:default}}` fill-in forms, custom templates, `🕒 Drafts` unsent recovery, and JSON pack import/export);
+   - `Alt+B`: open the **Cross-Session Context Pinboard** (curate and inject saved `<CONTEXT_PINBOARD>` blocks into any conversation composer);
+   - `Alt+O`: toggle the **Conversation Outline, Telemetry & Export** drawer (jump to turns & `H1–H3` headings, live token meter, `★` starred filters, `🚀 Session Handoff` brief generator, clean Markdown & dual-theme Bookish HTML report). To keep split panes and side previews uncluttered, the floating outline pill (`#agy-outline-pill`) is **hidden by default**; hover the pill's top-right `×` badge to hide anytime, or re-enable via the drawer header (`⊘/◉`), Control Center switch, or `Alt+K`;
+   - `Alt+Z`: toggle **Zen Focus Reading Mode** (collapse distracting sidebars for focused reading).
    - Skin and theme settings persist across restarts. The app keeps the native page-loading flow; once the page is ready, the control center reads local configuration without waiting for a backend switch. With the skin off, the official appearance remains and the control-center entry is still available.
    - Windows may retain Electron-injected styles from older versions. The current release disables the old preload skin injection in memory while keeping native interfaces and leaving the official ASAR untouched. After updating, fully quit and reopen the app once; subsequent skin toggles apply immediately.
    - The Windows background language service reads the enabled system proxy and preserves explicitly configured proxy environment variables; loopback traffic bypasses the proxy. If sign-in reports an `oauth2.googleapis.com/token` timeout, confirm the proxy can reach Google, then fully quit and reopen the app. The suite does not change system proxy or global environment variables.
@@ -274,8 +278,8 @@ After enabling the account module, the suite detects the currently signed-in Goo
 2. **One-click seamless switching**:
    - Click **Switch** next to the target account. The background updates credentials and restarts the language service while keeping the window and conversation; timing depends on the network and language-service startup. Stop any generation before switching.
    - Antigravity 2.28+ stores credentials under a per-account `antigravity-<credential-user-scope>` target. The suite updates both the new scoped target and the legacy `gemini:antigravity` target, and writes the target account's scope before restarting the language service, so switching does not fall back to onboarding.
-3. **View remaining model quota**:
-   - Click **Refresh quota** to see each account's remaining percentage and reset time per model, so you can switch before a quota runs out.
+3. **View Gemini & third-party quota pools + subscription tier badges**:
+   - Click **Refresh quota** to inspect each account's `loadCodeAssist` subscription badge (`AI Ultra` / `AI Pro` / Free Tier), prioritized **Gemini (`Weekly` & `5h`)** quota bars, and **`Claude/GPT` (`Weekly` & `5h`)** progress bars with reset countdowns. Requests use Antigravity's native `2.x` User-Agent and per-account CloudCode project binding so both weekly and 5-hour Gemini buckets populate reliably.
 
 ---
 
@@ -323,6 +327,31 @@ Relay progress distinguishes reasoning received, output in progress, tool execut
 - **Streaming display**: replies, reasoning content returned by the API, and tool states are shown progressively; the stop button cancels the current task. Whether reasoning is returned depends on the provider; plain waiting is never displayed as received reasoning.
 - **Continuous execution**: the tool loop has no fixed 48-turn cap and can continue until the model finishes, the user stops it, or an error occurs. Upstream timeouts, quotas, output limits, and context windows still apply; this is not unlimited context or an uninterrupted guarantee.
 
+#### 5. Parallel relay latency race & one-click fastest pick
+- Open **Connect Relay API** or press `Alt+K` and trigger **🏁 Parallel Relay Latency Race** (`🏁 全模型并发测速赛马`) to probe enabled relay models concurrently, render visual latency bars with a **`🏆 Fastest`** marker, and click **⚡ Pick Fastest** to switch to the lowest-latency healthy endpoint right away.
+
+---
+
+### 4. Universal Side-Panel Preview & Workflow Power Tools (`suite/`)
+
+> All productivity tools below expose independent toggles in the Control Center, keep `app.asar` untouched, and store all state locally.
+
+1. **Universal Side-Panel File Preview Enhancer (`suite/side-preview.js` & `suite/file-preview.cjs`)**
+   - Upgrades Antigravity's native side viewer in-place and adds a right-docked preview drawer for `file://` links outside the workspace (with `#L10-L20` line range highlighting):
+     - **PDF documents**: `HTTP 206` byte-range streaming (`Content-Range`) with smooth native browser zoom and page count telemetry.
+     - **Office suite**: dependency-free rendering for Word `.docx` (headings/paragraphs/tables), Excel `.xlsx` (multi-sheet switcher, sparse-column alignment, table filter), and PowerPoint `.pptx` (per-slide structure cards).
+     - **Non-UTF8 encodings & huge logs**: automatic decoding for `UTF-16LE`, `UTF-16BE`, and `GB18030` files containing `0x00` bytes (eliminating false "binary file" errors), plus fast head (`384 KB`) + tail (`64 KB`) sampling for >20 MB logs.
+     - **Notebooks, archives & SQLite**: Jupyter `.ipynb` cells + execution outputs, `.zip` / `.whl` / `.vsix` inner tree & inline entry viewer, `.sqlite` / `.db` table DDL inspection, plus **👁️ Rich Preview** toggles on `.csv` / `.tsv` / `.jsonl` / `.svg` / `.html`.
+     - **Security allow/block guard**: loopback + Origin restricted, automatically blocking sensitive credential paths such as `.env*`, `accounts.json`, `models.json`, `id_rsa`, `.pem`/`.key`/`.pfx`, and `.ssh/`.
+2. **Code Evolution Diff · Sandboxed HTML/SVG Preview · Excel Table Export**
+   - **Code Evolution Diff (`⇄ Diff`)**: automatically matches prior code blocks in the conversation to inspect inline line-by-line additions/deletions and copy unified `.diff` patches.
+   - **Zero-Trust HTML/SVG Sandbox (`▶ Preview HTML / SVG`)**: renders generated web snippets inside an opaque `sandbox="allow-scripts"` iframe (`connect-src 'none'`), with `100%` / `390px` viewport presets, light/dark backdrop switch, and standalone file download.
+   - **Excel TSV Copy & UTF-8 BOM CSV Download**: Markdown tables mount one-click actions for instant Excel pasting or garble-free CSV export.
+3. **Context Pinboard (`Alt+B`) · Selection Action Pill · Secret Leak Shield**
+   - **Selection Pill**: highlight text anywhere to surface **`❝ Quote & Ask · 📌 Pin · ✦ Save Template · 📋 Copy`**, routed to the active split-pane composer.
+   - **Secret Leak Shield & Unsent Draft Time Machine**: detects probable live API keys, tokens, and PEM private keys before submission with one-click **`✂️ Redact Secrets`**, while snapshotting long unsent drafts into `Alt+P` (`🕒 Drafts`) / `Alt+K`.
+   - **Context Telemetry & Session Handoff (`Alt+O`)**: track live estimated token distribution, compile **`🚀 Session Handoff`** briefs straight into Pinboard for fresh chats, or download standalone dual-theme Bookish HTML archives.
+
 ---
 
 ## 🛠️ Uninstall and Restore the Official App
@@ -350,10 +379,10 @@ antigravity-enhancement-suite/
 ├── live-reload.ps1                     # Live reload for styles, dictionaries, and frontend scripts
 ├── 双击一键安装.cmd / 双击一键卸载.cmd # Visual install / uninstall entry points
 ├── install-online.ps1                  # One-line download and install entry
-├── suite/                              # Module switches, control center, fixed runtime install, regression
-├── antigravity-claude-skin/            # [Module 1] Claude parchment theme + Chinese localization + guardian
-├── antigravity-account-switcher/       # [Module 2] Google multi-account hot switching and quota plugin
-└── antigravity-model-switcher/         # [Module 3] Third-party API relay and same-conversation context bridge
+├── suite/                              # Control center, command palette, prompt vault, pinboard, outline/export, side-panel preview, launcher (`launch.cjs`), and regression tests
+├── antigravity-claude-skin/            # [Module 1] Claude parchment/charcoal theme + 2,155+ i18n entries + `boot-on-launch.cjs` & guardian
+├── antigravity-account-switcher/       # [Module 2] Google multi-account hot switching & Gemini/Claude quota panel
+└── antigravity-model-switcher/         # [Module 3] Third-party API relay, latency race benchmark & conversation bridge
 ```
 
 To maintain the screenshots, first run `node suite/tools/read-docs-templates.mjs`: it captures the current home screen, a completed chat, and the native account settings layout, removes private content from the copied DOM, and restores the original page afterward. Keep the app idle with an empty composer during capture. Then run `node suite/tools/capture-docs.mjs --animations`; it renders screenshots and three 20 fps animations from anonymized templates in an isolated Chrome / Edge instance. Encoding animations also requires Python and Pillow. The preview never calls a real relay API or switches a real account; templates and raw frames live under the git-ignored `artifacts/`. Review every image and key frame before publishing.

@@ -45,7 +45,7 @@ async function discoverCdp(options = {}) {
     const ports = [...new Set(candidates.filter(Boolean).map(Number))];
     let endpoint;
     for (const port of ports) { endpoint = await probe(port); if (endpoint) break; }
-    if (!endpoint) {
+    if (!endpoint && !options.noScan && options.scan !== false) {
         const discovered = options.scan ? await options.scan() : await scanOwnedPorts();
         const results = await Promise.all(discovered.filter(port => !ports.includes(port)).map(probe));
         endpoint = results.find(Boolean);

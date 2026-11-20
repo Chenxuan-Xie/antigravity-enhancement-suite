@@ -19,7 +19,9 @@ try{
   const readmeEn=fs.readFileSync(path.join(root,'docs','readme','README_en.md'),'utf8');
   check(/\[English\]\(docs\/readme\/README_en\.md\)/.test(readmeZh)&&/\[简体中文\]\(\.\.\/\.\.\/README\.md\)/.test(readmeEn),'README language bar links to translated page');
   const readmeZhAssets=[...readmeZh.matchAll(/src="\.\/assets\/([^"]+)"/g)].map(m=>m[1]);
+  const readmeEnAssets=[...readmeEn.matchAll(/src="\.\.\/\.\.\/assets\/([^"]+)"/g)].map(m=>m[1]);
   check(!readmeZh.includes('../../assets/')&&!readmeZh.includes('.replace(/')&&readmeZhAssets.length>=10&&readmeZhAssets.every(f=>fs.existsSync(path.join(root,'assets',f))),'root README resolves all relative asset links without broken parent paths');
+  check(readmeEnAssets.length>=10&&readmeEnAssets.every(f=>fs.existsSync(path.join(root,'assets',f)))&&readmeZh.includes('Alt+B')&&readmeZh.includes('Alt+Z')&&readmeZh.includes('v2.33')&&readmeEn.includes('Alt+B')&&readmeEn.includes('v2.33'),'English README assets resolve cleanly and both READMEs cover latest shortcuts and v2.33+ support');
   await call('/api/suite/settings',{skin:false,i18n:true,accounts:false,api:false});
   check(settings.readSettings().i18n&&!settings.readSettings().skin,'Chinese-only settings persist independently');
   check((await call('/api/models')).status===403,'disabled API is rejected in standalone and sidecar routes');
