@@ -205,7 +205,7 @@
       list.push({
         id: 'token-speed-details',
         group: appearanceGroup,
-        title: text('⚡ 查看本对话各轮 Token 输出速度明细', '⚡ Inspect Per-Turn Output Speed Breakdown'),
+        title: text('⚡ 查看当前对话 Token 输出速度详情', '⚡ Inspect Current Conversation Output Speed'),
         badge: rec?.lastTurn ? `${rec.lastTurn.tokPerSec.toFixed(1)} tok/s` : 'tok/s',
         keywords: 'token speed rate tps ttft 速度 测速 速率 首字',
         run: () => window.__agyTokenSpeed?.openPopover?.()

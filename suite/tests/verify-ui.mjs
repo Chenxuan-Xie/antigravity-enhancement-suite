@@ -170,7 +170,7 @@ try{
     await pause(40);
     assert(tsPill.textContent.includes('tok/s')&&!/--/.test(tsPill.textContent)&&w.__agyTokenSpeed.getConversationRecord('conv-speed-a')?.lastTurn?.calibrated===true,'token speed pill measures streaming tok/s and calibrates with reported usage');
     tsPill.click();await pause(20);
-    assert(d.querySelector('#agy-token-speed-popover')?.textContent.includes('40 tok')&&d.querySelector('#agy-token-speed-popover')?.textContent.includes('Verified Usage'),'clicking speed pill opens breakdown popover with TTFT, tokens and turn history');
+    assert(d.querySelector('#agy-token-speed-popover')?.textContent.includes('40 tok')&&d.querySelector('#agy-token-speed-popover')?.textContent.includes('Verified Usage')&&!d.querySelector('#agy-token-speed-popover .agy-ts-hist-row'),'clicking speed pill opens simplified current-speed popover without turn history');
     mainPane.setAttribute('data-cascade-id','conv-speed-b');w.__agyTokenSpeed.refresh();await pause(20);
     assert(tsPill.textContent.includes('-- tok/s'),'switching conversations isolates token speed metrics per conversation');
     mainPane.setAttribute('data-cascade-id','conv-speed-a');w.__agyTokenSpeed.refresh();

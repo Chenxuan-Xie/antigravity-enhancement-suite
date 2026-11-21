@@ -3,7 +3,6 @@
 
   const STORAGE_KEY = '__agy_token_speed_v1__';
   const MAX_CONVERSATIONS = 40;
-  const MAX_TURNS_PER_CONV = 15;
   const ACTIVE_GAP_LIMIT_MS = 1500;
   const PAUSE_RESUME_QUANTUM_MS = 180;
   const SKIP_I18N_ATTR = 'data-ag-localization-skip';
@@ -132,7 +131,7 @@
     .agy-ts-pop-actions button:hover {
       border-color: #D97757; color: #D97757; background: rgba(217, 119, 87, 0.08);
     }
-    .agy-ts-pop-body { padding: 11px 14px 13px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .agy-ts-pop-body { flex: 1 1 auto; min-height: 0; padding: 11px 14px 13px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .agy-ts-hero {
       display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px;
     }
@@ -152,20 +151,6 @@
       padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 600;
       background: rgba(217, 119, 87, 0.12); color: #D97757;
     }
-    .agy-ts-hist-title {
-      font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.56;
-      text-transform: uppercase; margin-top: 2px;
-    }
-    .agy-ts-hist-list { display: flex; flex-direction: column; gap: 5px; }
-    .agy-ts-hist-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      padding: 6px 8px; border-radius: 8px;
-      background: rgba(128, 128, 128, 0.05); font-size: 11.5px;
-    }
-    .agy-ts-hist-left { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
-    .agy-ts-hist-model { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .agy-ts-hist-sub { font-size: 10.5px; opacity: 0.6; }
-    .agy-ts-hist-right { font-weight: 700; color: #D97757; flex-shrink: 0; }
     .agy-ts-empty { font-size: 11.5px; opacity: 0.62; padding: 8px 2px; line-height: 1.5; }
   `;
   document.head.appendChild(style);
@@ -459,18 +444,11 @@
       source: session.source
     };
 
-    const conv = store.conversations[session.convId] || {
+    const conv = {
       convId: session.convId,
-      history: []
+      updatedAt: Date.now(),
+      lastTurn: recordTurn
     };
-    conv.convId = session.convId;
-    conv.updatedAt = Date.now();
-    conv.lastTurn = recordTurn;
-    conv.history = [recordTurn, ...(Array.isArray(conv.history) ? conv.history : [])].slice(0, MAX_TURNS_PER_CONV);
-    const validRates = conv.history.map(h => h.tokPerSec).filter(n => Number.isFinite(n) && n > 0);
-    conv.avgTokPerSec = validRates.length ? round1(validRates.reduce((a, b) => a + b, 0) / validRates.length) : tokPerSec;
-    conv.peakTokPerSec = validRates.length ? round1(Math.max(...conv.history.map(h => h.peakTokPerSec || h.tokPerSec || 0))) : recordTurn.peakTokPerSec;
-    conv.totalTurns = (conv.totalTurns || 0) + 1;
     store.conversations[session.convId] = conv;
     saveStore();
     return conv;
@@ -618,15 +596,15 @@
       const last = convRecord.lastTurn;
       tier = speedTier(last.tokPerSec);
       label = `${last.tokPerSec.toFixed(1)} tok/s`;
-      const ttftSec = (last.ttftMs / 1000).toFixed(2);
+      const activeSec = (last.activeMs / 1000).toFixed(1);
       const srcTag = last.calibrated ? text('实测 Usage', 'Measured Usage') : text('本地估算', 'Est.');
       title = text(
-        `上轮输出速度 ${last.tokPerSec.toFixed(1)} tok/s（首字 ${ttftSec}s · ${last.tokens} tok · ${srcTag}）\n点击查看本对话各轮明细`,
-        `Last turn: ${last.tokPerSec.toFixed(1)} tok/s (TTFT ${ttftSec}s · ${last.tokens} tok · ${srcTag})\nClick for conversation breakdown`
+        `当前速度 ${last.tokPerSec.toFixed(1)} tok/s（${last.tokens} tok · ${activeSec}s · ${srcTag}）\n点击查看详情`,
+        `Current speed: ${last.tokPerSec.toFixed(1)} tok/s (${last.tokens} tok · ${activeSec}s · ${srcTag})\nClick for details`
       );
     } else {
       label = text('-- tok/s', '-- tok/s');
-      title = text('发送消息后自动监测本对话实时输出速度 (tok/s) 与首字延迟', 'Send a message to measure per-conversation tok/s & TTFT');
+      title = text('发送消息后自动显示当前对话实时输出速度 (tok/s)', 'Send a message to measure current conversation output speed (tok/s)');
     }
 
     pill.dataset.live = String(live);
@@ -675,10 +653,10 @@
     const acts = document.createElement('div');
     acts.className = 'agy-ts-pop-actions';
 
-    if (conv?.history?.length) {
+    if (conv?.lastTurn) {
       const clearBtn = document.createElement('button');
       clearBtn.type = 'button';
-      clearBtn.textContent = text('清空', 'Clear');
+      clearBtn.textContent = text('重置', 'Reset');
       clearBtn.onclick = () => {
         delete store.conversations[convId];
         saveStore();
@@ -709,7 +687,6 @@
     const cur = active && !active.finished
       ? {
           tokPerSec: active.liveTokPerSec || (active.activeMs >= 200 ? round1((active.tokens * 1000) / active.activeMs) : 0),
-          ttftMs: active.firstTokenAt ? Math.round(active.firstTokenAt - active.submittedAt) : Math.round(performance.now() - active.submittedAt),
           tokens: active.tokens,
           charsPerSec: active.activeMs >= 200 ? round1((active.chars * 1000) / active.activeMs) : 0,
           activeMs: Math.round(active.activeMs),
@@ -723,8 +700,8 @@
       const hero = document.createElement('div');
       hero.className = 'agy-ts-hero';
       const stats = [
-        { k: cur.live ? text('实时速度', 'Live Speed') : text('本轮速度', 'Last Speed'), v: cur.tokPerSec ? `${cur.tokPerSec.toFixed(1)} tok/s` : '…', primary: true },
-        { k: text('首字延迟', 'TTFT'), v: `${(cur.ttftMs / 1000).toFixed(2)}s` },
+        { k: cur.live ? text('实时速度', 'Live Speed') : text('当前速度', 'Current Speed'), v: cur.tokPerSec ? `${cur.tokPerSec.toFixed(1)} tok/s` : '…', primary: true },
+        { k: text('字符速率', 'Char Rate'), v: `${Math.round(cur.charsPerSec || 0)} ${text('字/s', 'ch/s')}` },
         { k: text('生成量', 'Output'), v: `${cur.tokens} tok` }
       ];
       for (const st of stats) {
@@ -738,11 +715,8 @@
       const meta = document.createElement('div');
       meta.className = 'agy-ts-meta-line';
       const leftMeta = document.createElement('span');
-      const parts = [];
-      if (cur.charsPerSec > 0) parts.push(`${cur.charsPerSec.toFixed(0)} ${text('字/s', 'ch/s')}`);
-      if (conv?.avgTokPerSec > 0) parts.push(`${text('均值', 'Avg')} ${conv.avgTokPerSec.toFixed(1)}`);
-      if (conv?.peakTokPerSec > 0) parts.push(`${text('峰值', 'Peak')} ${conv.peakTokPerSec.toFixed(1)}`);
-      leftMeta.textContent = parts.join(' · ') || cur.modelName;
+      const secText = (Math.max(200, cur.activeMs || 0) / 1000).toFixed(1);
+      leftMeta.textContent = `${cur.modelName} · ${secText}s`;
 
       const rightBadge = document.createElement('span');
       rightBadge.className = 'agy-ts-badge';
@@ -755,39 +729,10 @@
       const empty = document.createElement('div');
       empty.className = 'agy-ts-empty';
       empty.textContent = text(
-        '当前对话尚无已完成的生成轮次。发送一条消息后，这里将实时显示每秒输出 Token 速率 (tok/s)、首字延迟 (TTFT) 与各轮测速历史。',
-        'No measured turns in this conversation yet. Send a message to record live tok/s output speed, TTFT, and per-turn history.'
+        '当前对话尚无测速数据。发送一条消息后，模型选择器右侧会实时显示当前输出速度 (tok/s)。',
+        'No measurement yet. Send a message to display live tok/s output speed right beside the model selector.'
       );
       body.appendChild(empty);
-    }
-
-    if (conv?.history?.length) {
-      const hTitle = document.createElement('div');
-      hTitle.className = 'agy-ts-hist-title';
-      hTitle.textContent = text(`本对话测速记录（共 ${conv.history.length} 轮）`, `Conversation Turns (${conv.history.length})`);
-      body.appendChild(hTitle);
-
-      const list = document.createElement('div');
-      list.className = 'agy-ts-hist-list';
-      conv.history.slice(0, 8).forEach((item, idx) => {
-        const row = document.createElement('div');
-        row.className = 'agy-ts-hist-row';
-        const l = document.createElement('div');
-        l.className = 'agy-ts-hist-left';
-        const mEl = document.createElement('span');
-        mEl.className = 'agy-ts-hist-model';
-        mEl.textContent = `#${conv.history.length - idx} ${item.modelName}`;
-        const sEl = document.createElement('span');
-        sEl.className = 'agy-ts-hist-sub';
-        sEl.textContent = `${text('首字', 'TTFT')} ${(item.ttftMs / 1000).toFixed(2)}s · ${item.tokens} tok · ${(item.activeMs / 1000).toFixed(1)}s${item.calibrated ? ' ✓' : ''}`;
-        l.append(mEl, sEl);
-        const r = document.createElement('span');
-        r.className = 'agy-ts-hist-right';
-        r.textContent = `${item.tokPerSec.toFixed(1)} tok/s`;
-        row.append(l, r);
-        list.appendChild(row);
-      });
-      body.appendChild(list);
     }
 
     popoverEl.append(head, body);
